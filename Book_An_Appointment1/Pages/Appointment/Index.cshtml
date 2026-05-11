@@ -1,0 +1,397 @@
+﻿@page
+@model Book_An_Appointment1.Pages.Appointment.IndexModel
+@{
+    ViewData["Title"] = "Book Appointment";
+}
+
+<form method="post">
+    @Html.AntiForgeryToken()
+    <div class="container mt-5">
+
+        <!-- Tracker -->
+        <div class="wizard-track mb-5 d-flex justify-content-between">
+
+            <div class="step active">
+                Appointment
+            </div>
+
+            <div class="step-line"></div>
+
+            <div class="step">
+                Patient Details
+            </div>
+
+            <div class="step-line"></div>
+
+            <div class="step">
+                Confirmation
+            </div>
+
+            <div class="step-line"></div>
+
+            <div class="step">
+                Payment
+            </div>
+
+        </div>
+
+        <!-- Dropdowns -->
+        <div class="row g-4">
+
+            <!-- Facility -->
+            <div class="col-md-4">
+                <label class="form-label fw-bold">
+                    Facility
+                </label>
+
+                <select name="FacilityId"
+                        id="facilityDropdown"
+                        class="form-select select2">
+
+                    <option value="">
+                        Select Facility
+                    </option>
+
+                    @foreach (var item in Model.Wizard.Facilities)
+                    {
+                        <option value="@item.FacilityId">
+                            @(item.FacilityName ?? "N/A")
+                        </option>
+                    }
+
+                </select>
+            </div>
+
+            <!-- Speciality -->
+            <div class="col-md-4">
+                <label class="form-label fw-bold">
+                    Speciality
+                </label>
+
+                <select name="SpecialityId"
+                        id="specialityDropdown"
+                        class="form-select select2">
+
+                    <option value="">
+                        Search Speciality
+                    </option>
+
+                    @foreach (var item in Model.Wizard.Specialities)
+                    {
+                        <option value="@item.Id">
+                            @(item.SpecialisationName ?? "N/A")
+                        </option>
+                    }
+
+                </select>
+            </div>
+
+            <!-- Doctor -->
+            <div class="col-md-4">
+                <label class="form-label fw-bold">
+                    Doctor
+                </label>
+
+                <select name="DoctorId"
+                        id="doctorDropdown"
+                        class="form-select select2">
+
+                    <option value="">
+                        Search Doctor
+                    </option>
+
+                    @if (Model.Wizard.Doctors != null)
+                    {
+                        foreach (var item in Model.Wizard.Doctors)
+                        {
+                            <option value="@item.Id"
+                                @(Model.DoctorId.ToString() == item.Id ? "selected" : "")>
+                                @(item.Name ?? "N/A")
+                            </option>
+                        }
+                    }
+
+                </select>
+            </div>
+
+        </div>
+
+
+
+
+        <!-- Doctor Profile -->
+        @if (Model.Wizard.SelectedDoctor != null)
+        {
+            var doc = Model.Wizard.SelectedDoctor;
+            <div class="card shadow-lg border-0 rounded-4 mt-5 p-4">
+
+                <div class="row">
+                    <div class="col-md-3 text-center">
+                        <img src="@doc.ImageUrl"
+                             style="width:180px;height:180px;object-fit:cover;border-radius:50%;" />
+                        <div class="mt-2">
+                            <span class="badge bg-warning text-dark">⭐ @(doc.Rating ?? "N/A")</span>
+                            <span class="text-muted ms-1" style="font-size:12px;">(@(doc.Review ?? "0") reviews)</span>
+                        </div>
+                        @if (doc.IsTeleconsult)
+                        {
+                            <span class="badge bg-success mt-2">Teleconsultation Available</span>
+                        }
+                    </div>
+
+                    <div class="col-md-9">
+                        <h3>@doc.Name</h3>
+                        <p class="text-muted mb-1">@(doc.Designation ?? "") | @(doc.DepartmentName ?? "")</p>
+                        <p class="text-muted mb-3">@(doc.SpecialisationName ?? "")</p>
+
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <strong>Experience:</strong>
+                                <span>@doc.Experience</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Consultation Fee:</strong>
+                                <span class="text-success fw-bold">₹ @Model.Wizard.ConsultationAmount</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Next Available:</strong>
+                                <span>@doc.Timing</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Gender:</strong>
+                                <span>@(doc.Gender == "M" ? "Male" : doc.Gender == "F" ? "Female" : "N/A")</span>
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(doc.Treatment))
+                            {
+                                <div class="col-md-12">
+                                    <strong>Treatments:</strong>
+                                    <span>@doc.Treatment</span>
+                                </div>
+                            }
+                            @if (doc.ConsultingHospitals.Any())
+                            {
+                                <div class="col-md-12">
+                                    <strong>Hospital:</strong>
+                                    <span>
+                                        @doc.ConsultingHospitals.First().FacilityName,
+                                        @doc.ConsultingHospitals.First().CityName
+                                    </span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4" />
+
+                <h5 class="mb-4">Available Slots</h5>
+
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach (var slot in Model.Wizard.Slots)
+                    {
+                        var slotTime = DateTime.TryParse(slot.StartTime, out var t)
+                            ? t.ToString("hh:mm tt") : slot.StartTime;
+                        var slotDate = DateTime.TryParse(slot.StartTime, out var d)
+                            ? d.ToString("dd MMM") : "";
+
+                        <button type="button" class="btn btn-outline-primary rounded-pill px-3 py-1"
+                                style="font-size:13px;">
+                            <div>@slotTime</div>
+                            <div style="font-size:10px;color:#888;">@slotDate</div>
+                        </button>
+                    }
+                </div>
+
+                <div class="text-end mt-5">
+                    <button class="btn btn-primary px-5 py-3 rounded-pill">
+                        Continue →
+                    </button>
+                </div>
+
+            </div>
+        }
+
+
+
+
+
+
+     @*    @if (Model.Wizard.SelectedDoctor != null)
+        {
+            <div class="card shadow-lg border-0 rounded-4 mt-5 p-4">
+
+                <div class="row">
+
+                    <div class="col-md-3 text-center">
+
+                        <img src="@(string.IsNullOrWhiteSpace(Model.Wizard.SelectedDoctor.ImageUrl)
+                                                                                     ? "/images/default-doctor.png"
+                                                                                     : Model.Wizard.SelectedDoctor.ImageUrl)"
+                             style="width:180px;height:180px;object-fit:cover;border-radius:50%;" />
+
+                    </div>
+
+                    <div class="col-md-9">
+
+                        <h3>
+                            @(Model.Wizard.SelectedDoctor.Name ?? "N/A")
+                        </h3>
+
+                        <p>
+                            <strong>Experience:</strong>
+                            @(Model.Wizard.SelectedDoctor.Experience ?? "N/A")
+                        </p>
+
+                        <p>
+                            <strong>Consultation Fee:</strong>
+                            ₹ @(Model.Wizard.ConsultationAmount)
+                        </p>
+
+                        <p>
+                            <strong>Timing:</strong>
+                            @(Model.Wizard.SelectedDoctor.Timing ?? "N/A")
+                        </p>
+
+                        <p>
+                            @(Model.Wizard.SelectedDoctor.Description ?? "N/A")
+                        </p>
+
+                    </div>
+
+                </div>
+
+                <hr class="my-4" />
+
+                <!-- Slots -->
+                <h5 class="mb-4">
+                    Available Slots
+                </h5>
+
+                <div class="d-flex flex-wrap gap-3">
+
+                    @foreach (var slot in Model.Wizard.Slots)
+                    {
+                        <button type="button"
+                                class="btn btn-outline-primary rounded-pill px-4">
+                            @(DateTime.TryParse(slot.StartTime, out var t) ? t.ToString("hh:mm tt") : slot.StartTime)
+                        </button>
+                    }
+
+                </div>
+
+                <div class="text-end mt-5">
+
+                    <button class="btn btn-primary px-5 py-3 rounded-pill">
+                        Continue →
+                    </button>
+
+                </div>
+
+            </div>
+        }
+ *@
+    </div>
+
+</form>
+
+
+@section Scripts {
+
+    <script>
+
+ 
+
+        // $(document).ready(function () {
+
+        //     // Page refresh pe state clear karo
+        //     if (performance.navigation.type === 1) {
+        //         window.location.href = window.location.pathname;
+        //         return;
+        //     }
+
+        //     $('#facilityDropdown').select2({
+        //         width: '100%',
+        //         placeholder: 'Select Facility',
+        //         allowClear: true
+        //     });
+
+        //     $('#specialityDropdown').select2({
+        //         width: '100%',
+        //         placeholder: 'Search Speciality',
+        //         allowClear: true
+        //     });
+
+        //     $('#doctorDropdown').select2({
+        //         width: '100%',
+        //         placeholder: 'Search Doctor',
+        //         allowClear: true
+        //     });
+
+        //     // Selected values restore karo
+        //     $('#facilityDropdown').val('@Model.FacilityId').trigger('change.select2');
+        //     $('#specialityDropdown').val('@Model.SpecialityId').trigger('change.select2');
+        //     $('#doctorDropdown').val('@Model.DoctorId').trigger('change.select2');
+
+        //     // Facility change
+        //     $('#facilityDropdown').on('change', function () {
+        //         $('form').submit();
+        //     });
+
+        //     // Facility clear
+        //     $('#facilityDropdown').on('select2:clear', function () {
+        //         $(this).val('').trigger('change.select2');
+        //         $('form').submit();
+        //     });
+
+        //     // Speciality change
+        //     $('#specialityDropdown').on('change', function () {
+        //         $('#doctorDropdown').val('').trigger('change.select2'); // doctor clear
+        //         $('form').submit();
+        //     });
+
+        //     // Speciality clear
+        //     $('#specialityDropdown').on('select2:clear', function () {
+        //         $(this).val('').trigger('change.select2');
+        //         $('form').submit();
+        //     });
+
+        //     // Doctor change
+        //     $('#doctorDropdown').on('change', function () {
+        //         $('form').submit();
+        //     });
+
+        //     // Doctor clear
+        //     $('#doctorDropdown').on('select2:clear', function () {
+        //         $(this).val('').trigger('change.select2');
+        //         $('form').submit();
+        //     });
+
+        // });
+
+                  $(document).ready(function () {
+
+            if (performance.navigation.type === 1) {
+                window.location.href = window.location.pathname;
+                return;
+            }
+
+            $('#facilityDropdown').select2({ width: '100%', placeholder: 'Select Facility' });
+            $('#specialityDropdown').select2({ width: '100%', placeholder: 'Search Speciality' });
+            $('#doctorDropdown').select2({ width: '100%', placeholder: 'Search Doctor' });
+
+            $('#facilityDropdown').val('@Model.FacilityId').trigger('change.select2');
+            $('#specialityDropdown').val('@Model.SpecialityId').trigger('change.select2');
+
+            @if (Model.DoctorId > 0)
+            {
+                    <text>$('#doctorDropdown').val('@Model.DoctorId').trigger('change.select2');</text>
+            }
+
+            $('#facilityDropdown').on('change', function () { $('form').submit(); });
+            $('#specialityDropdown').on('change', function () { $('form').submit(); });
+            $('#doctorDropdown').on('change', function () { $('form').submit(); });
+
+        });
+    </script>
+
+}

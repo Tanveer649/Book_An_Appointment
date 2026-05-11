@@ -1,0 +1,74 @@
+﻿body {
+    background: #f4f7fb;
+}
+
+.appointment-container {
+    max-width: 1300px;
+    margin: 40px auto;
+    padding: 20px;
+}
+
+.booking-card {
+    background: #ffffff;
+    border-radius: 24px;
+    padding: 40px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+}
+
+.booking-header h2 {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.booking-header p {
+    color: #64748b;
+    margin-bottom: 30px;
+}
+
+.form-label {
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.form-select {
+    height: 56px;
+    border-radius: 14px;
+    border: 1px solid #dbe2ea;
+    padding-left: 16px;
+    font-size: 16px;
+}
+
+.wizard-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 35px;
+}
+
+.wizard-step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+}
+
+    .wizard-step span {
+        width: 48px;
+        height: 48px;
+        background: #dbeafe;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-weight: 700;
+        color: #2563eb;
+    }
+
+    .wizard-step.active span {
+        background: #2563eb;
+        color: #fff;
+    }
+
+    .wizard-step p {
+        margin-top: 10px;
+        font-weight: 600;
+    }
