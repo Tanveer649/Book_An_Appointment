@@ -120,7 +120,7 @@
 
 
         <!-- Doctor Profile -->
-        @if (Model.Wizard.SelectedDoctor != null)
+       @*  @if (Model.Wizard.SelectedDoctor != null)
         {
             var doc = Model.Wizard.SelectedDoctor;
             <div class="card shadow-lg border-0 rounded-4 mt-5 p-4">
@@ -210,87 +210,138 @@
 
             </div>
         }
+    </div> *@
 
 
-
-
-
-
-     @*    @if (Model.Wizard.SelectedDoctor != null)
+        @if (Model.Wizard.SelectedDoctor != null)
         {
+            var doc = Model.Wizard.SelectedDoctor;
             <div class="card shadow-lg border-0 rounded-4 mt-5 p-4">
 
+                <!-- Doctor Info -->
                 <div class="row">
-
                     <div class="col-md-3 text-center">
-
-                        <img src="@(string.IsNullOrWhiteSpace(Model.Wizard.SelectedDoctor.ImageUrl)
-                                                                                     ? "/images/default-doctor.png"
-                                                                                     : Model.Wizard.SelectedDoctor.ImageUrl)"
+                        <img src="@doc.ImageUrl"
                              style="width:180px;height:180px;object-fit:cover;border-radius:50%;" />
-
+                        <div class="mt-2">
+                            <span class="badge bg-warning text-dark">⭐ @(doc.Rating ?? "N/A")</span>
+                            <span class="text-muted ms-1" style="font-size:12px;">(@(doc.Review ?? "0") reviews)</span>
+                        </div>
+                        @if (doc.IsTeleconsult)
+                        {
+                            <div class="mt-2">
+                                <span class="badge bg-success">Teleconsultation Available</span>
+                            </div>
+                        }
                     </div>
 
                     <div class="col-md-9">
+                        <h3>@doc.Name</h3>
+                        <p class="text-muted mb-1">@(doc.Designation ?? "") | @(doc.DepartmentName ?? "")</p>
+                        <p class="text-muted mb-3">@(doc.SpecialisationName ?? "")</p>
 
-                        <h3>
-                            @(Model.Wizard.SelectedDoctor.Name ?? "N/A")
-                        </h3>
-
-                        <p>
-                            <strong>Experience:</strong>
-                            @(Model.Wizard.SelectedDoctor.Experience ?? "N/A")
-                        </p>
-
-                        <p>
-                            <strong>Consultation Fee:</strong>
-                            ₹ @(Model.Wizard.ConsultationAmount)
-                        </p>
-
-                        <p>
-                            <strong>Timing:</strong>
-                            @(Model.Wizard.SelectedDoctor.Timing ?? "N/A")
-                        </p>
-
-                        <p>
-                            @(Model.Wizard.SelectedDoctor.Description ?? "N/A")
-                        </p>
-
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <strong>Experience:</strong>
+                                <span>@doc.Experience</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Consultation Fee:</strong>
+                                <span class="text-success fw-bold">₹ @Model.Wizard.ConsultationAmount</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Next Available:</strong>
+                                <span>@doc.Timing</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Gender:</strong>
+                                <span>@(doc.Gender == "M" ? "Male" : doc.Gender == "F" ? "Female" : doc.Gender == "B" ? "Both" : "N/A")</span>
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(doc.Treatment))
+                            {
+                                <div class="col-md-12">
+                                    <strong>Treatments:</strong>
+                                    <span>@doc.Treatment</span>
+                                </div>
+                            }
+                            @if (doc.ConsultingHospitals.Any())
+                            {
+                                <div class="col-md-12">
+                                    <strong>Hospital:</strong>
+                                    <span>
+                                        @doc.ConsultingHospitals.First().FacilityName,
+                                        @doc.ConsultingHospitals.First().CityName
+                                    </span>
+                                </div>
+                            }
+                        </div>
                     </div>
-
                 </div>
 
                 <hr class="my-4" />
 
-                <!-- Slots -->
-                <h5 class="mb-4">
-                    Available Slots
-                </h5>
+                <!-- Calendar + Slots -->
+                <div class="row g-4">
 
-                <div class="d-flex flex-wrap gap-3">
+                    <!-- Calendar -->
+                    <div class="col-md-4">
+                        <h5 class="mb-3">Select Date</h5>
+                        <input type="text"
+                               id="slotCalendar"
+                               class="form-control"
+                               placeholder="Select date"
+                               readonly />
+                    </div>
 
-                    @foreach (var slot in Model.Wizard.Slots)
-                    {
-                        <button type="button"
-                                class="btn btn-outline-primary rounded-pill px-4">
-                            @(DateTime.TryParse(slot.StartTime, out var t) ? t.ToString("hh:mm tt") : slot.StartTime)
-                        </button>
-                    }
+                    <!-- Slots -->
+                    <div class="col-md-8">
+                        <h5 class="mb-3">
+                            Available Slots
+                            <span id="slotDateLabel" class="text-muted fs-6 ms-2"></span>
+                        </h5>
+
+                        <div id="slotsContainer" class="d-flex flex-wrap gap-2">
+                            @if (Model.Wizard.Slots.Any())
+                            {
+                                foreach (var slot in Model.Wizard.Slots)
+                                {
+                                    var slotTime = DateTime.TryParse(slot.StartTime, out var t)
+                                        ? t.ToString("hh:mm tt") : slot.StartTime;
+                                    var slotDate = DateTime.TryParse(slot.StartTime, out var d)
+                                        ? d.ToString("dd MMM yyyy") : "";
+
+                                    <button type="button"
+                                            class="btn btn-outline-primary rounded-pill px-3 py-1 slot-btn"
+                                            style="font-size:13px;"
+                                            data-start="@slot.StartTime"
+                                            data-end="@slot.EndTime">
+                                        <div>@slotTime</div>
+                                        <div style="font-size:10px;color:#888;">@slotDate</div>
+                                    </button>
+                                }
+                            }
+                            else
+                            {
+                                <div class="text-muted">No slots available for today.</div>
+                            }
+                        </div>
+                    </div>
 
                 </div>
 
-                <div class="text-end mt-5">
+                <!-- Hidden fields -->
+                <input type="hidden" id="hdnHospitalLocationId" value="@doc.HospitalLocationId" />
+                <input type="hidden" id="hdnDoctorIdForSlot" value="@Model.DoctorId" />
+                <input type="hidden" id="hdnFacilityIdForSlot" value="@Model.FacilityId" />
 
-                    <button class="btn btn-primary px-5 py-3 rounded-pill">
+                <div class="text-end mt-5">
+                    <button type="button" class="btn btn-primary px-5 py-3 rounded-pill" id="continueBtn" disabled>
                         Continue →
                     </button>
-
                 </div>
 
             </div>
         }
- *@
-    </div>
 
 </form>
 
@@ -301,74 +352,7 @@
 
  
 
-        // $(document).ready(function () {
-
-        //     // Page refresh pe state clear karo
-        //     if (performance.navigation.type === 1) {
-        //         window.location.href = window.location.pathname;
-        //         return;
-        //     }
-
-        //     $('#facilityDropdown').select2({
-        //         width: '100%',
-        //         placeholder: 'Select Facility',
-        //         allowClear: true
-        //     });
-
-        //     $('#specialityDropdown').select2({
-        //         width: '100%',
-        //         placeholder: 'Search Speciality',
-        //         allowClear: true
-        //     });
-
-        //     $('#doctorDropdown').select2({
-        //         width: '100%',
-        //         placeholder: 'Search Doctor',
-        //         allowClear: true
-        //     });
-
-        //     // Selected values restore karo
-        //     $('#facilityDropdown').val('@Model.FacilityId').trigger('change.select2');
-        //     $('#specialityDropdown').val('@Model.SpecialityId').trigger('change.select2');
-        //     $('#doctorDropdown').val('@Model.DoctorId').trigger('change.select2');
-
-        //     // Facility change
-        //     $('#facilityDropdown').on('change', function () {
-        //         $('form').submit();
-        //     });
-
-        //     // Facility clear
-        //     $('#facilityDropdown').on('select2:clear', function () {
-        //         $(this).val('').trigger('change.select2');
-        //         $('form').submit();
-        //     });
-
-        //     // Speciality change
-        //     $('#specialityDropdown').on('change', function () {
-        //         $('#doctorDropdown').val('').trigger('change.select2'); // doctor clear
-        //         $('form').submit();
-        //     });
-
-        //     // Speciality clear
-        //     $('#specialityDropdown').on('select2:clear', function () {
-        //         $(this).val('').trigger('change.select2');
-        //         $('form').submit();
-        //     });
-
-        //     // Doctor change
-        //     $('#doctorDropdown').on('change', function () {
-        //         $('form').submit();
-        //     });
-
-        //     // Doctor clear
-        //     $('#doctorDropdown').on('select2:clear', function () {
-        //         $(this).val('').trigger('change.select2');
-        //         $('form').submit();
-        //     });
-
-        // });
-
-                  $(document).ready(function () {
+        $(document).ready(function () {
 
             if (performance.navigation.type === 1) {
                 window.location.href = window.location.pathname;
@@ -391,7 +375,87 @@
             $('#specialityDropdown').on('change', function () { $('form').submit(); });
             $('#doctorDropdown').on('change', function () { $('form').submit(); });
 
+            @if (Model.DoctorId > 0)
+            {
+                <text>
+                    initCalendar();
+                </text>
+            }
+
+            // Slot select event
+            $(document).on('click', '.slot-btn', function () {
+                $('.slot-btn').removeClass('btn-primary').addClass('btn-outline-primary');
+                $(this).removeClass('btn-outline-primary').addClass('btn-primary');
+            });
+
         });
+
+        function initCalendar() {
+            flatpickr("#slotCalendar", {
+                minDate: "today",
+                dateFormat: "Y-m-d",
+                defaultDate: "today",
+                onChange: function (selectedDates, dateStr) {
+                    loadSlots(dateStr);
+                }
+            });
+        }
+
+        function loadSlots(date) {
+            var facilityId = $('#hdnFacilityIdForSlot').val();
+            var doctorId = $('#hdnDoctorIdForSlot').val();
+            var hospitalLocationId = $('#hdnHospitalLocationId').val();
+
+            $('#slotsContainer').html('<div class="text-muted">Loading slots...</div>');
+            $('#slotDateLabel').text('— ' + date);
+
+            $.get('?handler=SlotsByDate' +
+                '&facilityId=' + facilityId +
+                '&doctorId=' + doctorId +
+                '&hospitalLocationId=' + hospitalLocationId +
+                '&date=' + date,
+            function (data) {
+                $('#slotsContainer').empty();
+
+                if (!data || data.length === 0) {
+                    $('#slotsContainer').html('<div class="text-muted">No slots available for this date.</div>');
+                    return;
+                }
+
+                $.each(data, function (i, slot) {
+                    var startTime = slot.startTime;
+                    var timePart = '';
+                    var datePart = '';
+
+                    var parsed = new Date(startTime.replace(' ', 'T'));
+                    if (!isNaN(parsed)) {
+                        timePart = parsed.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                        datePart = parsed.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                    } else {
+                        timePart = startTime;
+                    }
+
+                    $('#slotsContainer').append(
+                        '<button type="button" class="btn btn-outline-primary rounded-pill px-3 py-1 slot-btn" style="font-size:13px;" data-start="' + slot.startTime + '" data-end="' + slot.endTime + '">' +
+                        '<div>' + timePart + '</div>' +
+                        '<div style="font-size:10px;color:#888;">' + datePart + '</div>' +
+                        '</button>'
+                    );
+                });
+
+                // Slot select
+                $('.slot-btn').on('click', function () {
+                    $('.slot-btn').removeClass('btn-primary').addClass('btn-outline-primary');
+                    $(this).removeClass('btn-outline-primary').addClass('btn-primary');
+                });
+            }
+        );
+    }
+
+    // Doctor dropdown change hone pe calendar init karo
+    $('#doctorDropdown').on('change', function () {
+        $('form').submit();
+    });
     </script>
 
 }

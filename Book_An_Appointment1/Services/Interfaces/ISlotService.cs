@@ -8,6 +8,8 @@ namespace Book_An_Appointment1.Services.Interfaces
         Task<ApiResponse<DoctorSlotResponse>?> GetSlotsAsync(
             int facilityId,
             int doctorId,
-            int hospitalLocationId);
+            int hospitalLocationId,
+            string fromDate,
+            string toDate);
     }
 }

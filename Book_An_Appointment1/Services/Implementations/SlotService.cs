@@ -19,12 +19,9 @@ namespace Book_An_Appointment1.Services
         }
 
         public async Task<ApiResponse<DoctorSlotResponse>?> GetSlotsAsync(
-            int facilityId,
-            int doctorId,
-            int hospitalLocationId)
+            int facilityId, int doctorId, int hospitalLocationId, string fromDate, string toDate)
         {
-            var fromDate = DateTime.Now.ToString("yyyy-MM-dd");
-            var toDate = fromDate;  //DateTime.Now.AddDays(1).ToString("yyyy-MM-dd");
+            
 
             var url =
                 $"/api/VCP/GetDoctorSlots" +

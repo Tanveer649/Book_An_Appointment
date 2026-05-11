@@ -114,6 +114,19 @@ namespace Book_An_Appointment1.Pages.Appointment
             return Page();
         }
 
+        public async Task<JsonResult> OnGetSlotsByDateAsync(int facilityId, int doctorId, int hospitalLocationId, string date)
+        {
+            var slotResponse = await _slotService.GetSlotsAsync(
+                facilityId,
+                doctorId,
+                hospitalLocationId,
+                date,
+                date);
+
+            var slots = slotResponse?.Data?.SlotsDetails ?? new List<SlotResponse>();
+            return new JsonResult(slots);
+        }
+
         private async Task LoadFacilities()
         {
             if (Wizard.Facilities.Any()) return; // already loaded hai
@@ -138,26 +151,12 @@ namespace Book_An_Appointment1.Pages.Appointment
 
         private async Task LoadDoctorDetails()
         {
-            var doctors =
-                (await _doctorService.GetDoctorsAsync(FacilityId, SpecialityId))?.Data ?? new();
+            //var doctors =
+                //(await _doctorService.GetDoctorsAsync(FacilityId, SpecialityId))?.Data ?? new();
 
             Wizard.SelectedDoctor = Wizard.Doctors.FirstOrDefault(x => x.Id == DoctorId.ToString());
 
             var consultantResponse = await _consultationService.GetConsultationFeeAsync(FacilityId, DoctorId);
-
-
-            //var clPrice = consultantResponse?
-            //    .SelectMany(x => x.Data)
-            //    .FirstOrDefault(x => x.ServiceType == "CL")
-            //    ?.Price;
-
-            //Wizard.ConsultationFee = new ConsultationResponse
-            //{
-            //    Data = consultantResponse?
-            //         .SelectMany(x => x.Data)
-            //         .Where(x => x.ServiceType == "CL")
-            //         .ToList() ?? new()
-            //};
 
             Wizard.ConsultationFee = new ConsultationResponse
             {
@@ -167,14 +166,17 @@ namespace Book_An_Appointment1.Pages.Appointment
              .ToList() ?? new()
             };
 
+            var today = DateTime.Now.ToString("yyyy-MM-dd");
+
             var slotResponse =
                 await _slotService.GetSlotsAsync(
                     FacilityId,
                     DoctorId,
-                    Wizard.SelectedDoctor?.HospitalLocationId ?? 24);
+                    Wizard.SelectedDoctor?.HospitalLocationId ?? 24, today, today);
 
             Wizard.Slots =
                 slotResponse?.Data?.SlotsDetails ?? new List<SlotResponse>();
         }
+
     }
 }
