@@ -1,4 +1,5 @@
-﻿using Book_An_Appointment1.Models.Common;
+﻿using Book_An_Appointment1.API.EndPoints;
+using Book_An_Appointment1.Models.Common;
 using Book_An_Appointment1.Models.Consultation;
 using Book_An_Appointment1.Services.Interfaces;
 using BookAppointmentPortal.Api.Clients;
@@ -21,7 +22,7 @@ namespace Book_An_Appointment1.Services.Implementations
             int doctorId)
         {
             var url =
-                $"/api/VCP/GetConsultationCharges" +
+                $"{ApiRoutes.GetConsultationCharges}" +
                 $"?facilityCode={facilityId}" +
                 $"&registrationNo=0" +
                 $"&appointmentId=0" +
@@ -34,10 +35,6 @@ namespace Book_An_Appointment1.Services.Implementations
 
             return response?.Data;
 
-            //return response?
-            //    .Data?
-            //    .FirstOrDefault(x => x.ServiceType == "RF")
-            //    ?.Price;
         }
     }
 }

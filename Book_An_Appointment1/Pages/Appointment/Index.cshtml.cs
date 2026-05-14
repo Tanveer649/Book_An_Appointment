@@ -1,12 +1,9 @@
 ﻿using Book_An_Appointment1.Models.Consultation;
-using Book_An_Appointment1.Models.DoctorItem;
 using Book_An_Appointment1.Models.Slot;
-using Book_An_Appointment1.Models.Speciality;
 using Book_An_Appointment1.Services.Interfaces;
 using Book_An_Appointment1.ViewModels.Appointment;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.Text.Json;
 
 namespace Book_An_Appointment1.Pages.Appointment
 {
@@ -17,166 +14,187 @@ namespace Book_An_Appointment1.Pages.Appointment
         private readonly IDoctorService _doctorService;
         private readonly IConsultationService _consultationService;
         private readonly ISlotService _slotService;
+        private readonly ILogger<IndexModel> _logger;
 
         public AppointmentWizardViewModel Wizard { get; set; } = new();
 
-        [BindProperty]
-        public int FacilityId { get; set; }
-
-        [BindProperty]
-        public int SpecialityId { get; set; }
-
-        [BindProperty]
-        public int DoctorId { get; set; }
+        [BindProperty] public int FacilityId { get; set; }
+        [BindProperty] public int SpecialityId { get; set; }
+        [BindProperty] public int DoctorId { get; set; }
+        [BindProperty] public string ? ErrorMessage { get; set; }
 
         public IndexModel(
             IFacilityService facilityService,
             ISpecialityService specialityService,
             IDoctorService doctorService,
             IConsultationService consultationService,
-            ISlotService slotService)
+            ISlotService slotService,
+            ILogger<IndexModel> logger)
         {
             _facilityService = facilityService;
             _specialityService = specialityService;
             _doctorService = doctorService;
             _consultationService = consultationService;
             _slotService = slotService;
+            _logger = logger;
         }
 
         public async Task OnGetAsync()
         {
             await LoadFacilities();
-
-            //if (FacilityId > 0)
-            //    await LoadSpecialities();
-
-            //if (SpecialityId > 0)
-            //    await LoadDoctors();
-
-            //if (DoctorId > 0)
-            //    await LoadDoctorDetails();
         }
-
-        //public async Task<IActionResult> OnPostAsync()
-        //{
-        //    await LoadFacilities();
-
-        //    if (FacilityId > 0)
-        //        await LoadSpecialities();
-
-        //    if (SpecialityId > 0)
-        //        await LoadDoctors();
-
-        //    if (DoctorId > 0)
-        //        await LoadDoctorDetails();
-
-        //    return Page();
-        //}
-
 
         public async Task<IActionResult> OnPostAsync()
         {
-            
-            await LoadFacilities();
-            Console.WriteLine($"RAW DoctorId: {DoctorId}");
+            // Parallel mein facilities load karo — hamesha chahiye
+
+            var facilitiesTask = LoadFacilities();
 
             if (FacilityId > 0 && SpecialityId == 0 && DoctorId == 0)
             {
-                // Facility select hua
-                await LoadSpecialities();
-                TempData["Specialities"] = JsonSerializer.Serialize(Wizard.Specialities);
+                // Facility select hua — facilities + specialities parallel load karo
+                await Task.WhenAll(facilitiesTask, LoadSpecialities());
             }
-            else if (SpecialityId > 0 && DoctorId == 0)
+            else if (FacilityId > 0 && SpecialityId > 0 && DoctorId == 0)
             {
-                // Speciality select hua
-                await LoadDoctors();
-
-                var specialitiesJson = TempData["Specialities"] as string;
-                if (specialitiesJson != null)
-                    Wizard.Specialities = JsonSerializer.Deserialize<List<SpecialityItem>>(specialitiesJson) ?? new();
-
-                TempData["Specialities"] = specialitiesJson; // preserve karo
-                TempData["Doctors"] = JsonSerializer.Serialize(Wizard.Doctors);
+                // Speciality select hua — facilities + doctors parallel load karo
+                await Task.WhenAll(facilitiesTask, LoadSpecialities(), LoadDoctors());
             }
-            else if (SpecialityId > 0 && DoctorId > 0)
+            else if (FacilityId > 0 && SpecialityId > 0 && DoctorId > 0)
             {
-                // Doctor select hua
-                await LoadDoctors();
-                await LoadDoctorDetails();
-
-                var specialitiesJson = TempData["Specialities"] as string;
-                if (specialitiesJson != null)
-                    Wizard.Specialities = JsonSerializer.Deserialize<List<SpecialityItem>>(specialitiesJson) ?? new();
-
-                TempData["Specialities"] = specialitiesJson; // preserve karo
+                // Doctor select hua — sab parallel load karo
+                await facilitiesTask;
+                await Task.WhenAll(LoadSpecialities(), LoadDoctors());
+                await LoadDoctorDetails(); // Doctors load hone ke baad
+            }
+            else
+            {
+                await facilitiesTask;
             }
 
-            return Page();
+            return Page(); 
+            
         }
 
         public async Task<JsonResult> OnGetSlotsByDateAsync(int facilityId, int doctorId, int hospitalLocationId, string date)
         {
-            var slotResponse = await _slotService.GetSlotsAsync(
-                facilityId,
-                doctorId,
-                hospitalLocationId,
-                date,
-                date);
+            try
+            {
+                var slotResponse = await _slotService.GetSlotsAsync(facilityId, doctorId, hospitalLocationId, date, date);
 
-            var slots = slotResponse?.Data?.SlotsDetails ?? new List<SlotResponse>();
-            return new JsonResult(slots);
+                var slots = slotResponse?.Data?.SlotsDetails ?? new List<SlotResponse>();
+                return new JsonResult(slots);
+
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex,
+               "OnGetSlotsByDateAsync failed | FacilityId={FacilityId} DoctorId={DoctorId} Date={Date}",
+               facilityId, doctorId, date);
+
+                return new JsonResult(new
+                {
+                    ErrorMessage = ex.Message,
+                    slots = new List<SlotResponse>()
+                });
+            }
         }
 
         private async Task LoadFacilities()
         {
-            if (Wizard.Facilities.Any()) return; // already loaded hai
-
-            Wizard.Facilities =
-                (await _facilityService.GetFacilitiesAsync())?.Data ?? new();
+            try
+            {
+                Wizard.Facilities = (await _facilityService.GetFacilitiesAsync())?.Data ?? new();
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "LoadFacilities failed");
+                ErrorMessage = ex.Message;
+                Wizard.Facilities = new();
+            }
         }
 
         private async Task LoadSpecialities()
         {
-            Wizard.Specialities =
-                (await _specialityService
-                .GetSpecialitiesAsync(FacilityId))?.Data ?? new();
+            try
+            {
+                Wizard.Specialities = 
+                    (await _specialityService.GetSpecialitiesAsync(FacilityId))?.Data ?? new();
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex,
+               "LoadSpecialities failed | FacilityId={FacilityId}", FacilityId);
+                ErrorMessage = ex.Message;
+                Wizard.Specialities = new();
+            }
         }
 
         private async Task LoadDoctors()
         {
-            Wizard.Doctors =
-                (await _doctorService
-                .GetDoctorsAsync(FacilityId, SpecialityId))?.Data ?? new();
+            try
+            {
+                Wizard.Doctors =
+                    (await _doctorService.GetDoctorsAsync(FacilityId, SpecialityId))?.Data ?? new();
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex,
+                    "LoadDoctors failed | FacilityId={FacilityId} SpecialityId={SpecialityId}",
+                FacilityId, SpecialityId);
+                ErrorMessage = ex.Message;
+                Wizard.Doctors = new();
+            }
         }
 
         private async Task LoadDoctorDetails()
         {
-            //var doctors =
-                //(await _doctorService.GetDoctorsAsync(FacilityId, SpecialityId))?.Data ?? new();
-
-            Wizard.SelectedDoctor = Wizard.Doctors.FirstOrDefault(x => x.Id == DoctorId.ToString());
-
-            var consultantResponse = await _consultationService.GetConsultationFeeAsync(FacilityId, DoctorId);
-
-            Wizard.ConsultationFee = new ConsultationResponse
+            try
             {
-                Data = consultantResponse?
-             .SelectMany(x => x.Data)
-             .Where(x => x.ServiceType == "CL")
-             .ToList() ?? new()
-            };
+                // Doctors already loaded hain — extra API call nahi
+                Wizard.SelectedDoctor = Wizard.Doctors.FirstOrDefault(x => x.Id == DoctorId.ToString());
 
-            var today = DateTime.Now.ToString("yyyy-MM-dd");
+                if (Wizard.SelectedDoctor == null) return;
 
-            var slotResponse =
-                await _slotService.GetSlotsAsync(
+                var today = DateTime.Now.ToString("yyyy-MM-dd");
+
+                // Consultation fee aur slots parallel load karo
+                var consultationTask = _consultationService.GetConsultationFeeAsync(FacilityId, DoctorId);
+                var slotsTask = _slotService.GetSlotsAsync(
                     FacilityId,
                     DoctorId,
-                    Wizard.SelectedDoctor?.HospitalLocationId ?? 24, today, today);
+                    Wizard.SelectedDoctor.HospitalLocationId,
+                    today,
+                    today);
 
-            Wizard.Slots =
-                slotResponse?.Data?.SlotsDetails ?? new List<SlotResponse>();
+                await Task.WhenAll(consultationTask, slotsTask);
+
+                var consultantResponse = await consultationTask;
+                var slotResponse = await slotsTask;
+
+                Wizard.ConsultationFee = new ConsultationResponse
+                {
+                    Data = consultantResponse?
+                        .SelectMany(x => x.Data)
+                        .Where(x => x.ServiceType == "CL")
+                        .ToList() ?? new()
+                };
+
+                Wizard.Slots = slotResponse?.Data?.SlotsDetails ?? new List<SlotResponse>();
+
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex,
+                "LoadDoctorDetails failed | DoctorId={DoctorId} FacilityId={FacilityId}",
+                DoctorId, FacilityId);
+
+                ErrorMessage = ex.Message;
+
+                Wizard.Slots = new();
+                Wizard.ConsultationFee = new();
+            }
         }
-
     }
 }
+

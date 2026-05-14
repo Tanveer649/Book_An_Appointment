@@ -36,6 +36,8 @@ builder.Services.AddHttpClient("ApiClient", client =>
 builder.Services.Configure<HospitalSettings>(
     builder.Configuration.GetSection("HospitalSettings"));
 
+builder.Services.AddMemoryCache();
+
 builder.Services.AddScoped<TokenService>();
 
 

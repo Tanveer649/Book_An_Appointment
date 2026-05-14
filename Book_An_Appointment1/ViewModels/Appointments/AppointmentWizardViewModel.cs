@@ -23,5 +23,6 @@ namespace Book_An_Appointment1.ViewModels.Appointment
 
         public string ConsultationAmount =>
             ConsultationFee.Data.FirstOrDefault()?.Price ?? "N/A";
+        public string? ErrorMessage { get; set; }
     }
 }

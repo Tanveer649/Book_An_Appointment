@@ -11,5 +11,7 @@
         public const string GetDoctors = "/api/VCP/GetDoctorList";
 
         public const string GetDoctorSlots = "/api/VCP/GetDoctorSlots";
+
+        public const string GetConsultationCharges = "/api/VCP/GetConsultationCharges";
     }
 }

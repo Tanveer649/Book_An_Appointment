@@ -1,7 +1,9 @@
 ﻿using Book_An_Appointment1.Models.Common;
 using Book_An_Appointment1.Models.Slot;
 using Book_An_Appointment1.Services.Interfaces;
+using Book_An_Appointment1.API.EndPoints;
 using BookAppointmentPortal.Api.Clients;
+
 
 namespace Book_An_Appointment1.Services
 {
@@ -24,7 +26,7 @@ namespace Book_An_Appointment1.Services
             
 
             var url =
-                $"/api/VCP/GetDoctorSlots" +
+                $"{ApiRoutes.GetDoctorSlots}" +
                 $"?facilityCode={facilityId}" +
                 $"&doctorRegistrationNo=" +
                 $"&fromDate={fromDate}" +

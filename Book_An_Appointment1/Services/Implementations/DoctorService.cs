@@ -1,4 +1,4 @@
-﻿using Book_An_Appointment1.API.Clients;
+﻿
 using Book_An_Appointment1.API.EndPoints;
 using Book_An_Appointment1.Models.Common;
 using Book_An_Appointment1.Models.DoctorItem;
