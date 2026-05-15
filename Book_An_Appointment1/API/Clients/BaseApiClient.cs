@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Book_An_Appointment1.API.Clients;
+using Newtonsoft.Json;
 using System;
 using System.Threading.Tasks;
 
@@ -8,11 +9,12 @@ public class BaseApiClient
 {
     protected readonly IHttpClientFactory ClientFactory;
     protected readonly ILogger Logger;
-
-    public BaseApiClient( IHttpClientFactory clientFactory, ILogger logger)
+    protected readonly ApiUrlBuilder ApiUrlBuilder;
+    public BaseApiClient( IHttpClientFactory clientFactory, ILogger logger, ApiUrlBuilder apiUrlBuilder)
     {
         ClientFactory = clientFactory;
         Logger = logger;
+        ApiUrlBuilder = apiUrlBuilder;
     }
 
     protected async Task<T?> GetAsync<T>(string url)

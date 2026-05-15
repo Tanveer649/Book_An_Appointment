@@ -1,4 +1,5 @@
-﻿using Book_An_Appointment1.API.EndPoints;
+﻿using Book_An_Appointment1.API.Clients;
+using Book_An_Appointment1.API.EndPoints;
 using Book_An_Appointment1.Models.Common;
 using Book_An_Appointment1.Models.Facility;
 using Book_An_Appointment1.Services.Interfaces;
@@ -17,8 +18,9 @@ namespace Book_An_Appointment1.Services
         public FacilityService(
             IHttpClientFactory clientFactory,
             ILogger<FacilityService> logger,
+            ApiUrlBuilder apiUrlBuilder,
             IConfiguration configuration,
-            IMemoryCache cache) : base(clientFactory, logger)
+            IMemoryCache cache) : base(clientFactory, logger, apiUrlBuilder)
         {
             _configuration = configuration;
             _cache = cache;
@@ -29,9 +31,7 @@ namespace Book_An_Appointment1.Services
             if (_cache.TryGetValue(CacheKey, out ApiResponse<List<FacilityItem>>? cached))
                 return cached;
 
-            var facilityCode = _configuration["ApiSettings:FacilityCode"];
-            var hospitalLocationId = _configuration["ApiSettings:HospitalLocationId"];
-            var url = $"{ApiRoutes.GetFacilities}?facilityCode={facilityCode}&hospitalLocationId={hospitalLocationId}";
+            var url = ApiUrlBuilder.BuildUrl(ApiRoutes.GetFacilities, "GetFacilitiesParams");
 
             var response = await GetAsync<ApiResponse<List<FacilityItem>>>(url);
 

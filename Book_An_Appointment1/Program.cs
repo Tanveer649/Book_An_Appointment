@@ -1,3 +1,4 @@
+using Book_An_Appointment1.API.Clients;
 using Book_An_Appointment1.API.Handlers;
 using Book_An_Appointment1.Models.Settings;
 using Book_An_Appointment1.Services;
@@ -39,6 +40,7 @@ builder.Services.Configure<HospitalSettings>(
 builder.Services.AddMemoryCache();
 
 builder.Services.AddScoped<TokenService>();
+builder.Services.AddSingleton<ApiUrlBuilder>();
 
 
 builder.Services.AddScoped<IFacilityService, FacilityService>();
