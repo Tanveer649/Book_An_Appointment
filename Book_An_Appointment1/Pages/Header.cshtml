@@ -1,0 +1,67 @@
+﻿@* @inject IConfiguration Configuration
+
+<header class="shadow-sm bg-white sticky-top border-bottom">
+    <div class="container-fluid py-3 px-4">
+        <div class="row align-items-center">
+            <div class="col-md-4 d-flex align-items-center">
+                <img src='@Configuration["HospitalSettings:LogoPath"]'
+                     alt="Hospital Logo"
+                     style="height:60px; width:auto;" />
+                <div class="fw-bold fs-2 text-dark ms-3">
+                    @Configuration["HospitalSettings:HospitalName"]
+                </div>
+            </div>
+
+            <div class="col-md-4 text-center">
+                <span class="fw-bold fs-2 text-primary">
+                    @Configuration["HospitalSettings:HeaderText"]
+                </span>
+            </div>
+
+            <div class="col-md-4 text-end">
+                <div class="fw-bold text-danger fs-5">
+                    Emergency:
+                    @Configuration["HospitalSettings:EmergencyNumber"]
+                </div>
+            </div>
+        </div>
+    </div>
+</header> *@
+@inject IConfiguration Configuration
+
+<header class="shadow-sm bg-white sticky-top border-bottom">
+    <div class="container-fluid py-3 px-4">
+        <div class="row align-items-center">
+
+            <!-- Left Side Logo + Hospital Name -->
+            <div class="col-md-4 d-flex align-items-center">
+                <img src='@Configuration["HospitalSettings:LogoPath"]'
+                     alt="Hospital Logo"
+                     style="height:@Configuration["HospitalSettings:LogoHeight"];
+                width:@Configuration["HospitalSettings:LogoWidth"];" />
+
+                <div class="fw-bold text-dark ms-3"
+                     style="font-size:@Configuration["HospitalSettings:HospitalFontSize"];">
+                    @Configuration["HospitalSettings:HospitalName"]
+                </div>
+            </div>
+
+            <!-- Center Book Appointment -->
+            <div class="col-md-4 text-center">
+                <span class="fw-bold text-primary"
+                      style="font-size:@Configuration["HospitalSettings:HeaderFontSize"];">
+                    @Configuration["HospitalSettings:HeaderText"]
+                </span>
+            </div>
+
+            <!-- Right Emergency -->
+            <div class="col-md-4 text-end">
+                <div class="fw-bold text-danger fs-5">
+                    Emergency:
+                    @Configuration["HospitalSettings:EmergencyNumber"]
+                </div>
+            </div>
+
+        </div>
+    </div>
+</header>

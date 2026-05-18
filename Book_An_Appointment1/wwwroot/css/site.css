@@ -76,3 +76,18 @@ body {
     color: white;
     font-weight: 600;
 }
+
+span.selection .select2-selection{
+    border-radius: 40px;
+    height: auto;
+    padding: 6px 10px;
+}
+
+
+.select2-container--open span.select2-selection.select2-selection--single {
+    border-radius: 20px;
+}
+
+    span.select2-selection__arrow {
+        padding: 20px;
+    }

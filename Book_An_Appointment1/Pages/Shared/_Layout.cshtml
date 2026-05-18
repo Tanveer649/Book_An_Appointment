@@ -12,28 +12,13 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
-
-    <header class="shadow-sm bg-white sticky-top">
-        <div class="container py-3 d-flex justify-content-between align-items-center">
-            <div class="fw-bold fs-4 text-primary">
-                @(ViewBag.HospitalName ?? "Hospital")
-            </div>
-
-            <div class="text-muted">
-                Book Appointment
-            </div>
-        </div>
-    </header>
-
-    <main>
+    @* Header *@
+    @await Html.PartialAsync("Header")
+    <main class="container py-4">
         @RenderBody()
     </main>
-
-    <footer class="bg-dark text-white py-4 mt-5">
-        <div class="container text-center">
-            © 2026
-        </div>
-    </footer>
+    @* Footer *@
+    @await Html.PartialAsync("~/Pages/Footer.cshtml")
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 

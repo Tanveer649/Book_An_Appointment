@@ -1,0 +1,73 @@
+﻿@inject IConfiguration Configuration
+
+<style>
+    html, body {
+        margin: 0;
+        padding: 0;
+    }
+
+    footer {
+        margin: 0;
+        padding: 0;
+    }
+
+    .custom-footer {
+        background-color: #212529;
+        color: white;
+        border-top: 1px solid #444;
+        width: 100%;
+    }
+
+    .footer-links a {
+        text-decoration: none;
+        font-size: 22px;
+        margin-right: 40px;
+    }
+</style>
+
+<footer class="custom-footer">
+    <div class="container-fluid py-4 px-4">
+
+        <!-- Disclaimer -->
+        <div class="mb-3 small fw-semibold">
+            Disclaimer :
+            @Configuration["HospitalSettings:DisclaimerText"]
+
+            For Panel (Any Government Panel cash/Credit) Patients,
+            Please call Sector 14:
+            @Configuration["HospitalSettings:FooterPhone1"]
+
+            Sector 56:
+            @Configuration["HospitalSettings:FooterPhone2"]
+
+            Sector 82:
+            @Configuration["HospitalSettings:FooterPhone3"]
+            to take appointment.
+        </div>
+
+        <!-- Footer Links -->
+        <div class="footer-links d-flex flex-wrap">
+
+            <a href="@Configuration["HospitalSettings:AboutUsUrl"]"
+                   class="text-primary">
+                About us
+            </a>
+
+            <a href="@Configuration["HospitalSettings:TermsUrl"]"
+                   class="text-primary">
+                Terms of Use
+            </a>
+
+            <a href="@Configuration["HospitalSettings:RefundPolicyUrl"]"
+                   class="text-primary">
+                Refund & Cancellations Policy
+            </a>
+
+            <a href="@Configuration["HospitalSettings:PrivacyPolicyUrl"]"
+                   class="text-primary">
+                Privacy policy
+            </a>
+
+        </div>
+    </div>
+</footer>

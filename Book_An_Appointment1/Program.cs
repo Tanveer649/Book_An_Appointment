@@ -79,3 +79,4 @@ app.MapGet("/", context =>
 });
 
 app.Run();
+app.UseStaticFiles();
