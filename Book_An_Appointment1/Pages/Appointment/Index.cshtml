@@ -146,9 +146,9 @@
                         }
                     </div>
 
-                    <div class="col-md-9">
+                    <div class="col-md-9">s
                         <h3>@doc.Name</h3>
-                        <p class="text-muted mb-1">@(doc.Designation ?? "") | @(doc.DepartmentName ?? "")</p>
+                        @*<p class="text-muted mb-1">@(doc.Designation ?? "") |@(doc.DepartmentName ?? "")</p>    @(doc.Designation ?? "") | *@
                         <p class="text-muted mb-3">@(doc.SpecialisationName ?? "")</p>
 
                         <div class="row g-2">
@@ -164,10 +164,10 @@
                                 <strong>Next Available:</strong>
                                 <span>@doc.Timing</span>
                             </div>
-                            <div class="col-md-6">
+                           @*  <div class="col-md-6">
                                 <strong>Gender:</strong>
                                 <span>@(doc.Gender == "M" ? "Male" : doc.Gender == "F" ? "Female" : doc.Gender == "B" ? "Both" : "N/A")</span>
-                            </div>
+                            </div> *@
                             @if (!string.IsNullOrWhiteSpace(doc.Treatment))
                             {
                                 <div class="col-md-12">

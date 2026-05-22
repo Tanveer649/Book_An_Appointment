@@ -12,7 +12,7 @@ namespace Book_An_Appointment1.ViewModels.Appointment
         public List<SpecialityItem> Specialities { get; set; } = new();
         public List<DoctorItem> Doctors { get; set; } = new();
 
-        public ConsultationResponse ConsultationFee { get; set; } = new();
+       // public ConsultationResponse ConsultationFee { get; set; } = new();
         public List<SlotResponse> Slots { get; set; } = new();
 
         public int SelectedFacilityId { get; set; }
@@ -21,8 +21,13 @@ namespace Book_An_Appointment1.ViewModels.Appointment
 
         public DoctorItem? SelectedDoctor { get; set; }
 
+        //public string ConsultationAmount =>
+        //    ConsultationFee.Data.FirstOrDefault()?.Price ?? "N/A";
+
+        public List<ConsultationItem> ConsultationFeeList { get; set; } = new();
+
         public string ConsultationAmount =>
-            ConsultationFee.Data.FirstOrDefault()?.Price ?? "N/A";
+            ConsultationFeeList?.FirstOrDefault()?.Price ?? "N/A";
         public string? ErrorMessage { get; set; }
     }
 }

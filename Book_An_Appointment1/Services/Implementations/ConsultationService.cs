@@ -7,9 +7,46 @@ using BookAppointmentPortal.Api.Clients;
 
 namespace Book_An_Appointment1.Services.Implementations
 {
-    public class ConsultationService :
-        BaseApiClient,
-        IConsultationService
+    //public class ConsultationService :
+    //    BaseApiClient,
+    //    IConsultationService
+    //{
+    //    public ConsultationService(
+    //        IHttpClientFactory clientFactory,
+    //        ILogger<ConsultationService> logger,
+    //        ApiUrlBuilder apiUrlBuilder)
+    //        : base(clientFactory, logger, apiUrlBuilder)
+    //    {
+    //    }
+
+    //public async Task<List<ConsultationResponse>?> GetConsultationFeeAsync(
+    //    int facilityId,
+    //    int doctorId)
+    //{
+    //    //var url =
+    //    //    $"{ApiRoutes.GetConsultationCharges}" +
+    //    //    $"?facilityCode={facilityId}" +
+    //    //    $"&registrationNo=0" +
+    //    //    $"&appointmentId=0" +
+    //    //    $"&doctorId={doctorId}" +
+    //    //    $"&appointmentType=RC" +
+    //    //    $"&doctorRegistrationNo=0" +
+    //    //    $"&GuestPateintId=0";
+
+    //    var url = ApiUrlBuilder.BuildUrl(ApiRoutes.GetConsultationCharges, "GetConsultationParams",
+    //        new Dictionary<string, string> 
+    //        {
+    //            { "facilityCode", facilityId.ToString() },
+    //            { "doctorId", doctorId.ToString() }
+
+    //        });
+    //    var response = await GetAsync<ApiResponse<List<ConsultationResponse>>>(url);
+
+    //    return response?.Data;
+
+    //}
+    // }
+    public class ConsultationService : BaseApiClient, IConsultationService
     {
         public ConsultationService(
             IHttpClientFactory clientFactory,
@@ -19,31 +56,20 @@ namespace Book_An_Appointment1.Services.Implementations
         {
         }
 
-        public async Task<List<ConsultationResponse>?> GetConsultationFeeAsync(
+        public async Task<List<ConsultationItem>?> GetConsultationFeeAsync(
             int facilityId,
             int doctorId)
         {
-            //var url =
-            //    $"{ApiRoutes.GetConsultationCharges}" +
-            //    $"?facilityCode={facilityId}" +
-            //    $"&registrationNo=0" +
-            //    $"&appointmentId=0" +
-            //    $"&doctorId={doctorId}" +
-            //    $"&appointmentType=RC" +
-            //    $"&doctorRegistrationNo=0" +
-            //    $"&GuestPateintId=0";
-
-            var url = ApiUrlBuilder.BuildUrl(ApiRoutes.GetConsultationCharges, "GetConsultationParams",
-                new Dictionary<string, string> 
+            var url = ApiUrlBuilder.BuildUrl(ApiRoutes.GetConsultationCharges,"GetConsultationParams",
+                new Dictionary<string, string>
                 {
                     { "facilityCode", facilityId.ToString() },
                     { "doctorId", doctorId.ToString() }
-
                 });
-            var response = await GetAsync<ApiResponse<List<ConsultationResponse>>>(url);
+
+            var response = await GetAsync<ApiResponse<List<ConsultationItem>>>(url);
 
             return response?.Data;
-
         }
     }
 }

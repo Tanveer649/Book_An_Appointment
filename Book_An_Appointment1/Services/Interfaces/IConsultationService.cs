@@ -2,9 +2,15 @@
 
 namespace Book_An_Appointment1.Services.Interfaces
 {
+    //public interface IConsultationService
+    //{
+    //    Task<List<ConsultationResponse>?> GetConsultationFeeAsync(
+    //        int facilityId,
+    //        int doctorId);
+    //}
     public interface IConsultationService
     {
-        Task<List<ConsultationResponse>?> GetConsultationFeeAsync(
+        Task<List<ConsultationItem>?> GetConsultationFeeAsync(
             int facilityId,
             int doctorId);
     }

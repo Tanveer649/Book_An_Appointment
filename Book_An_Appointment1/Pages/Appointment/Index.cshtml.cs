@@ -147,18 +147,64 @@ namespace Book_An_Appointment1.Pages.Appointment
             }
         }
 
+        //private async Task LoadDoctorDetails()
+        //{
+        //    try
+        //    {
+        //        // Doctors already loaded hain — extra API call nahi
+        //        Wizard.SelectedDoctor = Wizard.Doctors.FirstOrDefault(x => x.Id == DoctorId.ToString());
+
+        //        if (Wizard.SelectedDoctor == null) return;
+
+        //        var today = DateTime.Now.ToString("yyyy-MM-dd");
+
+        //        // Consultation fee aur slots parallel load karo
+        //        var consultationTask = _consultationService.GetConsultationFeeAsync(FacilityId, DoctorId);
+        //        var slotsTask = _slotService.GetSlotsAsync(
+        //            FacilityId,
+        //            DoctorId,
+        //            Wizard.SelectedDoctor.HospitalLocationId,
+        //            today,
+        //            today);
+
+        //        await Task.WhenAll(consultationTask, slotsTask);
+
+        //        var consultantResponse = await consultationTask;
+        //        var slotResponse = await slotsTask;
+
+        //        Wizard.ConsultationFee = new ConsultationResponse
+        //        {
+        //            Data = consultantResponse?
+        //                .SelectMany(x => x.Data)
+        //                .Where(x => x.ServiceType == "CL")
+        //                .ToList() ?? new()
+        //        };
+
+        //        Wizard.Slots = slotResponse?.Data?.SlotsDetails ?? new List<SlotResponse>();
+
+        //    }
+        //    catch(Exception ex)
+        //    {
+        //        _logger.LogError(ex,
+        //        "LoadDoctorDetails failed | DoctorId={DoctorId} FacilityId={FacilityId}",
+        //        DoctorId, FacilityId);
+
+        //        ErrorMessage = ex.Message;
+
+        //        Wizard.Slots = new();
+        //        Wizard.ConsultationFee = new();
+        //    }
+        //}
         private async Task LoadDoctorDetails()
         {
             try
             {
-                // Doctors already loaded hain — extra API call nahi
                 Wizard.SelectedDoctor = Wizard.Doctors.FirstOrDefault(x => x.Id == DoctorId.ToString());
 
                 if (Wizard.SelectedDoctor == null) return;
 
                 var today = DateTime.Now.ToString("yyyy-MM-dd");
 
-                // Consultation fee aur slots parallel load karo
                 var consultationTask = _consultationService.GetConsultationFeeAsync(FacilityId, DoctorId);
                 var slotsTask = _slotService.GetSlotsAsync(
                     FacilityId,
@@ -171,28 +217,22 @@ namespace Book_An_Appointment1.Pages.Appointment
 
                 var consultantResponse = await consultationTask;
                 var slotResponse = await slotsTask;
-
-                Wizard.ConsultationFee = new ConsultationResponse
-                {
-                    Data = consultantResponse?
-                        .SelectMany(x => x.Data)
-                        .Where(x => x.ServiceType == "CL")
-                        .ToList() ?? new()
-                };
+                Wizard.ConsultationFeeList = consultantResponse?
+                    .Where(x => x.ServiceType == "CL")
+                    .ToList() ?? new();
 
                 Wizard.Slots = slotResponse?.Data?.SlotsDetails ?? new List<SlotResponse>();
-
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex,
-                "LoadDoctorDetails failed | DoctorId={DoctorId} FacilityId={FacilityId}",
-                DoctorId, FacilityId);
+                    "LoadDoctorDetails failed | DoctorId={DoctorId} FacilityId={FacilityId}",
+                    DoctorId, FacilityId);
 
                 ErrorMessage = ex.Message;
 
                 Wizard.Slots = new();
-                Wizard.ConsultationFee = new();
+                Wizard.ConsultationFeeList = new(); 
             }
         }
     }
