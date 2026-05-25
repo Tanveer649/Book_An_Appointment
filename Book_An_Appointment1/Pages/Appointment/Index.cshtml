@@ -134,6 +134,94 @@
                     <div class="col-md-3 text-center">
                         <img src="@doc.ImageUrl"
                              style="width:180px;height:180px;object-fit:cover;border-radius:50%;" />
+
+                        @*  <div class="doctor-summary mt-3 px-2">
+                            <p class="summary-text">
+                                @doc.Name
+                                @if (!string.IsNullOrWhiteSpace(doc.Education))
+                                {
+                                    <span>@doc.Education</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(doc.SpecialisationName))
+                                {
+                                    <span class="d-block text-primary mt-1" style="font-size:12px;">
+                                        @doc.SpecialisationName
+                                    </span>
+                                }
+                            </p>
+                        </div> *@
+                        <div class="doctor-summary mt-3 px-2">
+                            <p class="summary-text summary-truncate" title="@doc.Name
+                                @(!string.IsNullOrWhiteSpace(doc.Education) ? "Education: " + doc.Education : "")
+                                @(!string.IsNullOrWhiteSpace(doc.SpecialisationName) ? "Specialization: " + doc.SpecialisationName : "")
+                                @(!string.IsNullOrWhiteSpace(doc.WorkExperience) ? "Experience: " + doc.WorkExperience : "Work Experience: 5 Years")
+                                @(doc.ConsultingHospitals.Any() ? "Hospital: " + doc.ConsultingHospitals.First().FacilityName + "," + doc.ConsultingHospitals.First().CityName : "")">
+
+                                <strong>@doc.Name</strong>
+
+                                @* @if (!string.IsNullOrWhiteSpace(doc.Education))
+                                {
+                                    <span> holds <em>@doc.Education</em></span>
+                                } *@
+
+                                @if (!string.IsNullOrWhiteSpace(doc.SpecialisationName))
+                                {
+                                    <span>Specialization in <strong>@doc.SpecialisationName</strong></span>
+                                }
+
+                                @* @if (doc.ConsultingHospitals.Any())
+                                {
+                                     <span>
+                                        , practicing at
+                                        <strong>@doc.ConsultingHospitals.First().FacilityName</strong>,
+                                        @doc.ConsultingHospitals.First().CityName
+                                    </span> 
+                                }*@
+
+                                @* @if (!string.IsNullOrWhiteSpace(doc.WorkExperience))
+                                {
+                                    <span>, <strong>@doc.WorkExperience</strong> experience</span>
+                                } *@
+                            </p>
+                        </div>
+
+                        @*  <div class="doctor-summary mt-3 px-2">
+                            <p class="summary-text">
+                                <strong>@doc.Name</strong>
+
+                                @if (!string.IsNullOrWhiteSpace(doc.Education))
+                                {
+                                    <span>holds <em>@doc.Education</em></span>
+                                }
+
+                                @if (!string.IsNullOrWhiteSpace(doc.SpecialisationName))
+                                {
+                                    <span>, specializing in <strong>@doc.SpecialisationName</strong></span>
+                                }
+
+                                @if (!string.IsNullOrWhiteSpace(doc.WorkExperience))
+                                {
+                                    <span> with <strong>@doc.WorkExperience</strong> of experience</span>
+                                }
+
+                                @if (doc.ConsultingHospitals.Any())
+                                {
+                                    <span>
+                                        , currently practicing at
+                                        <strong>@doc.ConsultingHospitals.First().FacilityName</strong>,
+                                        @doc.ConsultingHospitals.First().CityName
+                                    </span>
+                                }
+
+                                @if (!string.IsNullOrWhiteSpace(doc.ProfessionalStatement))
+                                {
+                                    <span class="d-block mt-1 fst-italic text-muted">
+                                        "@doc.ProfessionalStatement"
+                                    </span>
+                                }
+                            </p>
+                        </div> *@
+
                         <div class="mt-2">
                             <span class="badge bg-warning text-dark">⭐ @(doc.Rating ?? "N/A")</span>
                             <span class="text-muted ms-1" style="font-size:12px;">(@(doc.Review ?? "0") reviews)</span>
@@ -146,7 +234,7 @@
                         }
                     </div>
 
-                    <div class="col-md-9">s
+                    <div class="col-md-9">
                         <h3>@doc.Name</h3>
                         @*<p class="text-muted mb-1">@(doc.Designation ?? "") |@(doc.DepartmentName ?? "")</p>    @(doc.Designation ?? "") | *@
                         <p class="text-muted mb-3">@(doc.SpecialisationName ?? "")</p>
@@ -164,7 +252,7 @@
                                 <strong>Next Available:</strong>
                                 <span>@doc.Timing</span>
                             </div>
-                           @*  <div class="col-md-6">
+                            @*  <div class="col-md-6">
                                 <strong>Gender:</strong>
                                 <span>@(doc.Gender == "M" ? "Male" : doc.Gender == "F" ? "Female" : doc.Gender == "B" ? "Both" : "N/A")</span>
                             </div> *@
@@ -259,112 +347,8 @@
 
 
 
-    @section Scripts {
-        <script>
-            $(document).ready(function () {
-
-                if (performance.navigation.type === 1) {
-                    window.location.href = window.location.pathname;
-                    return;
-                }
-
-                // Select2 initialize
-                $('#facilityDropdown').select2({ width: '100%', placeholder: 'Select Facility' });
-                $('#specialityDropdown').select2({ width: '100%', placeholder: 'Search Speciality' });
-                $('#doctorDropdown').select2({ width: '100%', placeholder: 'Search Doctor' });
-
-                // Selected values restore karo
-                $('#facilityDropdown').val('@Model.FacilityId').trigger('change.select2');
-                $('#specialityDropdown').val('@Model.SpecialityId').trigger('change.select2');
-
-                @if (Model.DoctorId > 0)
-                {
-                        <text>
-                            $('#doctorDropdown').val('@Model.DoctorId').trigger('change.select2');
-                            initCalendar();
-                        </text>
-                }
-
-                // Dropdown change events
-                $('#facilityDropdown').on('change', function () { $('form').submit(); });
-                $('#specialityDropdown').on('change', function () { $('form').submit(); });
-                $('#doctorDropdown').on('change', function () { $('form').submit(); });
-
-                // Slot select event
-                $(document).on('click', '.slot-btn', function () {
-                    $('.slot-btn').removeClass('btn-primary').addClass('btn-outline-primary');
-                    $(this).removeClass('btn-outline-primary').addClass('btn-primary');
-                    $('#continueBtn').prop('disabled', false);
-                });
-
-            });
-
-            function initCalendar() {
-                flatpickr("#slotCalendar", {
-                    minDate: "today",
-                    dateFormat: "Y-m-d",
-                    defaultDate: "today",
-                    onChange: function (selectedDates, dateStr) {
-                        loadSlots(dateStr);
-                    }
-                });
-            }
-
-            function loadSlots(date) {
-                var facilityId = $('#hdnFacilityIdForSlot').val();
-                var doctorId = $('#hdnDoctorIdForSlot').val();
-                var hospitalLocationId = $('#hdnHospitalLocationId').val();
-
-                $('#slotsContainer').html('<div class="text-muted">Loading slots...</div>');
-                $('#slotDateLabel').text('— ' + date);
-                $('#continueBtn').prop('disabled', true);
-
-                $.get('?handler=SlotsByDate', {
-                    facilityId: facilityId,
-                    doctorId: doctorId,
-                    hospitalLocationId: hospitalLocationId,
-                    date: date
-                }, function (data) {
-                    $('#slotsContainer').empty();
-
-                    if (!data || data.length === 0) {
-                        $('#slotsContainer').html('<div class="text-muted">No slots available for this date.</div>');
-                        return;
-                    }
-
-                    $.each(data, function (i, slot) {
-                        var parsed = new Date(slot.startTime.replace(' ', 'T'));
-                        var timePart = isNaN(parsed)
-                            ? slot.startTime
-                            : parsed.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-                        var datePart = isNaN(parsed)
-                            ? ''
-                            : parsed.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-
-                        $('#slotsContainer').append(
-                            $('<button>', {
-                                type: 'button',
-                                class: 'btn btn-outline-primary rounded-pill px-3 py-1 slot-btn',
-                                style: 'font-size:13px;',
-                                'data-start': slot.startTime,
-                                'data-end': slot.endTime
-                            }).append(
-                                $('<div>').text(timePart),
-                                $('<div>', { style: 'font-size:10px;color:#888;' }).text(datePart)
-                            )
-                        );
-                    });
-                });
-            }
-        </script>
-    }
-
-@* @section Scripts {
-
+@section Scripts {
     <script>
-
- 
-
         $(document).ready(function () {
 
             if (performance.navigation.type === 1) {
@@ -372,33 +356,33 @@
                 return;
             }
 
+            // Select2 initialize
             $('#facilityDropdown').select2({ width: '100%', placeholder: 'Select Facility' });
             $('#specialityDropdown').select2({ width: '100%', placeholder: 'Search Speciality' });
             $('#doctorDropdown').select2({ width: '100%', placeholder: 'Search Doctor' });
 
+            // Selected values restore karo
             $('#facilityDropdown').val('@Model.FacilityId').trigger('change.select2');
             $('#specialityDropdown').val('@Model.SpecialityId').trigger('change.select2');
 
             @if (Model.DoctorId > 0)
             {
-                    <text>$('#doctorDropdown').val('@Model.DoctorId').trigger('change.select2');</text>
+                            <text>
+                                        $('#doctorDropdown').val('@Model.DoctorId').trigger('change.select2');
+                                        initCalendar();
+                            </text>
             }
 
+            // Dropdown change events
             $('#facilityDropdown').on('change', function () { $('form').submit(); });
             $('#specialityDropdown').on('change', function () { $('form').submit(); });
             $('#doctorDropdown').on('change', function () { $('form').submit(); });
-
-            @if (Model.DoctorId > 0)
-            {
-                <text>
-                    initCalendar();
-                </text>
-            }
 
             // Slot select event
             $(document).on('click', '.slot-btn', function () {
                 $('.slot-btn').removeClass('btn-primary').addClass('btn-outline-primary');
                 $(this).removeClass('btn-outline-primary').addClass('btn-primary');
+                $('#continueBtn').prop('disabled', false);
             });
 
         });
@@ -421,13 +405,14 @@
 
             $('#slotsContainer').html('<div class="text-muted">Loading slots...</div>');
             $('#slotDateLabel').text('— ' + date);
+            $('#continueBtn').prop('disabled', true);
 
-            $.get('?handler=SlotsByDate' +
-                '&facilityId=' + facilityId +
-                '&doctorId=' + doctorId +
-                '&hospitalLocationId=' + hospitalLocationId +
-                '&date=' + date,
-            function (data) {
+            $.get('?handler=SlotsByDate', {
+                facilityId: facilityId,
+                doctorId: doctorId,
+                hospitalLocationId: hospitalLocationId,
+                date: date
+            }, function (data) {
                 $('#slotsContainer').empty();
 
                 if (!data || data.length === 0) {
@@ -436,37 +421,29 @@
                 }
 
                 $.each(data, function (i, slot) {
-                    var startTime = slot.startTime;
-                    var timePart = '';
-                    var datePart = '';
-
-                    var parsed = new Date(startTime.replace(' ', 'T'));
-                    if (!isNaN(parsed)) {
-                        timePart = parsed.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-                        datePart = parsed.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-                    } else {
-                        timePart = startTime;
-                    }
+                    var parsed = new Date(slot.startTime.replace(' ', 'T'));
+                    var timePart = isNaN(parsed)
+                        ? slot.startTime
+                        : parsed.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                    var datePart = isNaN(parsed)
+                        ? ''
+                        : parsed.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 
                     $('#slotsContainer').append(
-                        '<button type="button" class="btn btn-outline-primary rounded-pill px-3 py-1 slot-btn" style="font-size:13px;" data-start="' + slot.startTime + '" data-end="' + slot.endTime + '">' +
-                        '<div>' + timePart + '</div>' +
-                        '<div style="font-size:10px;color:#888;">' + datePart + '</div>' +
-                        '</button>'
+                        $('<button>', {
+                            type: 'button',
+                            class: 'btn btn-outline-primary rounded-pill px-3 py-1 slot-btn',
+                            style: 'font-size:13px;',
+                            'data-start': slot.startTime,
+                            'data-end': slot.endTime
+                        }).append(
+                            $('<div>').text(timePart),
+                            $('<div>', { style: 'font-size:10px;color:#888;' }).text(datePart)
+                        )
                     );
                 });
+            });
+        }
+    </script>
+}
 
-                // Slot select
-                $('.slot-btn').on('click', function () {
-                    $('.slot-btn').removeClass('btn-primary').addClass('btn-outline-primary');
-                    $(this).removeClass('btn-outline-primary').addClass('btn-primary');
-                });
-            }
-        );
-    }
-
-    // Doctor dropdown change hone pe calendar init karo
-    $('#doctorDropdown').on('change', function () {
-        $('form').submit();
-    });
-    </script> *@

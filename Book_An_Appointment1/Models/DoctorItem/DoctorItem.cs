@@ -75,4 +75,5 @@ namespace Book_An_Appointment1.Models.DoctorItem
         public string StateName { get; set; }
     }
 
+
 }

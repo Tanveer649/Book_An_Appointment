@@ -46,26 +46,21 @@ namespace Book_An_Appointment1.Pages.Appointment
 
         public async Task<IActionResult> OnPostAsync()
         {
-            // Parallel mein facilities load karo — hamesha chahiye
-
             var facilitiesTask = LoadFacilities();
 
             if (FacilityId > 0 && SpecialityId == 0 && DoctorId == 0)
             {
-                // Facility select hua — facilities + specialities parallel load karo
                 await Task.WhenAll(facilitiesTask, LoadSpecialities());
             }
             else if (FacilityId > 0 && SpecialityId > 0 && DoctorId == 0)
             {
-                // Speciality select hua — facilities + doctors parallel load karo
                 await Task.WhenAll(facilitiesTask, LoadSpecialities(), LoadDoctors());
             }
             else if (FacilityId > 0 && SpecialityId > 0 && DoctorId > 0)
-            {
-                // Doctor select hua — sab parallel load karo
+            {           
                 await facilitiesTask;
                 await Task.WhenAll(LoadSpecialities(), LoadDoctors());
-                await LoadDoctorDetails(); // Doctors load hone ke baad
+                await LoadDoctorDetails(); 
             }
             else
             {
