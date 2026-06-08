@@ -91,3 +91,56 @@ span.selection .select2-selection{
     span.select2-selection__arrow {
         padding: 20px;
     }
+
+/* ========================================
+   Doctor Summary Block
+======================================== */
+.doctor-summary {
+    background: #f0f6ff;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+}
+
+.summary-text {
+    font-size: 12px;
+    color: #495057;
+    line-height: 1.7;
+    margin-bottom: 0;
+    font-weight: 400;
+    text-align: left;
+}
+
+/* ✅ Truncate - 2 lines ke baad ... */
+.summary-truncate {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+    /* ✅ Hover pe pura dikhao */
+    .summary-truncate:hover {
+        -webkit-line-clamp: unset;
+        overflow: visible;
+        background: #fff;
+        border: 1px solid #d0e4ff;
+        border-radius: 8px;
+        padding: 8px;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
+        position: relative;
+        z-index: 10;
+    }
+
+.doctor-summary.mt-3.px-2 span {
+    display: block;
+}
+
+.doctor-summary strong:last-child {
+    font-size: 12px;
+    color: #0d6efd;
+    display: block;
+}

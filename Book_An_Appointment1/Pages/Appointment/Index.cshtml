@@ -149,6 +149,94 @@
                     <div class="col-md-3 text-center">
                         <img src="@doc.ImageUrl"
                              style="width:180px;height:180px;object-fit:cover;border-radius:50%;" />
+
+                        @*  <div class="doctor-summary mt-3 px-2">
+                            <p class="summary-text">
+                                @doc.Name
+                                @if (!string.IsNullOrWhiteSpace(doc.Education))
+                                {
+                                    <span>@doc.Education</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(doc.SpecialisationName))
+                                {
+                                    <span class="d-block text-primary mt-1" style="font-size:12px;">
+                                        @doc.SpecialisationName
+                                    </span>
+                                }
+                            </p>
+                        </div> *@
+                        <div class="doctor-summary mt-3 px-2">
+                            <p class="summary-text summary-truncate" title="@doc.Name
+                                @(!string.IsNullOrWhiteSpace(doc.Education) ? "Education: " + doc.Education : "")
+                                @(!string.IsNullOrWhiteSpace(doc.SpecialisationName) ? "Specialization: " + doc.SpecialisationName : "")
+                                @(!string.IsNullOrWhiteSpace(doc.WorkExperience) ? "Experience: " + doc.WorkExperience : "Work Experience: 5 Years")
+                                @(doc.ConsultingHospitals.Any() ? "Hospital: " + doc.ConsultingHospitals.First().FacilityName + "," + doc.ConsultingHospitals.First().CityName : "")">
+
+                                <strong>@doc.Name</strong>
+
+                                @* @if (!string.IsNullOrWhiteSpace(doc.Education))
+                                {
+                                    <span> holds <em>@doc.Education</em></span>
+                                } *@
+
+                                @if (!string.IsNullOrWhiteSpace(doc.SpecialisationName))
+                                {
+                                    <span>Specialization in <strong>@doc.SpecialisationName</strong></span>
+                                }
+
+                                @* @if (doc.ConsultingHospitals.Any())
+                                {
+                                     <span>
+                                        , practicing at
+                                        <strong>@doc.ConsultingHospitals.First().FacilityName</strong>,
+                                        @doc.ConsultingHospitals.First().CityName
+                                    </span> 
+                                }*@
+
+                                @* @if (!string.IsNullOrWhiteSpace(doc.WorkExperience))
+                                {
+                                    <span>, <strong>@doc.WorkExperience</strong> experience</span>
+                                } *@
+                            </p>
+                        </div>
+
+                        @*  <div class="doctor-summary mt-3 px-2">
+                            <p class="summary-text">
+                                <strong>@doc.Name</strong>
+
+                                @if (!string.IsNullOrWhiteSpace(doc.Education))
+                                {
+                                    <span>holds <em>@doc.Education</em></span>
+                                }
+
+                                @if (!string.IsNullOrWhiteSpace(doc.SpecialisationName))
+                                {
+                                    <span>, specializing in <strong>@doc.SpecialisationName</strong></span>
+                                }
+
+                                @if (!string.IsNullOrWhiteSpace(doc.WorkExperience))
+                                {
+                                    <span> with <strong>@doc.WorkExperience</strong> of experience</span>
+                                }
+
+                                @if (doc.ConsultingHospitals.Any())
+                                {
+                                    <span>
+                                        , currently practicing at
+                                        <strong>@doc.ConsultingHospitals.First().FacilityName</strong>,
+                                        @doc.ConsultingHospitals.First().CityName
+                                    </span>
+                                }
+
+                                @if (!string.IsNullOrWhiteSpace(doc.ProfessionalStatement))
+                                {
+                                    <span class="d-block mt-1 fst-italic text-muted">
+                                        "@doc.ProfessionalStatement"
+                                    </span>
+                                }
+                            </p>
+                        </div> *@
+
                         <div class="mt-2">
                             <span class="badge bg-warning text-dark">⭐ @(doc.Rating ?? "N/A")</span>
                             <span class="text-muted ms-1" style="font-size:12px;">(@(doc.Review ?? "0") reviews)</span>
@@ -161,7 +249,7 @@
                         }
                     </div>
 
-                    <div class="col-md-9">s
+                    <div class="col-md-9">
                         <h3>@doc.Name</h3>
                         @*<p class="text-muted mb-1">@(doc.Designation ?? "") |@(doc.DepartmentName ?? "")</p>    @(doc.Designation ?? "") | *@
                         <p class="text-muted mb-3">@(doc.SpecialisationName ?? "")</p>
@@ -179,7 +267,7 @@
                                 <strong>Next Available:</strong>
                                 <span>@doc.Timing</span>
                             </div>
-                           @*  <div class="col-md-6">
+                            @*  <div class="col-md-6">
                                 <strong>Gender:</strong>
                                 <span>@(doc.Gender == "M" ? "Male" : doc.Gender == "F" ? "Female" : doc.Gender == "B" ? "Both" : "N/A")</span>
                             </div> *@
@@ -273,7 +361,6 @@
 
     </div>
 </form>
-
 
 @section Scripts {
     <script>
