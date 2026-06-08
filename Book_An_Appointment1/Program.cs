@@ -44,7 +44,6 @@ builder.Services.AddSingleton<ApiUrlBuilder>();
 
 
 builder.Services.AddScoped<IFacilityService, FacilityService>();
-builder.Services.AddScoped<IFacilityService, FacilityService>();
 builder.Services.AddScoped<ISpecialityService,SpecialityService>();
 builder.Services.AddScoped<IDoctorService,DoctorService>();
 builder.Services.AddScoped<IConsultationService, ConsultationService>();

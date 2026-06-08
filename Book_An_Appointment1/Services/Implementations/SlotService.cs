@@ -25,18 +25,6 @@ namespace Book_An_Appointment1.Services
         public async Task<ApiResponse<DoctorSlotResponse>?> GetSlotsAsync(
             int facilityId, int doctorId, int hospitalLocationId, string fromDate, string toDate)
         {
-            
-
-            //var url =
-            //    $"{ApiRoutes.GetDoctorSlots}" +
-            //    $"?facilityCode={facilityId}" +
-            //    $"&doctorRegistrationNo=" +
-            //    $"&fromDate={fromDate}" +
-            //    $"&toDate={toDate}" +
-            //    $"&pageNo=1" +
-            //    $"&reservationType=RC" +
-            //    $"&doctorId={doctorId}" +
-            //    $"&hospitallocationId={hospitalLocationId}";
 
             var url = ApiUrlBuilder.BuildUrl(ApiRoutes.GetDoctorSlots, "GetDoctorSlotsParams",
                 new Dictionary<string, string>

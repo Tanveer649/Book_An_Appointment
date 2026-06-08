@@ -19,9 +19,9 @@ namespace Book_An_Appointment1.Pages.Appointment
         public AppointmentWizardViewModel Wizard { get; set; } = new();
 
         [BindProperty] public int FacilityId { get; set; }
-        [BindProperty] public int SpecialityId { get; set; }
-        [BindProperty] public int DoctorId { get; set; }
-        [BindProperty] public string ? ErrorMessage { get; set; }
+        [BindProperty] public int? SpecialityId { get; set; }
+        [BindProperty] public int? DoctorId { get; set; }
+        [BindProperty] public string? ErrorMessage { get; set; }
 
         public IndexModel(
             IFacilityService facilityService,
@@ -46,21 +46,23 @@ namespace Book_An_Appointment1.Pages.Appointment
 
         public async Task<IActionResult> OnPostAsync()
         {
+            ModelState.Clear();
+
             // Parallel mein facilities load karo — hamesha chahiye
 
             var facilitiesTask = LoadFacilities();
 
-            if (FacilityId > 0 && SpecialityId == 0 && DoctorId == 0)
+            if (FacilityId > 0 && (SpecialityId ?? 0) == 0 && (DoctorId ?? 0) == 0)
             {
                 // Facility select hua — facilities + specialities parallel load karo
                 await Task.WhenAll(facilitiesTask, LoadSpecialities());
             }
-            else if (FacilityId > 0 && SpecialityId > 0 && DoctorId == 0)
+            else if (FacilityId > 0 && (SpecialityId ?? 0) > 0 && (DoctorId ?? 0) == 0)
             {
                 // Speciality select hua — facilities + doctors parallel load karo
                 await Task.WhenAll(facilitiesTask, LoadSpecialities(), LoadDoctors());
             }
-            else if (FacilityId > 0 && SpecialityId > 0 && DoctorId > 0)
+            else if (FacilityId > 0 && (SpecialityId ?? 0) > 0 && (DoctorId ?? 0) > 0)
             {
                 // Doctor select hua — sab parallel load karo
                 await facilitiesTask;
@@ -72,21 +74,21 @@ namespace Book_An_Appointment1.Pages.Appointment
                 await facilitiesTask;
             }
 
-            return Page(); 
-            
+            return Page();
+
         }
 
-        public async Task<JsonResult> OnGetSlotsByDateAsync(int facilityId, int doctorId, int hospitalLocationId, string date)
+        public async Task<JsonResult> OnGetSlotsByDateAsync(int facilityId, int? doctorId, int hospitalLocationId, string date)
         {
             try
             {
-                var slotResponse = await _slotService.GetSlotsAsync(facilityId, doctorId, hospitalLocationId, date, date);
+                var slotResponse = await _slotService.GetSlotsAsync(facilityId, (doctorId ?? 0), hospitalLocationId, date, date);
 
                 var slots = slotResponse?.Data?.SlotsDetails ?? new List<SlotResponse>();
                 return new JsonResult(slots);
 
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex,
                "OnGetSlotsByDateAsync failed | FacilityId={FacilityId} DoctorId={DoctorId} Date={Date}",
@@ -106,7 +108,7 @@ namespace Book_An_Appointment1.Pages.Appointment
             {
                 Wizard.Facilities = (await _facilityService.GetFacilitiesAsync())?.Data ?? new();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "LoadFacilities failed");
                 ErrorMessage = ex.Message;
@@ -118,10 +120,10 @@ namespace Book_An_Appointment1.Pages.Appointment
         {
             try
             {
-                Wizard.Specialities = 
+                Wizard.Specialities =
                     (await _specialityService.GetSpecialitiesAsync(FacilityId))?.Data ?? new();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex,
                "LoadSpecialities failed | FacilityId={FacilityId}", FacilityId);
@@ -135,9 +137,9 @@ namespace Book_An_Appointment1.Pages.Appointment
             try
             {
                 Wizard.Doctors =
-                    (await _doctorService.GetDoctorsAsync(FacilityId, SpecialityId))?.Data ?? new();
+                    (await _doctorService.GetDoctorsAsync(FacilityId, SpecialityId ?? 0))?.Data ?? new();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex,
                     "LoadDoctors failed | FacilityId={FacilityId} SpecialityId={SpecialityId}",
@@ -147,68 +149,25 @@ namespace Book_An_Appointment1.Pages.Appointment
             }
         }
 
-        //private async Task LoadDoctorDetails()
-        //{
-        //    try
-        //    {
-        //        // Doctors already loaded hain — extra API call nahi
-        //        Wizard.SelectedDoctor = Wizard.Doctors.FirstOrDefault(x => x.Id == DoctorId.ToString());
-
-        //        if (Wizard.SelectedDoctor == null) return;
-
-        //        var today = DateTime.Now.ToString("yyyy-MM-dd");
-
-        //        // Consultation fee aur slots parallel load karo
-        //        var consultationTask = _consultationService.GetConsultationFeeAsync(FacilityId, DoctorId);
-        //        var slotsTask = _slotService.GetSlotsAsync(
-        //            FacilityId,
-        //            DoctorId,
-        //            Wizard.SelectedDoctor.HospitalLocationId,
-        //            today,
-        //            today);
-
-        //        await Task.WhenAll(consultationTask, slotsTask);
-
-        //        var consultantResponse = await consultationTask;
-        //        var slotResponse = await slotsTask;
-
-        //        Wizard.ConsultationFee = new ConsultationResponse
-        //        {
-        //            Data = consultantResponse?
-        //                .SelectMany(x => x.Data)
-        //                .Where(x => x.ServiceType == "CL")
-        //                .ToList() ?? new()
-        //        };
-
-        //        Wizard.Slots = slotResponse?.Data?.SlotsDetails ?? new List<SlotResponse>();
-
-        //    }
-        //    catch(Exception ex)
-        //    {
-        //        _logger.LogError(ex,
-        //        "LoadDoctorDetails failed | DoctorId={DoctorId} FacilityId={FacilityId}",
-        //        DoctorId, FacilityId);
-
-        //        ErrorMessage = ex.Message;
-
-        //        Wizard.Slots = new();
-        //        Wizard.ConsultationFee = new();
-        //    }
-        //}
         private async Task LoadDoctorDetails()
         {
             try
             {
-                Wizard.SelectedDoctor = Wizard.Doctors.FirstOrDefault(x => x.Id == DoctorId.ToString());
+                // Doctors already loaded hain — extra API call nahi
+                Wizard.SelectedDoctor = Wizard.Doctors
+                    .FirstOrDefault(x => x.Id == (DoctorId ?? 0).ToString());
 
                 if (Wizard.SelectedDoctor == null) return;
 
                 var today = DateTime.Now.ToString("yyyy-MM-dd");
 
-                var consultationTask = _consultationService.GetConsultationFeeAsync(FacilityId, DoctorId);
+                // Consultation fee aur slots parallel load karo
+                var consultationTask =
+                    _consultationService.GetConsultationFeeAsync(FacilityId, (DoctorId ?? 0));
+
                 var slotsTask = _slotService.GetSlotsAsync(
                     FacilityId,
-                    DoctorId,
+                    (DoctorId ?? 0),
                     Wizard.SelectedDoctor.HospitalLocationId,
                     today,
                     today);
@@ -217,11 +176,13 @@ namespace Book_An_Appointment1.Pages.Appointment
 
                 var consultantResponse = await consultationTask;
                 var slotResponse = await slotsTask;
+
                 Wizard.ConsultationFeeList = consultantResponse?
                     .Where(x => x.ServiceType == "CL")
                     .ToList() ?? new();
 
-                Wizard.Slots = slotResponse?.Data?.SlotsDetails ?? new List<SlotResponse>();
+                Wizard.Slots = slotResponse?.Data?.SlotsDetails
+                    ?? new List<SlotResponse>();
             }
             catch (Exception ex)
             {
@@ -232,9 +193,28 @@ namespace Book_An_Appointment1.Pages.Appointment
                 ErrorMessage = ex.Message;
 
                 Wizard.Slots = new();
-                Wizard.ConsultationFeeList = new(); 
+                Wizard.ConsultationFeeList = new();
             }
+        }
+
+        public async Task<IActionResult> OnPostContinueAsync(string selectedSlotStart, string selectedSlotEnd)
+        {
+            ModelState.Clear();
+
+            // Server side validation — sirf slot
+            if (string.IsNullOrEmpty(selectedSlotStart))
+                ModelState.AddModelError("Slot", "Please select a time slot.");
+
+            if (!ModelState.IsValid)
+            {
+                await LoadFacilities();
+                await Task.WhenAll(LoadSpecialities(), LoadDoctors());
+                await LoadDoctorDetails();
+                return Page();
+            }
+
+            // Valid — next page pe jayenge (baad mein session add karenge)
+            return RedirectToPage("/Appointment/PatientDetails");
         }
     }
 }
-

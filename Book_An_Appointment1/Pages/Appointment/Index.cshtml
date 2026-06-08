@@ -4,8 +4,12 @@
     ViewData["Title"] = "Book Appointment";
 }
 
-<form method="post">
+<form method="post" id="appointmentForm">
     @Html.AntiForgeryToken()
+
+    <input type="hidden" name="handler" id="formHandler" value="" />
+    <input type="hidden" name="selectedSlotStart" id="hdnSelectedSlotStart" value="" />
+    <input type="hidden" name="selectedSlotEnd" id="hdnSelectedSlotEnd" value="" />
     <div class="container mt-5">
 
         @* Error Message *@
@@ -14,6 +18,17 @@
         {
             <div class="alert alert-danger mb-4">
                 <strong>Error:</strong> @Model.ErrorMessage
+            </div>
+        }
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger mb-4">
+                <ul class="mb-0">
+                    @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@error.ErrorMessage</li>
+                    }
+                </ul>
             </div>
         }
         <!-- Tracker -->
@@ -246,7 +261,9 @@
                 <input type="hidden" id="hdnFacilityIdForSlot" value="@Model.FacilityId" />
 
                 <div class="text-end mt-5">
-                    <button type="button" class="btn btn-primary px-5 py-3 rounded-pill" id="continueBtn" disabled>
+                    <button type="button"
+                            class="btn btn-primary px-5 py-3 rounded-pill"
+                            id="continueBtn">
                         Continue →
                     </button>
                 </div>
@@ -258,215 +275,15 @@
 </form>
 
 
-
-    @section Scripts {
-        <script>
-            $(document).ready(function () {
-
-                if (performance.navigation.type === 1) {
-                    window.location.href = window.location.pathname;
-                    return;
-                }
-
-                // Select2 initialize
-                $('#facilityDropdown').select2({ width: '100%', placeholder: 'Select Facility' });
-                $('#specialityDropdown').select2({ width: '100%', placeholder: 'Search Speciality' });
-                $('#doctorDropdown').select2({ width: '100%', placeholder: 'Search Doctor' });
-
-                // Selected values restore karo
-                $('#facilityDropdown').val('@Model.FacilityId').trigger('change.select2');
-                $('#specialityDropdown').val('@Model.SpecialityId').trigger('change.select2');
-
-                @if (Model.DoctorId > 0)
-                {
-                        <text>
-                            $('#doctorDropdown').val('@Model.DoctorId').trigger('change.select2');
-                            initCalendar();
-                        </text>
-                }
-
-                // Dropdown change events
-                $('#facilityDropdown').on('change', function () { $('form').submit(); });
-                $('#specialityDropdown').on('change', function () { $('form').submit(); });
-                $('#doctorDropdown').on('change', function () { $('form').submit(); });
-
-                // Slot select event
-                $(document).on('click', '.slot-btn', function () {
-                    $('.slot-btn').removeClass('btn-primary').addClass('btn-outline-primary');
-                    $(this).removeClass('btn-outline-primary').addClass('btn-primary');
-                    $('#continueBtn').prop('disabled', false);
-                });
-
-            });
-
-            function initCalendar() {
-                flatpickr("#slotCalendar", {
-                    minDate: "today",
-                    dateFormat: "Y-m-d",
-                    defaultDate: "today",
-                    onChange: function (selectedDates, dateStr) {
-                        loadSlots(dateStr);
-                    }
-                });
-            }
-
-            function loadSlots(date) {
-                var facilityId = $('#hdnFacilityIdForSlot').val();
-                var doctorId = $('#hdnDoctorIdForSlot').val();
-                var hospitalLocationId = $('#hdnHospitalLocationId').val();
-
-                $('#slotsContainer').html('<div class="text-muted">Loading slots...</div>');
-                $('#slotDateLabel').text('— ' + date);
-                $('#continueBtn').prop('disabled', true);
-
-                $.get('?handler=SlotsByDate', {
-                    facilityId: facilityId,
-                    doctorId: doctorId,
-                    hospitalLocationId: hospitalLocationId,
-                    date: date
-                }, function (data) {
-                    $('#slotsContainer').empty();
-
-                    if (!data || data.length === 0) {
-                        $('#slotsContainer').html('<div class="text-muted">No slots available for this date.</div>');
-                        return;
-                    }
-
-                    $.each(data, function (i, slot) {
-                        var parsed = new Date(slot.startTime.replace(' ', 'T'));
-                        var timePart = isNaN(parsed)
-                            ? slot.startTime
-                            : parsed.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-                        var datePart = isNaN(parsed)
-                            ? ''
-                            : parsed.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-
-                        $('#slotsContainer').append(
-                            $('<button>', {
-                                type: 'button',
-                                class: 'btn btn-outline-primary rounded-pill px-3 py-1 slot-btn',
-                                style: 'font-size:13px;',
-                                'data-start': slot.startTime,
-                                'data-end': slot.endTime
-                            }).append(
-                                $('<div>').text(timePart),
-                                $('<div>', { style: 'font-size:10px;color:#888;' }).text(datePart)
-                            )
-                        );
-                    });
-                });
-            }
-        </script>
-    }
-
-@* @section Scripts {
-
+@section Scripts {
     <script>
+        window.AppointmentConfig = {
+            facilityId: '@Model.FacilityId',
+            specialityId: '@Model.SpecialityId',
+            doctorId: @(Model.DoctorId ?? 0)
+        };
+    </script>
+    <script src="~/js/pages/appointment-validation.js"></script>
+    <script src="~/js/pages/appointment.js"></script>
+}
 
- 
-
-        $(document).ready(function () {
-
-            if (performance.navigation.type === 1) {
-                window.location.href = window.location.pathname;
-                return;
-            }
-
-            $('#facilityDropdown').select2({ width: '100%', placeholder: 'Select Facility' });
-            $('#specialityDropdown').select2({ width: '100%', placeholder: 'Search Speciality' });
-            $('#doctorDropdown').select2({ width: '100%', placeholder: 'Search Doctor' });
-
-            $('#facilityDropdown').val('@Model.FacilityId').trigger('change.select2');
-            $('#specialityDropdown').val('@Model.SpecialityId').trigger('change.select2');
-
-            @if (Model.DoctorId > 0)
-            {
-                    <text>$('#doctorDropdown').val('@Model.DoctorId').trigger('change.select2');</text>
-            }
-
-            $('#facilityDropdown').on('change', function () { $('form').submit(); });
-            $('#specialityDropdown').on('change', function () { $('form').submit(); });
-            $('#doctorDropdown').on('change', function () { $('form').submit(); });
-
-            @if (Model.DoctorId > 0)
-            {
-                <text>
-                    initCalendar();
-                </text>
-            }
-
-            // Slot select event
-            $(document).on('click', '.slot-btn', function () {
-                $('.slot-btn').removeClass('btn-primary').addClass('btn-outline-primary');
-                $(this).removeClass('btn-outline-primary').addClass('btn-primary');
-            });
-
-        });
-
-        function initCalendar() {
-            flatpickr("#slotCalendar", {
-                minDate: "today",
-                dateFormat: "Y-m-d",
-                defaultDate: "today",
-                onChange: function (selectedDates, dateStr) {
-                    loadSlots(dateStr);
-                }
-            });
-        }
-
-        function loadSlots(date) {
-            var facilityId = $('#hdnFacilityIdForSlot').val();
-            var doctorId = $('#hdnDoctorIdForSlot').val();
-            var hospitalLocationId = $('#hdnHospitalLocationId').val();
-
-            $('#slotsContainer').html('<div class="text-muted">Loading slots...</div>');
-            $('#slotDateLabel').text('— ' + date);
-
-            $.get('?handler=SlotsByDate' +
-                '&facilityId=' + facilityId +
-                '&doctorId=' + doctorId +
-                '&hospitalLocationId=' + hospitalLocationId +
-                '&date=' + date,
-            function (data) {
-                $('#slotsContainer').empty();
-
-                if (!data || data.length === 0) {
-                    $('#slotsContainer').html('<div class="text-muted">No slots available for this date.</div>');
-                    return;
-                }
-
-                $.each(data, function (i, slot) {
-                    var startTime = slot.startTime;
-                    var timePart = '';
-                    var datePart = '';
-
-                    var parsed = new Date(startTime.replace(' ', 'T'));
-                    if (!isNaN(parsed)) {
-                        timePart = parsed.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-                        datePart = parsed.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-                    } else {
-                        timePart = startTime;
-                    }
-
-                    $('#slotsContainer').append(
-                        '<button type="button" class="btn btn-outline-primary rounded-pill px-3 py-1 slot-btn" style="font-size:13px;" data-start="' + slot.startTime + '" data-end="' + slot.endTime + '">' +
-                        '<div>' + timePart + '</div>' +
-                        '<div style="font-size:10px;color:#888;">' + datePart + '</div>' +
-                        '</button>'
-                    );
-                });
-
-                // Slot select
-                $('.slot-btn').on('click', function () {
-                    $('.slot-btn').removeClass('btn-primary').addClass('btn-outline-primary');
-                    $(this).removeClass('btn-outline-primary').addClass('btn-primary');
-                });
-            }
-        );
-    }
-
-    // Doctor dropdown change hone pe calendar init karo
-    $('#doctorDropdown').on('change', function () {
-        $('form').submit();
-    });
-    </script> *@

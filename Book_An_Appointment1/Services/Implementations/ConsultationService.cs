@@ -60,8 +60,9 @@ namespace Book_An_Appointment1.Services.Implementations
             int facilityId,
             int doctorId)
         {
-            var url = ApiUrlBuilder.BuildUrl(ApiRoutes.GetConsultationCharges,"GetConsultationParams",
-                new Dictionary<string, string>
+
+            var url = ApiUrlBuilder.BuildUrl(ApiRoutes.GetConsultationCharges, "GetConsultationParams",
+                new Dictionary<string, string> 
                 {
                     { "facilityCode", facilityId.ToString() },
                     { "doctorId", doctorId.ToString() }
