@@ -1,0 +1,354 @@
+﻿@* @page "/Appointment/ReviewAndConfirmation" *@
+@page
+@model Book_An_Appointment1.Pages.ReviewAndConfimation.ReviewAndConfirmationModel
+@{
+    ViewData["Title"] = "Review & Confirm";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/review-confirm.css" asp-append-version="true" />
+}
+@section Scripts {
+    <script>
+
+        //  var EnablePayNow       = '@Model.Summary.EnablePayNow.ToString().ToLower()';
+        // var EnablePayOnArrival = '@Model.Summary.EnablePayOnArrival.ToString().ToLower()';
+
+        // function handleConfirmClick() {
+        //     const payNow     = EnablePayNow === 'true';
+        //     const payArrival = EnablePayOnArrival === 'true';
+
+        //     if (payNow && payArrival) {
+        //         openPaymentModal();
+        //     } else if (payNow && !payArrival) {
+        //         selectPayment('now');
+        //     } else if (!payNow && payArrival) {
+        //         selectPayment('arrival');
+        //     } else {
+        //         alert('No payment options available. Please contact support.');
+        //     }
+        // }
+        function openPaymentModal() {
+            document.getElementById('paymentModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePaymentModal() {
+            document.getElementById('paymentModal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        function selectPayment(type) {
+            // Baad mein implement hoga
+            console.log('Payment type:', type);
+            closePaymentModal();
+        }
+
+        // ESC key se close
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closePaymentModal();
+        });
+
+        // Overlay click se close
+        document.getElementById('paymentModal')
+            .addEventListener('click', function(e) {
+                if (e.target === this) closePaymentModal();
+            });
+    </script>
+}
+
+<div class="rc-page">
+
+    @* ── Progress Bar ── *@
+    <div class="progress-bar">
+        <div class="step-item">
+            <div class="step-circle done">✓</div>
+            <span class="step-label done">Select slot</span>
+        </div>
+        <div class="step-connector done"></div>
+        <div class="step-item">
+            <div class="step-circle done">✓</div>
+            <span class="step-label done">Patient details</span>
+        </div>
+        <div class="step-connector done"></div>
+        <div class="step-item">
+            <div class="step-circle active">3</div>
+            <span class="step-label active">Review &amp; confirm</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-item">
+            <div class="step-circle pending">4</div>
+            <span class="step-label">Payment</span>
+        </div>
+    </div>
+
+    @* ── Page Header ── *@
+    <div class="rc-header">
+        <div class="rc-title">Review &amp; Confirm</div>
+        <div class="rc-sub">Please review your details before confirming the appointment</div>
+    </div>
+
+    @* ── Main Grid ── *@
+    <div class="rc-grid">
+
+        @* ── Appointment Details ── *@
+        <div class="rc-card">
+            <div class="rc-card-header">
+                <div class="rc-card-title">
+                    <span class="rc-icon">📋</span>
+                    Appointment details
+                </div>
+                <a asp-page="/Appointment/Appointment" class="rc-edit-btn">
+                    ✏ Edit
+                </a>
+            </div>
+
+            <div class="rc-detail-row">
+                <span class="rc-detail-icon">🏥</span>
+                <span class="rc-detail-label">Hospital</span>
+                <span class="rc-detail-value">@Model.Summary.Hospital</span>
+            </div>
+            <div class="rc-detail-row">
+                <span class="rc-detail-icon">🩺</span>
+                <span class="rc-detail-label">Specialty</span>
+                <span class="rc-detail-value">@Model.Summary.Specialisation</span>
+            </div>
+            <div class="rc-detail-row">
+                <span class="rc-detail-icon">👨‍⚕️</span>
+                <span class="rc-detail-label">Doctor</span>
+                <span class="rc-detail-value">@Model.Summary.DoctorName</span>
+            </div>
+            <div class="rc-detail-row">
+                <span class="rc-detail-icon">📅</span>
+                <span class="rc-detail-label">Appointment date</span>
+                <span class="rc-detail-value">
+                    @(DateTime.TryParse(Model.Summary.SlotDate, out var sd)
+                        ? sd.ToString("ddd, dd MMM yyyy") : Model.Summary.SlotDate)
+                </span>
+            </div>
+            <div class="rc-detail-row">
+                <span class="rc-detail-icon">🕐</span>
+                <span class="rc-detail-label">Appointment time</span>
+                <span class="rc-detail-value">
+                    @(DateTime.TryParse(Model.Summary.SlotTime, out var st)
+                        ? st.ToString("hh:mm tt")
+                        : Model.Summary.SlotTime)
+                </span>
+            </div>
+            <div class="rc-detail-row">
+                <span class="rc-detail-icon">💰</span>
+                <span class="rc-detail-label">Consultation fee</span>
+                <span class="rc-detail-value rc-fee">
+                    ₹ @Model.Summary.ConsultationFee.ToString("N0")
+                </span>
+            </div>
+        </div>
+
+        @* ── Patient Information ── *@
+        <div class="rc-card">
+            <div class="rc-card-header">
+                <div class="rc-card-title">
+                    <span class="rc-icon">👤</span>
+                    Patient information
+                </div>
+                <div class="rc-card-header-right">
+                    <span class="rc-verified-badge">✓ Verified</span>
+                    <a asp-page="/PatientDetails/PatientDetails"
+                       class="rc-edit-btn">
+                        ✏ Edit
+                    </a>
+                </div>
+            </div>
+
+            <div class="rc-patient-grid">
+                <div class="rc-patient-item">
+                    <span class="rc-patient-label">Patient type</span>
+                    <span class="rc-patient-value">
+                        @Model.Summary.PatientTypeDisplay
+                    </span>
+                </div>
+                <div class="rc-patient-item">
+                    <span class="rc-patient-label">Full name</span>
+                    <span class="rc-patient-value">@Model.Summary.FullName</span>
+                </div>
+                <div class="rc-patient-item">
+                    <span class="rc-patient-label">Gender</span>
+                    <span class="rc-patient-value">@Model.Summary.Gender</span>
+                </div>
+                <div class="rc-patient-item">
+                    <span class="rc-patient-label">Date of birth</span>
+                    <span class="rc-patient-value">@Model.Summary.FormattedDOB</span>
+                </div>
+                <div class="rc-patient-item">
+                    <span class="rc-patient-label">Mobile number</span>
+                    <span class="rc-patient-value">
+                        @Model.Summary.CountryCode @Model.Summary.Mobile
+                    </span>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(Model.Summary.Email))
+                {
+                    <div class="rc-patient-item">
+                        <span class="rc-patient-label">Email</span>
+                        <span class="rc-patient-value">@Model.Summary.Email</span>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.Summary.BloodGroup))
+                {
+                    <div class="rc-patient-item">
+                        <span class="rc-patient-label">Blood group</span>
+                        <span class="rc-patient-value">@Model.Summary.BloodGroup</span>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.Summary.Address))
+                {
+                    <div class="rc-patient-item rc-full-width">
+                        <span class="rc-patient-label">Address</span>
+                        <span class="rc-patient-value">@Model.Summary.Address</span>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.Summary.RegistrationNo))
+                {
+                    <div class="rc-patient-item rc-full-width">
+                        <span class="rc-patient-label">UHID</span>
+                        <span class="rc-patient-value">@Model.Summary.RegistrationNo</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* ── Appointment Notes ── *@
+        <div class="rc-card">
+            <div class="rc-card-header">
+                <div class="rc-card-title">
+                    <span class="rc-icon">📝</span>
+                    Appointment notes
+                </div>
+                <a asp-page="/PatientDetails/PatientDetails"
+                   class="rc-edit-btn">
+                    ✏ Edit
+                </a>
+            </div>
+            <div class="rc-notes-label">Symptoms / Reason</div>
+            @if (!string.IsNullOrWhiteSpace(Model.Summary.AppointmentNotes))
+            {
+                <div class="rc-notes-text">@Model.Summary.AppointmentNotes</div>
+            }
+            else
+            {
+                <div class="rc-notes-empty">No notes added</div>
+            }
+        </div>
+
+        @* ── Consent & Preferences ── *@
+        <div class="rc-card">
+            <div class="rc-card-header">
+                <div class="rc-card-title">
+                    <span class="rc-icon">🛡️</span>
+                    Consent &amp; preferences
+                </div>
+                <a asp-page="/PatientDetails/PatientDetails"
+                   class="rc-edit-btn">
+                    ✏ Edit
+                </a>
+            </div>
+            <div class="rc-consent-item">
+                <span class="rc-consent-icon">✓</span>
+                I agree to the
+                <a href="/terms" target="_blank">Terms &amp; Conditions</a>
+                and
+                <a href="/privacy-policy" target="_blank">Privacy Policy</a>
+            </div>
+            @if (Model.Summary.ConsentMarketing)
+            {
+                <div class="rc-consent-item">
+                    <span class="rc-consent-icon">✓</span>
+                    I agree to receive appointment reminders and health tips
+                    via SMS/Email
+                </div>
+            }
+        </div>
+
+    </div>
+
+    @* ── Payment Summary ── *@
+    <div class="rc-fee-card">
+        <div class="rc-fee-title">💳 Payment summary</div>
+        <div class="rc-fee-row">
+            <span>Consultation fee</span>
+            <span class="rc-fee-val">₹ @Model.Summary.ConsultationFee.ToString("N0")</span>
+        </div>
+        <div class="rc-fee-row rc-fee-total">
+            <span>Total payable</span>
+            <span class="rc-fee-val">₹ @Model.Summary.ConsultationFee.ToString("N0")</span>
+        </div>
+    </div>
+
+    @* ── Info Box ── *@
+    <div class="rc-info-box">
+        <span class="rc-info-icon">ℹ</span>
+        <div>
+            <div class="rc-info-title">Please check all details carefully</div>
+            <div class="rc-info-sub">
+                Once confirmed, you will receive an SMS/Email
+                with your appointment details.
+            </div>
+        </div>
+    </div>
+
+    @* ── Footer ── *@
+    <div class="rc-footer">
+        <a asp-page="/PatientDetails/PatientDetails" class="rc-btn-back">
+            ← Back to Patient Details
+        </a>
+        <button class="rc-btn-confirm" onclick="openPaymentModal()">
+            Confirm &amp; Proceed to Payment →
+        </button>
+
+@*         <button class="rc-btn-confirm" onclick="handleConfirmClick()">
+            Confirm &amp; Proceed to Payment →
+        </button>
+ *@    </div>
+
+</div>
+
+@* ── Payment Modal — baad mein implement hoga ── *@
+<div class="rc-modal-overlay" id="paymentModal" style="display:none">
+    <div class="rc-modal">
+        <div class="rc-modal-header">
+            <div class="rc-modal-title">Choose payment option</div>
+            <button class="rc-modal-close" onclick="closePaymentModal()">✕</button>
+        </div>
+        <div class="rc-modal-body">
+            @if (Model.Summary.EnablePayOnArrival)
+            {
+                <div class="rc-payment-option" onclick="selectPayment('arrival')">
+                    <div class="rc-pay-icon">🏥</div>
+                    <div class="rc-pay-info">
+                        <div class="rc-pay-title">Pay on arrival</div>
+                        <div class="rc-pay-sub">Pay at the hospital counter</div>
+                    </div>
+                    <div class="rc-pay-arrow">→</div>
+                </div>
+            }
+
+            @if (Model.Summary.EnablePayNow)
+            {
+                <div class="rc-payment-option" onclick="selectPayment('now')">
+                    <div class="rc-pay-icon">💳</div>
+                    <div class="rc-pay-info">
+                        <div class="rc-pay-title">Pay now</div>
+                        <div class="rc-pay-sub">Pay online securely</div>
+                    </div>
+                    <div class="rc-pay-arrow">→</div>
+                </div>
+            }
+
+            @if (!Model.Summary.EnablePayNow && !Model.Summary.EnablePayOnArrival)
+            {
+                <div class="rc-payment-empty">
+                    No payment options available. Please contact support.
+                </div>
+            }
+        </div>
+    </div>
+</div>

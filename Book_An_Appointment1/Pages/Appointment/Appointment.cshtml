@@ -1,0 +1,88 @@
+﻿@page "/Appointment"
+@model Book_An_Appointment1.Pages.Appointment.AppointmentModel
+@{
+    ViewData["Title"] = "Book Appointment";
+}
+
+<form method="post" id="appointmentForm">
+    @Html.AntiForgeryToken()
+
+    <input type="hidden" name="selectedSlotStart" id="hdnSelectedSlotStart" value="" />
+    <input type="hidden" name="selectedSlotEnd" id="hdnSelectedSlotEnd" value="" />
+
+    <div class="container mt-5">
+
+        @* Error Message *@
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger mb-4">
+                <strong>Error:</strong> @Model.ErrorMessage
+            </div>
+        }
+
+        @* Client Validation *@
+        <div id="clientValidationError"></div>
+
+        @* Tracker *@
+        <div class="wizard-track mb-5 d-flex justify-content-between">
+            <div class="step active">Appointment</div>
+            <div class="step-line"></div>
+            <div class="step">Patient Details</div>
+            <div class="step-line"></div>
+            <div class="step">Confirmation</div>
+            <div class="step-line"></div>
+            <div class="step">Payment</div>
+        </div>
+
+        @* Dropdowns *@
+        <div class="row g-4">
+
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Facility</label>
+                <select name="FacilityId" id="facilityDropdown" class="form-select select2">
+                    <option value="">Select Facility</option>
+                    @foreach (var item in Model.Wizard.Facilities)
+                    {
+                        <option value="@item.FacilityId">
+                            @(item.FacilityName ?? "N/A")
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Speciality</label>
+                <select name="SpecialityId" id="specialityDropdown" class="form-select select2">
+                    <option value="">Search Speciality</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Doctor</label>
+                <select name="DoctorId" id="doctorDropdown" class="form-select select2">
+                    <option value="">Search Doctor</option>
+                </select>
+            </div>
+
+        </div>
+
+        @* Doctor Details Card — AJAX se render hoga *@
+        <div id="doctorDetailsCard"
+             class="card shadow-lg border-0 rounded-4 mt-5 p-4"
+             style="display:none">
+        </div>
+
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        window.AppointmentConfig = {
+            facilityId:   '@Model.FacilityId',
+            specialityId: '@(Model.SpecialityId ?? 0)',
+            doctorId:     @(Model.DoctorId ?? 0)
+        };
+    </script>
+    <script src="~/js/pages/appointment-validation.js"></script>
+    <script src="~/js/pages/appointment.js"></script>
+}

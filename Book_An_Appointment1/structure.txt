@@ -1,0 +1,130 @@
+Book_An_Appointment1/
+¦
++-- API/
+¦   +-- Clients/
+¦   ¦   +-- ApiUrlBuilder.cs
+¦   ¦   +-- BaseApiClient.cs
+¦   +-- EndPoints/
+¦   ¦   +-- ApiRoutes.cs
+¦   +-- Handlers/
+¦       +-- AuthHandler.cs
+¦
++-- Helpers/
+¦   +-- SessionHelper.cs
+¦
++-- Models/
+¦   +-- Common/
+¦   ¦   +-- ApiResponse.cs
+¦   +-- Consultation/
+¦   ¦   +-- ConsultationResponse.cs
+¦   +-- DoctorItem/
+¦   ¦   +-- DoctorItem.cs
+¦   +-- Facility/
+¦   ¦   +-- FacilityItem.cs
+¦   +-- PatientOTP/
+¦   ¦   +-- OtpRequestModel.cs
+¦   ¦   +-- OtpResponseModel.cs
+¦   ¦   +-- VerifyOtpRequestModel.cs
+¦   ¦   +-- VerifyOtpResponseData.cs
+¦   +-- Settings/
+¦   ¦   +-- HospitalSettings.cs
+¦   +-- Slot/
+¦   ¦   +-- DoctorSlotResponse.cs
+¦   +-- Speciality/
+¦   ¦   +-- SpecialityItem.cs
+¦   ¦   +-- SpecialityResponse.cs
+¦   +-- Token/
+¦       +-- TokenRequest.cs
+¦       +-- TokenResponse.cs
+¦
++-- Pages/
+¦   +-- Appointment/
+¦   ¦   +-- Appointment.cshtml
+¦   ¦   +-- Appointment.cshtml.cs
+¦   +-- PatientDetails/
+¦   ¦   +-- PatientDetails.cshtml
+¦   ¦   +-- PatientDetails.cshtml.cs
+¦   +-- ReviewAndConfirmation/
+¦   ¦   +-- ReviewAndConfirmation.cshtml
+¦   ¦   +-- ReviewAndConfirmation.cshtml.cs
+¦   +-- Shared/
+¦   ¦   +-- _ViewStart.cshtml
+¦   +-- Footer.cshtml
+¦   +-- Header.cshtml
+¦
++-- Services/
+¦   +-- Implementations/
+¦   ¦   +-- ConsultationService.cs
+¦   ¦   +-- DoctorService.cs
+¦   ¦   +-- FacilityService.cs
+¦   ¦   +-- OtpService.cs
+¦   ¦   +-- SlotService.cs
+¦   ¦   +-- SpecialityService.cs
+¦   ¦   +-- TokenService.cs
+¦   +-- Interfaces/
+¦       +-- IConsultationService.cs
+¦       +-- IDoctorService.cs
+¦       +-- IFacilityService.cs
+¦       +-- IOtpService.cs
+¦       +-- ISlotService.cs
+¦       +-- ISpecialityService.cs
+¦       +-- ITokenService.cs
+¦
++-- Theme/
+¦   +-- default.css
+¦   +-- evercare.css
+¦   +-- motherland.css
+¦
++-- ViewModule/
+¦   +-- Appointments/
+¦   ¦   +-- AppointmentViewModel.cs
+¦   +-- PatientDetails/
+¦   ¦   +-- PatientDetailsViewModel.cs
+¦   +-- AppointmentSessionData.cs
+¦
++-- wwwroot/
+¦   +-- css/
+¦   ¦   +-- site.css
+¦   ¦   +-- patient-details.css
+¦   +-- js/
+¦   ¦   +-- pages/
+¦   ¦       +-- appointment.js
+¦   ¦       +-- appointment-validation.js
+¦   +-- images/
+¦       +-- default-doctor.png
+¦
++-- appsettings.json
++-- appsettings.Development.json
++-- libman.json
++-- Program.cs
+
+
+
+Project: Hospital Appointment Booking Portal
+Tech: ASP.NET Core Razor Pages + C#
+
+Flow:
+1. User ? /Appointment
+   - Facility select karo (dropdown)
+   - Speciality select karo (AJAX)
+   - Doctor select karo (AJAX)
+   - Slot select karo (Calendar)
+   - Continue ?
+
+2. User ? /PatientDetails
+   - New Patient / Already Registered
+   - Form fill karo
+   - Mobile OTP verify karo
+   - Review & Confirm ?
+
+3. User ? /ReviewAndConfirmation
+   - Appointment summary
+   - Payment ?
+
+Key Files:
+- Services/     ? API calls handle karta hai
+- Models/       ? API response structures
+- ViewModule/   ? Page pe dikhne wala data
+- Helpers/      ? Session management
+- API/Clients/  ? HTTP client + URL builder
+- Pages/        ? UI (Razor Pages)

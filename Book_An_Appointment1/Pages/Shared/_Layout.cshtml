@@ -10,13 +10,18 @@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
     @* Header *@
     @await Html.PartialAsync("Header")
+
     <main class="container py-4">
         @RenderBody()
     </main>
+
+
     @* Footer *@
     @await Html.PartialAsync("~/Pages/Footer.cshtml")
 
