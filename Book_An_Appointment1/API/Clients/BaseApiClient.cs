@@ -1,6 +1,7 @@
 ﻿using Book_An_Appointment1.API.Clients;
 using Newtonsoft.Json;
 using System;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace BookAppointmentPortal.Api.Clients;
@@ -44,6 +45,37 @@ public class BaseApiClient
         {
             Logger.LogError(ex, "API Error");
 
+            throw;
+        }
+    }
+
+
+    protected async Task<T?> PostAsync<T>(string url, object body)
+    {
+        try
+        {
+            var client = ClientFactory.CreateClient("ApiClient");
+
+            Logger.LogInformation("API POST Request: {Url}", url);
+
+            var json = JsonConvert.SerializeObject(body);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await client.PostAsync(url, content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            Logger.LogInformation(
+                "API POST Response: {StatusCode} | {Content}",
+                response.StatusCode, responseContent);
+
+            if (!response.IsSuccessStatusCode)
+                throw new Exception($"API Failed: {response.StatusCode}");
+
+            return JsonConvert.DeserializeObject<T>(responseContent);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "API POST Error: {Url}", url);
             throw;
         }
     }

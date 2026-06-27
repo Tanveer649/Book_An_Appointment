@@ -51,24 +51,24 @@
     position: relative;
 }
 
-    .wizard-step span {
-        width: 48px;
-        height: 48px;
-        background: #dbeafe;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        font-weight: 700;
-        color: #2563eb;
-    }
+.wizard-step span {
+    width: 48px;
+    height: 48px;
+    background: #dbeafe;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: 700;
+    color: #2563eb;
+}
 
-    .wizard-step.active span {
-        background: #2563eb;
-        color: #fff;
-    }
+.wizard-step.active span {
+    background: #2563eb;
+    color: #fff;
+}
 
-    .wizard-step p {
-        margin-top: 10px;
-        font-weight: 600;
-    }
+.wizard-step p {
+    margin-top: 10px;
+    font-weight: 600;
+}

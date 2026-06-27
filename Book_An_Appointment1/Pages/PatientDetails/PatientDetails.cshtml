@@ -1,0 +1,381 @@
+﻿@* @page "/Appointment/PatientDetails" *@
+
+@page
+
+@model Book_An_Appointment1.Pages.Appointment.PatientDetailsModel
+@{
+    ViewData["Title"] = "Patient Details";
+}
+@section Styles {
+    <link rel="stylesheet" href="~/css/patient-details.css" asp-append-version="true" />
+}
+<div class="page">
+
+    @* Error Modal *@
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="error-modal-overlay" id="serverErrorModal">
+            <div class="error-modal">
+                <div class="error-modal-header">
+                    <div class="error-modal-title">⚠ Please fix the following issues</div>
+                    <button type="button" class="error-modal-close" onclick="closeServerErrorModal()">✕</button>
+                </div>
+                <div class="error-modal-body">
+                    <ul class="error-list">
+                        @foreach (var error in ViewData.ModelState.Values
+                            .SelectMany(v => v.Errors)
+                            .Select(e => e.ErrorMessage)
+                            .Distinct())
+                        {
+                            <li>@error</li>
+                        }
+                    </ul>
+                </div>
+                <div class="error-modal-footer">
+                    <button type="button" class="error-modal-btn" onclick="closeServerErrorModal()">
+                        Got it, let me fix
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* Progress Bar *@
+    <div class="progress-bar">
+        <div class="step-item">
+            <div class="step-circle done">✓</div>
+            <span class="step-label done">Select slot</span>
+        </div>
+        <div class="step-connector done"></div>
+        <div class="step-item">
+            <div class="step-circle active">2</div>
+            <span class="step-label active">Patient details</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-item">
+            <div class="step-circle pending">3</div>
+            <span class="step-label">Review &amp; confirm</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-item">
+            <div class="step-circle pending">4</div>
+            <span class="step-label">Payment</span>
+        </div>
+    </div>
+
+    <div class="page-layout">
+
+        @* LEFT — Doctor Summary *@
+        <div class="appt-sidebar">
+            <div class="appt-summary">
+                <div class="doc-avatar">@Model.Form.DoctorInitials</div>
+                <div class="appt-info">
+                    <strong>@Model.Form.DoctorName</strong>
+                    <p>@Model.Form.Specialisation</p>
+                    <p>@Model.Form.Hospital</p>
+                </div>
+                <div class="appt-divider"></div>
+                <div class="appt-detail-row">
+                    <div class="appt-detail-item">
+                        <span class="detail-icon">📅</span>
+                        <div class="detail-text">
+                            <span class="detail-label">Appointment</span>
+                            <span class="detail-value">@Model.Form.SlotDisplayText</span>
+                        </div>
+                    </div>
+                </div>
+                @if (Model.Form.ConsultationFee > 0)
+                {
+                    <div class="fee-badge">₹ @Model.Form.ConsultationFee.ToString("N0")</div>
+                }
+            </div>
+        </div>
+
+        @* RIGHT — Form *@
+        <div class="form-wrapper">
+            <form method="post" onsubmit="return validateForm()">
+                @Html.AntiForgeryToken()
+
+                @* Common hidden fields *@
+                <input type="hidden" asp-for="Form.PatientType" id="Form_PatientType" />
+                <input type="hidden" id="Form_CountryId" name="Form.CountryId" value="@Model.Form.CountryId" />
+
+                @* Patient Information Card *@
+                <div class="section-card">
+                    <div class="section-title">👤 Patient information</div>
+
+                    <div class="patient-toggle">
+                        <button type="button" class="toggle-btn active" onclick="switchMode('new')" id="btn-new">
+                            New patient
+                        </button>
+                        <button type="button" class="toggle-btn" onclick="switchMode('registered')" id="btn-existing">
+                            Already registered
+                        </button>
+                    </div>
+
+                    @* ════════════════ NEW PATIENT FORM ════════════════ *@
+                    <div id="new-patient-form">
+
+                        <input type="hidden" asp-for="Form.NewPatient.Gender" id="Form_Gender" />
+                        <input type="hidden" asp-for="Form.NewPatient.Mobile" id="Form_Mobile" />
+                        <input type="hidden" asp-for="Form.NewPatient.IsMobileVerified" id="Form_IsMobileVerified" />
+                        <input type="hidden" id="Form_StateId" name="Form.NewPatient.StateId" value="@Model.Form.NewPatient.StateId" />
+                        <input type="hidden" id="Form_CityId" name="Form.NewPatient.CityId" value="@Model.Form.NewPatient.CityId" />
+                        <input type="hidden" id="Form_StateName" name="Form.NewPatient.StateName" value="@Model.Form.NewPatient.StateName" />
+                        <input type="hidden" id="Form_CityName" name="Form.NewPatient.CityName" value="@Model.Form.NewPatient.CityName" />
+                        <input type="hidden" id="Form_CountryName" name="Form.CountryName" value="@Model.Form.CountryName" />
+
+                        <div class="form-row form-row-4">
+                            <div class="form-group">
+                                <label>Title <span class="required">*</span></label>
+                                <select id="Form_Title" name="Form.NewPatient.TitleName">
+                                    <option value="">--</option>
+                                </select>
+                                <input type="hidden" id="Form_TitleId" name="Form.NewPatient.TitleId" />
+                            </div>
+                            <div class="form-group">
+                                <label>First name <span class="required">*</span></label>
+                                <input asp-for="Form.NewPatient.FirstName" id="Form_FirstName" type="text" placeholder="First name" />
+                            </div>
+                            <div class="form-group">
+                                <label>Middle name</label>
+                                <input asp-for="Form.NewPatient.MiddleName" id="Form_MiddleName" type="text" placeholder="Middle name" />
+                            </div>
+                            <div class="form-group">
+                                <label>Last name <span class="required">*</span></label>
+                                <input asp-for="Form.NewPatient.LastName" id="Form_LastName" type="text" placeholder="Last name" />
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Date of birth <span class="required">*</span></label>
+                                <input asp-for="Form.NewPatient.DOB" id="Form_DOB" type="date" />
+                            </div>
+                            <div class="form-group">
+                                <label>Gender <span class="required">*</span></label>
+                                <div class="gender-row">
+                                    <button type="button" class="gender-btn" data-value="Male" onclick="selGender(this)">Male</button>
+                                    <button type="button" class="gender-btn" data-value="Female" onclick="selGender(this)">Female</button>
+                                    <button type="button" class="gender-btn" data-value="Other" onclick="selGender(this)">Other</button>
+                                </div>
+                                <span id="gender-error" class="field-error" style="display:none">Please select gender</span>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Email address</label>
+                                <input asp-for="Form.NewPatient.Email" id="Form_Email" type="email" placeholder="patient@email.com" />
+                            </div>
+                            <div class="form-group">
+                                <label>Blood group</label>
+                                <select asp-for="Form.NewPatient.BloodGroup" id="Form_BloodGroup">
+                                    <option value="">Select blood group</option>
+                                    <option>A+</option>
+                                    <option>A−</option>
+                                    <option>B+</option>
+                                    <option>B−</option>
+                                    <option>O+</option>
+                                    <option>O−</option>
+                                    <option>AB+</option>
+                                    <option>AB−</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row form-row-single">
+                            <div class="form-group">
+                                <label>Address</label>
+                                <input asp-for="Form.NewPatient.Address" id="Form_Address" type="text" placeholder="Enter full address" />
+                            </div>
+                        </div>
+
+                        <div class="form-row form-row-3">
+                            <div class="form-group">
+                                <label>Country</label>
+                                <select id="Form_Country" name="Form.CountryName">
+                                    <option value="">Select country</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>State</label>
+                                <select id="Form_State" disabled>
+                                    <option value="">Select state</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>City</label>
+                                <select id="Form_City" disabled>
+                                    <option value="">Select city</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row-pincode">
+                            <div class="form-group">
+                                <label>Pincode</label>
+                                <input asp-for="Form.NewPatient.Pincode" id="Form_Pincode" type="text" maxlength="6" placeholder="6-digit pincode" />
+                            </div>
+                            <div></div>
+                        </div>
+
+                        <div class="divider"></div>
+
+                        <div class="section-title">
+                            📱 Mobile verification
+                            <span class="verify-badge" id="verify-badge">✓ Verified</span>
+                        </div>
+
+                        <div class="phone-row">
+                            <div class="form-group country-code">
+                                <label>Code</label>
+                                <input asp-for="Form.NewPatient.CountryCode" id="Form_CountryCode" type="text" value="+91" maxlength="4" />
+                            </div>
+                            <div class="form-group phone-number-group">
+                                <label>Mobile number <span class="required">*</span></label>
+                                <input type="tel" id="phone-input" placeholder="98XXXXXXXX" maxlength="10"
+                                       oninput="checkPhone()" value="@Model.Form.NewPatient.Mobile" />
+                            </div>
+                            <button type="button" class="send-otp-btn" id="send-otp-btn" onclick="sendOTP()" disabled>
+                                Send OTP
+                            </button>
+                        </div>
+
+                        <div class="otp-section" id="otp-section">
+                            <div class="otp-hint">
+                                OTP sent to +91 <strong id="otp-phone-display"></strong>. Valid for 5 minutes.
+                            </div>
+                            <div class="otp-inputs" id="new-otp-inputs"></div>
+                            <div class="otp-verified" id="otp-verified">✓ Mobile number verified</div>
+                            <div class="resend-row">
+                                <button type="button" class="resend-link" id="resend-btn" onclick="resendOTP()">Resend OTP</button>
+                                <span class="timer" id="timer-display"></span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    @* ════════════════ REGISTERED PATIENT FORM ════════════════ *@
+                    <div id="registered-form" style="display:none">
+
+                        <input type="hidden" asp-for="Form.RegisteredPatient.IsMobileVerified" id="Reg_IsMobileVerified" />
+                        <input type="hidden" asp-for="Form.RegisteredPatient.GuestPatientId" id="Reg_GuestPatientId" />
+                        <input type="hidden" asp-for="Form.RegisteredPatient.RegistrationNo" id="Reg_RegistrationNo" />
+                        <input type="hidden" asp-for="Form.RegisteredPatient.TitleName" id="Reg_TitleName" />
+                        <input type="hidden" asp-for="Form.RegisteredPatient.TitleId" id="Reg_TitleId" />
+                        <input type="hidden" asp-for="Form.RegisteredPatient.FirstName" id="Reg_FirstName" />
+                        <input type="hidden" asp-for="Form.RegisteredPatient.MiddleName" id="Reg_MiddleName" />
+                        <input type="hidden" asp-for="Form.RegisteredPatient.LastName" id="Reg_LastName" />
+                        <input type="hidden" asp-for="Form.RegisteredPatient.Gender" id="Reg_Gender" />
+                        <input type="hidden" asp-for="Form.RegisteredPatient.DOB" id="Reg_DOB" />
+                        <input type="hidden" asp-for="Form.RegisteredPatient.Email" id="Reg_Email" />
+
+                        <p class="existing-note">
+                            Enter your registered mobile number.
+                            We'll send an OTP to verify and fetch your details.
+                        </p>
+
+                        <div class="phone-row">
+                            <div class="form-group country-code">
+                                <label>Code</label>
+                                <input type="text" id="reg-country-code" value="+91" maxlength="4" />
+                            </div>
+                            <div class="form-group phone-number-group">
+                                <label>Registered mobile <span class="required">*</span></label>
+                                <input type="tel" id="reg-phone-input" name="Form.RegisteredPatient.Mobile"
+                                       placeholder="98XXXXXXXX" maxlength="10"
+                                       oninput="checkRegPhone()" value="@Model.Form.RegisteredPatient.Mobile" />
+                            </div>
+                            <button type="button" class="send-otp-btn" id="reg-send-otp-btn" onclick="sendRegisteredOTP()" disabled>
+                                Send OTP
+                            </button>
+                        </div>
+
+                        <div class="otp-section" id="reg-otp-section">
+                            <div class="otp-hint">
+                                OTP sent to +91 <strong id="reg-otp-phone-display"></strong>. Valid for 5 minutes.
+                            </div>
+                            <div class="otp-inputs" id="reg-otp-inputs"></div>
+                            <div class="otp-verified" id="reg-otp-verified">✓ Mobile number verified</div>
+                            <div class="resend-row">
+                                <button type="button" class="resend-link" id="reg-resend-btn" onclick="resendRegisteredOTP()">Resend OTP</button>
+                                <span class="timer" id="reg-timer-display"></span>
+                            </div>
+                        </div>
+
+                        <div id="patient-found-card" style="display:none">
+                            <div class="patient-found-inner">
+                                <div class="patient-found-avatar" id="pf-avatar"></div>
+                                <div class="patient-found-info">
+                                    <div class="pf-name" id="pf-name"></div>
+                                    <div class="pf-details" id="pf-details"></div>
+                                </div>
+                                <div class="pf-verified-badge">✓ Verified</div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                @* Common — Appointment Notes *@
+                <div class="section-card">
+                    <div class="section-title">📋 Appointment notes</div>
+                    <div class="form-group">
+                        <label>Describe your symptoms or reason for visit (optional)</label>
+                        <textarea asp-for="Form.AppointmentNotes" id="Form_AppointmentNotes" class="notes-textarea"
+                                  placeholder="e.g. Chest pain for 3 days..." maxlength="300"
+                                  oninput="countChars(this)"></textarea>
+                        <div class="char-count"><span id="char-count">0</span> / 300</div>
+                    </div>
+                </div>
+
+                @* Common — Consent *@
+                <div class="section-card">
+                    <div class="section-title">🛡️ Consent &amp; terms</div>
+                    <div class="consent-row">
+                        <input asp-for="Form.ConsentTerms" id="Form_ConsentTerms" type="checkbox"
+                               onchange="if(this.checked) document.getElementById('consent-error').style.display='none';" />
+                        <label for="Form_ConsentTerms">
+                            I agree to the
+                            <a href="/terms" target="_blank">Terms &amp; Conditions</a> and
+                            <a href="/privacy-policy" target="_blank">Privacy Policy</a>
+                            <span class="required">*</span>
+                        </label>
+                    </div>
+                    <span id="consent-error" class="field-error" style="display:none">Please accept terms and conditions</span>
+                    <div class="consent-row mt-2">
+                        <input asp-for="Form.ConsentMarketing" id="Form_ConsentMarketing" type="checkbox" />
+                        <label>I agree to receive appointment reminders and health tips via SMS/Email</label>
+                    </div>
+                </div>
+
+                @* Footer *@
+                <div class="footer-actions">
+                    <a asp-page="/Appointment/Appointment" class="btn-back">← Back</a>
+                    <button type="submit" class="btn-continue">Review &amp; Confirm →</button>
+                </div>
+
+            </form>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/pages/patient-details.js"></script>
+    <script>
+        var OTP_LENGTH = @Model.Form.OtpLength;
+        var DefaultCountryId = @Model.Form.CountryId;
+        var SavedTitleName = '@Model.Form.NewPatient.TitleName';
+        var SavedTitleId = '@Model.Form.NewPatient.TitleId';
+        var SavedCountryName = '@Model.Form.CountryName';
+        var SavedStateName = '@Model.Form.NewPatient.StateName';
+        var SavedStateId = '@Model.Form.NewPatient.StateId';
+        var SavedCityName = '@Model.Form.NewPatient.CityName';
+        var SavedCityId = '@Model.Form.NewPatient.CityId';
+        var SavedPatientType = '@Model.Form.PatientType';
+
+        initPatientDetailsPage();
+    </script>
+}

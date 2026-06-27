@@ -50,6 +50,10 @@ builder.Services.AddScoped<IConsultationService, ConsultationService>();
 builder.Services.AddScoped<ISlotService, SlotService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 
+builder.Services.AddScoped<IOtpService, OtpService>();
+builder.Services.AddScoped<ILocationService, LocationService>();
+builder.Services.AddScoped<ITitleService, TitleService>();
+
 
 var app = builder.Build();
 

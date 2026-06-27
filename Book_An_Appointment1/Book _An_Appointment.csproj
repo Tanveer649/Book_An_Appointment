@@ -9,9 +9,21 @@
 
   <ItemGroup>
     <Compile Remove="Configurations\**" />
+    <Compile Remove="wwwroot\css\components\**" />
+    <Compile Remove="wwwroot\css\themes\**" />
+    <Compile Remove="wwwroot\js\components\**" />
     <Content Remove="Configurations\**" />
+    <Content Remove="wwwroot\css\components\**" />
+    <Content Remove="wwwroot\css\themes\**" />
+    <Content Remove="wwwroot\js\components\**" />
     <EmbeddedResource Remove="Configurations\**" />
+    <EmbeddedResource Remove="wwwroot\css\components\**" />
+    <EmbeddedResource Remove="wwwroot\css\themes\**" />
+    <EmbeddedResource Remove="wwwroot\js\components\**" />
     <None Remove="Configurations\**" />
+    <None Remove="wwwroot\css\components\**" />
+    <None Remove="wwwroot\css\themes\**" />
+    <None Remove="wwwroot\js\components\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,13 +35,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Helpers\" />
-    <Folder Include="wwwroot\css\components\" />
-    <Folder Include="wwwroot\css\themes\" />
-    <Folder Include="wwwroot\js\components\" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <None Include="wwwroot\Image\default-doctor.png" />
     <None Include="wwwroot\Image\Logo\logo.png" />
   </ItemGroup>
 

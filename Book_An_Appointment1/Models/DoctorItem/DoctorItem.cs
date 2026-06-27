@@ -11,14 +11,12 @@ namespace Book_An_Appointment1.Models.DoctorItem
         public string FullName { get; set; }
         [JsonProperty("education")]
         public string Education { get; set; }
-        //[JsonProperty("designation")]
-        //public string Designation { get; set; }
+
         [JsonProperty("specialisationName")]
         public string SpecialisationName { get; set; }
         [JsonProperty("specialisationId")]
         public string SpecialisationId { get; set; }
-        //[JsonProperty("departmentName")]
-        //public string DepartmentName { get; set; }
+ 
 
         [JsonProperty("workexperience")]
         public string WorkExperience { get; set; }
@@ -38,8 +36,7 @@ namespace Book_An_Appointment1.Models.DoctorItem
         public string Icon { get; set; }
         [JsonProperty("doctorFee")]
         public string DoctorFee { get; set; }
-        //[JsonProperty("gender")]
-        //public string Gender { get; set; }
+  
 
         [JsonProperty("mobile")]
         public string Mobile { get; set; }
@@ -53,7 +50,8 @@ namespace Book_An_Appointment1.Models.DoctorItem
         public string Name => FullName ?? "N/A";
         public string Experience => !string.IsNullOrWhiteSpace(WorkExperience) ? WorkExperience : "N/A";
         public string Description => !string.IsNullOrWhiteSpace(AboutUS) ? AboutUS : "N/A";
-        public string ImageUrl => !string.IsNullOrWhiteSpace(Icon) ? Icon : "/images/default-doctor.png";
+        public string ImageUrl => !string.IsNullOrWhiteSpace(Icon) ?  Icon.Replace("http://", "https://")  // ← force https
+                                    : "/Image/default-doctor.png"; 
         public string Timing => !string.IsNullOrWhiteSpace(Availability)? DateTime.TryParse(Availability, out var dt) ? dt.ToString("hh:mm tt") : Availability: "N/A";
         public bool IsTeleconsult => IsTeleconsultation == "1";
     }

@@ -11,8 +11,8 @@
             this.logger = logger;
         }
 
-        public string BuildUrl(string baseUrl, string sectionKey, 
-            Dictionary<string, string> ?dynamicParams = null)
+        public string BuildUrl(string baseUrl, string sectionKey,
+            Dictionary<string, string>? dynamicParams = null)
         {
             try
             {
@@ -35,14 +35,14 @@
                     ?? Enumerable.Empty<string>();
 
                 var queryString = string.Join("&", queryParams.Concat(dynamicQueryParams));
-               
+
                 return $"{baseUrl}?{queryString}";
 
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 logger.LogError(ex, "Error building API URL for section '{SectionKey}'", sectionKey);
-                
+
                 return baseUrl;
             }
         }

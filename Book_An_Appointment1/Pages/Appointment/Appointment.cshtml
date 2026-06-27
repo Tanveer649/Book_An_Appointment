@@ -1,0 +1,312 @@
+﻿@page "/Appointment"
+@model Book_An_Appointment1.Pages.Appointment.AppointmentModel
+@{
+    ViewData["Title"] = "Book Appointment";
+}
+
+<form method="post" id="appointmentForm">
+    @Html.AntiForgeryToken()
+
+    <input type="hidden" name="selectedSlotStart" id="hdnSelectedSlotStart" value="" />
+    <input type="hidden" name="selectedSlotEnd" id="hdnSelectedSlotEnd" value="" />
+    <input type="hidden" name="facilityId" id="hdnFacilityId" value="@Model.FacilityId" />
+    <input type="hidden" name="specialityId" id="hdnSpecialityId" value="@(Model.SpecialityId ?? 0)" />
+    <input type="hidden" name="doctorId" id="hdnDoctorId" value="@(Model.DoctorId ?? 0)" />
+
+    <div class="container mt-5">
+
+        @* Error Message *@
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger mb-4">
+                <strong>Error:</strong> @Model.ErrorMessage
+            </div>
+        }
+
+        @* Server Side Validation Errors *@
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger mb-4">
+                <ul class="mb-0">
+                    @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@error.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        }
+
+        @* Client Validation *@
+        <div id="clientValidationError"></div>
+
+        @* Tracker *@
+        <div class="wizard-track mb-5 d-flex justify-content-between">
+            <div class="step active">Appointment</div>
+            <div class="step-line"></div>
+            <div class="step">Patient Details</div>
+            <div class="step-line"></div>
+            <div class="step">Confirmation</div>
+            <div class="step-line"></div>
+            <div class="step">Payment</div>
+        </div>
+
+        @* Dropdowns *@
+        <div class="row g-4">
+
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Facility <span class="text-danger">*</span></label>
+                <select name="FacilityId" id="facilityDropdown" class="form-select select2">
+                    <option value="">Select Facility</option>
+                    @foreach (var item in Model.Wizard.Facilities)
+                    {
+                        <option value="@item.FacilityId" selected="@(item.FacilityId == Model.FacilityId)">
+                            @(item.FacilityName ?? "N/A")
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Speciality <span class="text-danger">*</span></label>
+                <span class="dropdown-lock-wrap" id="specialityLockWrap" data-tooltip="Please select a facility first">
+                    <select name="SpecialityId" id="specialityDropdown" class="form-select select2" disabled>
+                        <option value="">Search Speciality</option>
+                        @foreach (var item in Model.Wizard.Specialities)
+                        {
+                            <option value="@item.Id" selected="@(item.Id == (Model.SpecialityId ?? 0).ToString())">
+                                @(item.SpecialisationName ?? "N/A")
+                            </option>
+                        }
+                    </select>
+                </span>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Doctor <span class="text-danger">*</span></label>
+                <span class="dropdown-lock-wrap" id="doctorLockWrap" data-tooltip="Please select a facility first">
+                    <select name="DoctorId" id="doctorDropdown" class="form-select select2" disabled>
+                        <option value="">Search Doctor</option>
+                        @if (Model.Wizard.Doctors != null)
+                        {
+                            foreach (var item in Model.Wizard.Doctors)
+                            {
+                                <option value="@item.Id" selected="@(item.Id == (Model.DoctorId ?? 0).ToString())">
+                                    @(item.Name ?? "N/A")
+                                </option>
+                            }
+                        }
+                    </select>
+                </span>
+            </div>
+
+        </div>
+
+        @* Doctor Details Card *@
+        <div id="doctorDetailsCard"
+             class="card shadow-lg border-0 rounded-4 mt-5 p-4"
+             style="@(Model.Wizard.SelectedDoctor != null ? "" : "display:none")">
+
+            @if (Model.Wizard.SelectedDoctor != null)
+            {
+                var doc = Model.Wizard.SelectedDoctor;
+                var hospital = doc.ConsultingHospitals?.FirstOrDefault();
+                var feeRaw = Model.Wizard.ConsultationFeeList?.FirstOrDefault()?.Price
+                            ?? Model.Wizard.ConsultationFeeList?.FirstOrDefault()?.NetAmount
+                            ?? "0";
+
+                var fee = decimal.TryParse(feeRaw, out var feeDecimal)
+                            ? ((int)feeDecimal).ToString()
+                            : feeRaw;
+
+                var imageUrl = (doc.ImageUrl ?? "").Replace("http://", "https://");
+
+                <div class="row">
+                    <div class="col-md-3 text-center">
+                        <img src="@imageUrl"
+                             style="width:180px;height:180px;object-fit:cover;border-radius:50%;"
+                             onerror="this.onerror=null; this.src='/Image/default-doctor.png';" />
+                        <div class="mt-2">
+                            <span class="badge bg-warning text-dark">⭐ @(doc.Rating ?? "N/A")</span>
+                            <span class="text-muted ms-1" style="font-size:12px;">(@(doc.Review ?? "0") reviews)</span>
+                        </div>
+                        @if (doc.IsTeleconsult)
+                        {
+                            <div class="mt-2">
+                                <span class="badge bg-success">Teleconsultation Available</span>
+                            </div>
+                        }
+                    </div>
+                    <div class="col-md-9">
+                        <h3>@doc.Name</h3>
+                        <p class="text-muted mb-3">@doc.SpecialisationName</p>
+                        <div class="row g-2">
+                            <div class="col-md-6"><strong>Experience:</strong> <span>@doc.Experience</span></div>
+                            <div class="col-md-6"><strong>Consultation Fee:</strong> <span class="text-success fw-bold">₹ @fee</span></div>
+                            <div class="col-md-6"><strong>Next Available:</strong> <span>@doc.Timing</span></div>
+                            @if (!string.IsNullOrWhiteSpace(doc.Treatment))
+                            {
+                                <div class="col-md-12"><strong>Treatments:</strong> <span>@doc.Treatment</span></div>
+                            }
+                            @if (hospital != null)
+                            {
+                                <div class="col-md-12"><strong>Hospital:</strong> <span>@hospital.FacilityName, @hospital.CityName</span></div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4" />
+
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <h5 class="mb-3">Select Date</h5>
+                        <input type="text" id="slotCalendar" class="form-control" placeholder="Select date" readonly style="display:none;" />
+                        <div id="calendarContainer"></div>
+                    </div>
+                    <div class="col-md-8">
+                        <h5 class="mb-3">
+                            Available Slots
+                            <span id="slotDateLabel" class="text-muted fs-6 ms-2"></span>
+                        </h5>
+                        <div id="slotsContainer" class="d-flex flex-wrap gap-2">
+                            @if (Model.Wizard.Slots.Any())
+                            {
+                                foreach (var slot in Model.Wizard.Slots)
+                                {
+                                    var parsed = DateTime.TryParse(slot.StartTime.Replace(" ", "T"), out var pdt);
+                                    var timePart = parsed ? pdt.ToString("hh:mm tt") : slot.StartTime;
+                                    var datePart = parsed ? pdt.ToString("dd MMM yyyy") : "";
+
+                                    <button type="button" class="btn btn-outline-primary rounded-pill px-3 py-1 slot-btn"
+                                            style="font-size:13px;"
+                                            data-start="@slot.StartTime" data-end="@slot.EndTime">
+                                        <div>@timePart</div>
+                                        <div style="font-size:10px;color:#888;">@datePart</div>
+                                    </button>
+                                }
+                            }
+                            else
+                            {
+                                <div class="text-muted">No slots available for today.</div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <input type="hidden" id="hdnHospitalLocationId" value="@doc.HospitalLocationId" />
+                <input type="hidden" id="hdnDoctorIdForSlot" value="@Model.DoctorId" />
+                <input type="hidden" id="hdnFacilityIdForSlot" value="@Model.FacilityId" />
+
+                <div class="text-end mt-5">
+                    <button type="button" id="continueBtn" class="btn btn-primary px-5 py-3 rounded-pill">
+                        Continue →
+                    </button>
+                </div>
+            }
+        </div>
+
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        window.AppointmentConfig = {
+            facilityId:   '@Model.FacilityId',
+            specialityId: '@(Model.SpecialityId ?? 0)',
+            doctorId:     @(Model.DoctorId ?? 0),
+            savedSlotDate:  '@(Model.SavedSlotDate ?? "")',
+            savedSlotStart: '@(Model.SavedSlotStart ?? "")',
+            hospitalLocationId: @(Model.Wizard.SelectedDoctor?.HospitalLocationId ?? 0)
+        };
+    </script>
+    <script src="~/js/pages/appointment.js"></script>
+}
+
+
+
+
+
+
+@* @page "/Appointment"
+@model Book_An_Appointment1.Pages.Appointment.AppointmentModel
+@{
+    ViewData["Title"] = "Book Appointment";
+}
+
+<form method="post" id="appointmentForm">
+    @Html.AntiForgeryToken()
+
+    <input type="hidden" name="selectedSlotStart" id="hdnSelectedSlotStart" value="" />
+    <input type="hidden" name="selectedSlotEnd" id="hdnSelectedSlotEnd" value="" />
+
+    <div class="container mt-5">
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger mb-4">
+                <strong>Error:</strong> @Model.ErrorMessage
+            </div>
+        }
+
+        <div id="clientValidationError"></div>
+
+        <div class="wizard-track mb-5 d-flex justify-content-between">
+            <div class="step active">Appointment</div>
+            <div class="step-line"></div>
+            <div class="step">Patient Details</div>
+            <div class="step-line"></div>
+            <div class="step">Confirmation</div>
+            <div class="step-line"></div>
+            <div class="step">Payment</div>
+        </div>
+
+        <div class="row g-4">
+
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Facility</label>
+                <select name="FacilityId" id="facilityDropdown" class="form-select select2">
+                    <option value="">Select Facility</option>
+                    @foreach (var item in Model.Wizard.Facilities)
+                    {
+                        <option value="@item.FacilityId">
+                            @(item.FacilityName ?? "N/A")
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Speciality</label>
+                <select name="SpecialityId" id="specialityDropdown" class="form-select select2">
+                    <option value="">Search Speciality</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Doctor</label>
+                <select name="DoctorId" id="doctorDropdown" class="form-select select2">
+                    <option value="">Search Doctor</option>
+                </select>
+            </div>
+
+        </div>
+
+        <div id="doctorDetailsCard"
+             class="card shadow-lg border-0 rounded-4 mt-5 p-4"
+             style="display:none">
+        </div>
+
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        window.AppointmentConfig = {
+            facilityId:   '@Model.FacilityId',
+            specialityId: '@(Model.SpecialityId ?? 0)',
+            doctorId:     @(Model.DoctorId ?? 0)
+        };
+    </script>
+    <script src="~/js/pages/appointment-validation.js"></script>
+    <script src="~/js/pages/appointment.js"></script>
+} *@

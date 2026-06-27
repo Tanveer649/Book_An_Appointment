@@ -1,0 +1,561 @@
+﻿/* ── Page ── */
+.rc-page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem 3rem;
+    width: 100%;
+}
+
+/* ── Progress Bar ── */
+.progress-bar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 2rem;
+    width: 100%;
+}
+
+.step-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.step-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+    .step-circle.done {
+        background: #1D9E75;
+        color: #fff;
+    }
+
+    .step-circle.active {
+        background: #185FA5;
+        color: #fff;
+    }
+
+    .step-circle.pending {
+        background: #f1f5f9;
+        color: #94a3b8;
+        border: 1px solid #e2e8f0;
+    }
+
+.step-label {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+    .step-label.active {
+        color: #185FA5;
+        font-weight: 500;
+    }
+
+    .step-label.done {
+        color: #1D9E75;
+    }
+
+.step-connector {
+    flex: 1;
+    height: 1px;
+    background: #e2e8f0;
+    margin: 0 8px;
+    min-width: 16px;
+}
+
+    .step-connector.done {
+        background: #1D9E75;
+    }
+
+/* ── Page Header ── */
+.rc-header {
+    margin-bottom: 1.25rem;
+}
+
+.rc-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 4px;
+}
+
+.rc-sub {
+    font-size: 13px;
+    color: #64748b;
+}
+
+/* ── Grid ── */
+.rc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+/* ── Card ── */
+.rc-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1.1rem 1.25rem;
+}
+
+.rc-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.rc-card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.rc-icon {
+    font-size: 15px;
+}
+
+.rc-card-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.rc-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: #185FA5;
+    background: #eff6ff;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background .12s;
+}
+
+    .rc-edit-btn:hover {
+        background: #dbeafe;
+    }
+
+.rc-verified-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #15803d;
+    background: #dcfce7;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+/* ── Appointment Detail Rows ── */
+.rc-detail-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 13px;
+}
+
+    .rc-detail-row:last-child {
+        border-bottom: none;
+    }
+
+.rc-detail-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+    width: 18px;
+    margin-top: 1px;
+}
+
+.rc-detail-label {
+    color: #64748b;
+    min-width: 130px;
+    flex-shrink: 0;
+}
+
+.rc-detail-value {
+    color: #0f172a;
+    font-weight: 400;
+    flex: 1;
+}
+
+    .rc-detail-value.rc-fee {
+        color: #185FA5;
+        font-weight: 600;
+        font-size: 15px;
+    }
+
+/* ── Patient Grid ── */
+.rc-patient-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+}
+
+.rc-patient-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+    .rc-patient-item:nth-last-child(-n+2):not(.rc-full-width) {
+        border-bottom: none;
+    }
+
+    .rc-patient-item:nth-child(odd) {
+        padding-right: 14px;
+    }
+
+    .rc-patient-item:nth-child(even) {
+        padding-left: 14px;
+        border-left: 1px solid #f1f5f9;
+    }
+
+.rc-full-width {
+    grid-column: 1 / -1 !important;
+    border-left: none !important;
+    padding-left: 0 !important;
+}
+
+.rc-patient-label {
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+}
+
+.rc-patient-value {
+    font-size: 13px;
+    color: #0f172a;
+}
+
+/* ── Notes ── */
+.rc-notes-label {
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    margin-bottom: 6px;
+}
+
+.rc-notes-text {
+    font-size: 13px;
+    color: #475569;
+    line-height: 1.6;
+}
+
+.rc-notes-empty {
+    font-size: 13px;
+    color: #94a3b8;
+    font-style: italic;
+}
+
+/* ── Consent ── */
+.rc-consent-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 13px;
+    color: #475569;
+    padding: 7px 0;
+    border-bottom: 1px solid #f1f5f9;
+    line-height: 1.5;
+}
+
+    .rc-consent-item:last-child {
+        border-bottom: none;
+    }
+
+    .rc-consent-item a {
+        color: #185FA5;
+        text-decoration: none;
+    }
+
+.rc-consent-icon {
+    color: #15803d;
+    font-weight: 700;
+    font-size: 14px;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+/* ── Fee Card ── */
+.rc-fee-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 14px;
+}
+
+.rc-fee-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.rc-fee-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: #64748b;
+    padding: 7px 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+    .rc-fee-row:last-child {
+        border-bottom: none;
+    }
+
+.rc-fee-val {
+    color: #0f172a;
+    font-weight: 500;
+}
+
+.rc-fee-total {
+    font-size: 15px;
+    font-weight: 600;
+    color: #0f172a;
+    border-top: 1px solid #e2e8f0 !important;
+    margin-top: 4px;
+    padding-top: 12px !important;
+}
+
+    .rc-fee-total .rc-fee-val {
+        color: #185FA5;
+        font-size: 16px;
+    }
+
+/* ── Info Box ── */
+.rc-info-box {
+    display: flex;
+    gap: 12px;
+    padding: 12px 16px;
+    background: #eff6ff;
+    border-left: 3px solid #185FA5;
+    border-radius: 0 10px 10px 0;
+    margin-bottom: 20px;
+}
+
+.rc-info-icon {
+    font-size: 18px;
+    color: #185FA5;
+    flex-shrink: 0;
+}
+
+.rc-info-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #185FA5;
+    margin-bottom: 2px;
+}
+
+.rc-info-sub {
+    font-size: 12px;
+    color: #3b82f6;
+}
+
+/* ── Footer ── */
+.rc-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.rc-btn-back {
+    height: 44px;
+    padding: 0 22px;
+    background: #fff;
+    color: #374151;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    transition: background .12s;
+}
+
+    .rc-btn-back:hover {
+        background: #f8fafc;
+    }
+
+.rc-btn-confirm {
+    height: 44px;
+    padding: 0 28px;
+    background: #185FA5;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background .15s;
+}
+
+    .rc-btn-confirm:hover {
+        background: #0c447c;
+    }
+
+/* ── Payment Modal ── */
+.rc-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rc-modal {
+    background: #fff;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 420px;
+    padding: 0;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,.2);
+}
+
+.rc-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.rc-modal-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.rc-modal-close {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: #f1f5f9;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 13px;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rc-modal-body {
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.rc-payment-option {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all .15s;
+}
+
+    .rc-payment-option:hover {
+        border-color: #185FA5;
+        background: #eff6ff;
+    }
+
+.rc-pay-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+}
+
+.rc-pay-info {
+    flex: 1;
+}
+
+.rc-pay-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.rc-pay-sub {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+.rc-pay-arrow {
+    font-size: 18px;
+    color: #185FA5;
+}
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+    .rc-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .rc-patient-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .rc-patient-item:nth-child(even) {
+        padding-left: 0;
+        border-left: none;
+    }
+
+    .rc-footer {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .rc-btn-back,
+    .rc-btn-confirm {
+        width: 100%;
+        justify-content: center;
+    }
+}
