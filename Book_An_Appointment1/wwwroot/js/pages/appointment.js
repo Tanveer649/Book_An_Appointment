@@ -134,6 +134,7 @@ $(document).ready(function () {
     }
 
     // ── Facility Change → Load Specialities ──────────────
+    // ── Facility Change → Load Specialities ──────────────
     $('#facilityDropdown').on('change', function () {
         var facilityId = parseInt($(this).val());
 
@@ -161,6 +162,7 @@ $(document).ready(function () {
             }
         });
     });
+
 
     // ── Speciality Change → Load Doctors ─────────────────
     $('#specialityDropdown').on('change', function () {

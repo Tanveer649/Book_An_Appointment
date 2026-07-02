@@ -40,6 +40,7 @@ namespace Book_An_Appointment1.Pages.ReviewAndConfimation
 
             if (sessionData.PatientType == "registered")
             {
+
                 Summary.FirstName = sessionData.RegisteredPatient.FirstName;
                 Summary.LastName = sessionData.RegisteredPatient.LastName;
                 Summary.Mobile = sessionData.RegisteredPatient.Mobile;
