@@ -70,7 +70,11 @@ $(document).ready(function () {
         hideTooltip();
     });
 
-
+    // ── Hospital carousel (left rail, until a doctor is chosen) ──
+    buildCarousel();
+    if ($('#hospitalCarousel').css('display') !== 'none') {
+        startCarousel();
+    }
 
     // ── Back button case: Razor ne already card render kiya hai ──
     // Fresh select case mein #slotCalendar tab nahi hota DOM mein
@@ -96,6 +100,7 @@ $(document).ready(function () {
             });
         }
     }
+
     function showTooltip($wrap, message) {
         $('.dropdown-tooltip').remove();
         var tip = $('<div class="dropdown-tooltip">' + message + '</div>');
@@ -133,14 +138,79 @@ $(document).ready(function () {
         $(wrapSelector).removeClass('is-locked');
     }
 
-    // ── Facility Change → Load Specialities ──────────────
+    // ── Hospital carousel helpers ─────────────────────────
+    function buildCarousel() {
+        var images = (window.AppointmentConfig && window.AppointmentConfig.hospitalImages) || [];
+        if (!images.length) {
+            $('#hospitalCarousel').hide();
+            return;
+        }
+
+        var $track = $('#carouselTrack').empty();
+        var $dots = $('#carouselDots').empty();
+
+        images.forEach(function (img, i) {
+            $track.append(
+                $('<div class="carousel-slide"></div>').append(
+                    $('<img>').attr('src', img.src).attr('alt', img.caption || '')
+                )
+            );
+            var $dot = $('<button type="button" class="carousel-dot"></button>')
+                .toggleClass('active', i === 0)
+                .attr('aria-label', 'Slide ' + (i + 1))
+                .on('click', function () { goToSlide(i); startCarousel(); });
+            $dots.append($dot);
+        });
+
+        window._carouselIndex = 0;
+    }
+
+    function goToSlide(index) {
+        var images = (window.AppointmentConfig && window.AppointmentConfig.hospitalImages) || [];
+        if (!images.length) return;
+        window._carouselIndex = (index + images.length) % images.length;
+        $('#carouselTrack').css('transform', 'translateX(-' + (window._carouselIndex * 100) + '%)');
+        $('.carousel-dot').removeClass('active').eq(window._carouselIndex).addClass('active');
+    }
+
+    function startCarousel() {
+        stopCarousel();
+        var images = (window.AppointmentConfig && window.AppointmentConfig.hospitalImages) || [];
+        if (images.length < 2) return;
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+        window._carouselInterval = setInterval(function () {
+            goToSlide((window._carouselIndex || 0) + 1);
+        }, 3000);
+    }
+
+    function stopCarousel() {
+        if (window._carouselInterval) {
+            clearInterval(window._carouselInterval);
+            window._carouselInterval = null;
+        }
+    }
+
+    function showCarousel() {
+        $('#doctorIdentityCard').hide().html('').removeAttr('data-speciality');
+        $('#hospitalCarousel').show();
+        startCarousel();
+    }
+
+    function showDoctorIdentity() {
+        stopCarousel();
+        $('#hospitalCarousel').hide();
+        $('#doctorIdentityCard').show();
+    }
+
     // ── Facility Change → Load Specialities ──────────────
     $('#facilityDropdown').on('change', function () {
         var facilityId = parseInt($(this).val());
 
         resetDropdown('#specialityDropdown', 'Search Speciality');
         resetDropdown('#doctorDropdown', 'Search Doctor');
-        $('#doctorDetailsCard').hide().html('').removeAttr('data-speciality');
+        $('#bookingPanel').hide().html('');
+        showCarousel();
         $('#emptyState').show();
         AppointmentValidation.clearErrors();
 
@@ -171,7 +241,8 @@ $(document).ready(function () {
         var specialityId = parseInt($(this).val());
 
         resetDropdown('#doctorDropdown', 'Search Doctor');
-        $('#doctorDetailsCard').hide().html('').removeAttr('data-speciality');
+        $('#bookingPanel').hide().html('');
+        showCarousel();
         $('#emptyState').show();
         AppointmentValidation.clearErrors();
 
@@ -204,13 +275,18 @@ $(document).ready(function () {
         var specialityId = parseInt($('#specialityDropdown').val());
         var doctorId = parseInt($(this).val());
 
-        $('#doctorDetailsCard').hide().html('').removeAttr('data-speciality');
+        $('#doctorIdentityCard').html('').removeAttr('data-speciality');
         AppointmentValidation.clearErrors();
 
-        if (!facilityId || !specialityId || !doctorId) return;
+        if (!facilityId || !specialityId || !doctorId) {
+            $('#bookingPanel').hide().html('');
+            showCarousel();
+            $('#emptyState').show();
+            return;
+        }
 
         $('#emptyState').hide();
-        $('#doctorDetailsCard')
+        $('#bookingPanel')
             .show()
             .html('<div class="text-muted p-3">Loading doctor details...</div>');
 
@@ -226,14 +302,14 @@ $(document).ready(function () {
             }),
             success: function (res) {
                 if (!res.success) {
-                    $('#doctorDetailsCard').html(
+                    $('#bookingPanel').html(
                         '<div class="text-danger p-3">Failed to load doctor details.</div>');
                     return;
                 }
                 renderDoctorCard(res.data, facilityId, doctorId);
             },
             error: function () {
-                $('#doctorDetailsCard').html(
+                $('#bookingPanel').html(
                     '<div class="text-danger p-3">Something went wrong.</div>');
             }
         });
@@ -271,67 +347,63 @@ $(document).ready(function () {
         if (!url) return '/Image/default-doctor.png';
         return url.replace('http://', 'https://');
     }
-    // ── Render Doctor Card ────────────────────────────────
-    function renderDoctorCard(doc, facilityId, doctorId) {
-        // sets the "chart tab" spine label — see appointment.css
-        $('#doctorDetailsCard').attr('data-speciality', doc.specialisation || '');
 
-        var html = `
-        <div class="doctor-card-body">
-            <div class="doctor-profile">
-                <div class="doctor-avatar-wrap">
-                    <img class="doctor-avatar"
-                         src="${toHttps(doc.imageUrl)}"
-                         onerror="this.onerror=null; this.src='/Image/default-doctor.png';" />
-                </div>
-                <div class="doctor-rating">
-                    <span class="rating-badge">
-                        ⭐ ${doc.rating || 'N/A'}
-                    </span>
-                    <span class="review-count">
-                        (${doc.review || '0'} reviews)
-                    </span>
-                </div>
-                ${doc.isTeleconsult
+    // ── Render Doctor Card (identity → left rail, booking → right panel) ──
+    function renderDoctorCard(doc, facilityId, doctorId) {
+        var identityHtml = `
+        <div class="doctor-profile">
+            <div class="doctor-avatar-wrap">
+                <img class="doctor-avatar"
+                     src="${toHttps(doc.imageUrl)}"
+                     onerror="this.onerror=null; this.src='/Image/default-doctor.png';" />
+            </div>
+            <div class="doctor-rating">
+                <span class="rating-badge">
+                    ⭐ ${doc.rating || 'N/A'}
+                </span>
+                <span class="review-count">
+                    (${doc.review || '0'} reviews)
+                </span>
+            </div>
+            ${doc.isTeleconsult
                 ? `<span class="teleconsult-badge">Teleconsultation available</span>`
                 : ''}
-            </div>
-            <div class="doctor-info">
-                <h3 class="doctor-name">${doc.name}</h3>
-                <p class="doctor-specialisation">${doc.specialisation}</p>
-                <div class="doctor-vitals">
-                    <div class="vital">
-                        <span class="vital-label">Experience</span>
-                        <span class="vital-value">${doc.experience}</span>
-                    </div>
-                    <div class="vital">
-                        <span class="vital-label">Consultation fee</span>
-                        <span class="vital-value vital-accent">₹ ${doc.fee}</span>
-                    </div>
-                    <div class="vital">
-                        <span class="vital-label">Next available</span>
-                        <span class="vital-value">${doc.timing}</span>
-                    </div>
-                    ${doc.treatment
-                ? `<div class="vital vital-wide">
-                               <span class="vital-label">Treatments</span>
-                               <span class="vital-value">${doc.treatment}</span>
-                           </div>`
-                : ''}
-                    ${doc.hospitalName
-                ? `<div class="vital vital-wide">
-                               <span class="vital-label">Hospital</span>
-                               <span class="vital-value">${doc.hospitalName}, ${doc.hospitalCity}</span>
-                           </div>`
-                : ''}
-                </div>
-            </div>
+            <h3 class="doctor-name">${doc.name}</h3>
         </div>
+        <div class="doctor-vitals">
+            <div class="vital">
+                <span class="vital-label">Speciality</span>
+                <span class="vital-value">${doc.specialisation}</span>
+            </div>
+            <div class="vital">
+                <span class="vital-label">Experience</span>
+                <span class="vital-value">${doc.experience}</span>
+            </div>
+            <div class="vital">
+                <span class="vital-label">Consultation fee</span>
+                <span class="vital-value vital-accent">₹ ${doc.fee}</span>
+            </div>
+            <div class="vital vital-wide">
+                <span class="vital-label">Next available</span>
+                <span class="vital-value">${doc.timing}</span>
+            </div>
+            ${doc.treatment
+                ? `<div class="vital vital-wide">
+                       <span class="vital-label">Treatments</span>
+                       <span class="vital-value">${doc.treatment}</span>
+                   </div>`
+                : ''}
+            ${doc.hospitalName
+                ? `<div class="vital vital-wide">
+                       <span class="vital-label">Hospital</span>
+                       <span class="vital-value">${doc.hospitalName}, ${doc.hospitalCity}</span>
+                   </div>`
+                : ''}
+        </div>`;
 
-        <div class="booking-divider"></div>
-
-        <div class="row g-4">
-            <div class="col-md-4">
+        var bookingHtml = `
+        <div class="booking-grid">
+            <div class="calendar-panel">
                 <h5 class="panel-title">Select date</h5>
                 <input type="text" id="slotCalendar"
                        class="form-control"
@@ -339,12 +411,12 @@ $(document).ready(function () {
                        readonly 
                        style="display:none;" />
             </div>
-            <div class="col-md-8">
+            <div class="slots-panel">
                 <h5 class="panel-title">
                     Available slots
                     <span id="slotDateLabel"></span>
                 </h5>
-                <div id="slotsContainer" class="slots-container d-flex flex-wrap gap-2">
+                <div id="slotsContainer" class="slots-container">
                     ${renderSlots(doc.slots)}
                 </div>
             </div>
@@ -360,11 +432,13 @@ $(document).ready(function () {
             </button>
         </div>`;
 
-        $('#doctorDetailsCard').html(html);
+        $('#doctorIdentityCard').html(identityHtml);
+        $('#bookingPanel').html(bookingHtml);
+        showDoctorIdentity();
         initCalendar(doc.hospitalLocationId, facilityId, doctorId);
     }
 
-    // ── Render Slots ──────────────────────────────────────
+    // ── Render Slots (grouped Morning / Afternoon / Evening) ──
     function renderSlots(slots) {
         if (!slots || slots.length === 0)
             return '<div class="text-muted">No slots available for today.</div>';
@@ -483,7 +557,6 @@ $(document).ready(function () {
         }
     }
 });
-
 
 
 

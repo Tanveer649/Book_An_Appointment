@@ -1,10 +1,15 @@
-﻿/* ============================================================
+﻿
+/* ============================================================
    Book Appointment — visual identity
    Concept: "patient chart" — a calm clinical paper background,
    a serif display face for the doctor's identity, a monospace
    face for anything measured (time, fee, experience), and a
    single coral accent reserved for the things the patient must
    act on (selected date, selected slot, Continue).
+
+   Layout: a fixed left rail (hospital photos → doctor identity
+   once chosen) beside a right column that carries the booking
+   steps (pick → date → slot → continue).
    ============================================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,450;9..144,560;9..144,650&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
@@ -55,7 +60,6 @@ body {
     .container.mt-5 {
         margin-top: 2rem !important;
         padding-bottom: 5rem;
-        position: relative;
     }
 
 *:focus-visible {
@@ -160,6 +164,114 @@ body {
     .step-connector.done {
         background: var(--success);
     }
+
+/* ── Two-column booking layout ─────────────────────────── */
+.appointment-layout {
+    display: grid;
+    grid-template-columns: 460px 1fr;
+    gap: 32px;
+    align-items: start;
+}
+
+.side-panel {
+    position: sticky;
+    top: 24px;
+}
+
+.main-panel {
+    min-width: 0;
+}
+
+/* ── Hospital photo carousel ───────────────────────────── */
+.carousel {
+    position: relative;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    aspect-ratio: 4 / 5;
+    box-shadow: var(--shadow-card);
+    background: var(--surface-alt);
+}
+
+.carousel-track {
+    display: flex;
+    height: 100%;
+    transition: transform .6s cubic-bezier(.65, 0, .35, 1);
+}
+
+.carousel-slide {
+    flex: 0 0 100%;
+    height: 100%;
+}
+
+    .carousel-slide img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+.carousel::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 45%;
+    background: linear-gradient(180deg, rgba(10, 25, 40, 0) 0%, rgba(10, 25, 40, .55) 100%);
+    pointer-events: none;
+}
+
+.carousel-caption {
+    position: absolute;
+    left: 20px;
+    right: 20px;
+    bottom: 40px;
+    color: #fff;
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 560;
+    z-index: 2;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, .25);
+}
+
+.carousel-dots {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 16px;
+    display: flex;
+    justify-content: center;
+    gap: 7px;
+    z-index: 2;
+}
+
+.carousel-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .5);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: width .2s ease, background .2s ease;
+}
+
+    .carousel-dot.active {
+        width: 20px;
+        border-radius: 4px;
+        background: #fff;
+    }
+
+/* ── Vertical dropdown stack (right column) ────────────── */
+.dropdown-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.dropdown-group {
+    width: 100%;
+}
 
 /* ── Field labels ──────────────────────────────────────── */
 .form-label.fw-bold {
@@ -287,100 +399,47 @@ body {
     }
 }
 
-/* ── Empty state (shown before a doctor is chosen) ─────── */
-.empty-state {
-    margin-top: 3rem;
+/* ── Inline empty hint (right column, before a doctor is chosen) ── */
+.empty-hint {
+    margin-top: 22px;
     border: 1.5px dashed var(--line);
-    border-radius: var(--radius-lg);
-    background: linear-gradient(180deg, var(--surface) 0%, var(--surface-alt) 100%);
-    padding: 4rem 2rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 14px;
-}
-
-.empty-state-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: var(--primary-tint);
+    border-radius: var(--radius-md);
+    padding: 16px 18px;
     display: flex;
     align-items: center;
-    justify-content: center;
-    color: var(--primary);
-    margin-bottom: 4px;
-}
-
-.empty-state-title {
-    font-family: var(--font-display);
-    font-size: 20px;
-    font-weight: 560;
-    color: var(--ink);
-    margin: 0;
-}
-
-.empty-state-text {
-    font-size: 14px;
+    gap: 12px;
     color: var(--ink-soft);
-    max-width: 360px;
-    margin: 0;
+    font-size: 13.5px;
 }
 
-/* ── Doctor card (signature element) ──────────────────── */
-#doctorDetailsCard.doctor-card {
+    .empty-hint svg {
+        flex-shrink: 0;
+        color: var(--primary);
+    }
+
+/* ── Doctor identity card (left rail, signature element) ─ */
+#doctorIdentityCard.doctor-card {
     background: var(--surface);
     border: 1px solid rgba(18, 40, 61, .05);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-card);
-    padding: 2.5rem 2.75rem 2.75rem 3rem;
+    padding: 2rem 1.75rem;
     position: relative;
     overflow: hidden;
 }
 
-    /* the "chart tab" spine — carries the speciality name, like a
-   folder tab on a patient chart */
-    #doctorDetailsCard.doctor-card::before {
-        content: attr(data-speciality);
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 38px;
-        background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%);
-        color: rgba(255, 255, 255, .92);
-        font-family: var(--font-mono);
-        font-size: 12px;
-        font-weight: 600;
-        letter-spacing: .04em;
-        text-transform: uppercase;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        writing-mode: vertical-rl;
-        transform: rotate(180deg);
-        padding: 20px 0;
-    }
-
-.doctor-card-body {
-    display: flex;
-    gap: 2.25rem;
-    flex-wrap: wrap;
-}
-
 .doctor-profile {
-    flex: 0 0 180px;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
     gap: 10px;
+    margin-bottom: 20px;
 }
 
 .doctor-avatar-wrap {
-    width: 148px;
-    height: 148px;
+    width: 132px;
+    height: 132px;
     border-radius: 50%;
     padding: 4px;
     background: linear-gradient(160deg, var(--primary-tint), var(--surface-alt));
@@ -431,31 +490,29 @@ body {
     border-radius: var(--radius-pill);
 }
 
-.doctor-info {
-    flex: 1 1 320px;
-    min-width: 260px;
-}
-
 .doctor-name {
     font-family: var(--font-display);
-    font-size: 28px;
+    font-size: 23px;
     font-weight: 560;
     color: var(--ink);
     margin: 0 0 2px;
+    text-align: center;
 }
 
 .doctor-specialisation {
     color: var(--ink-soft);
-    font-size: 14.5px;
-    margin: 0 0 18px;
+    font-size: 13.5px;
+    margin: 0 0 0;
+    text-align: center;
 }
 
 .doctor-vitals {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 16px 20px;
+    gap: 16px 16px;
     border-top: 1px dashed var(--line);
-    padding-top: 16px;
+    padding-top: 18px;
+    margin-top: 18px;
 }
 
 .vital {
@@ -469,17 +526,18 @@ body {
 }
 
 .vital-label {
-    font-size: 11px;
+    font-family: var(--font-body);
+    font-size: 13px;
     font-weight: 600;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-    color: var(--ink-faint);
+    letter-spacing: .01em;
+    color: var(--ink);
 }
 
 .vital-value {
     font-family: var(--font-mono);
-    font-size: 14.5px;
+    font-size: 13.5px;
     color: var(--ink);
+    line-height: 1.4;
 }
 
 .vital-accent {
@@ -487,22 +545,16 @@ body {
     font-weight: 600;
 }
 
-/* ── Divider ───────────────────────────────────────────── */
-.booking-divider {
-    height: 1px;
-    background: var(--line);
-    margin: 2rem 0;
+/* ── Booking panel (right column, appears once a doctor is chosen) ── */
+#bookingPanel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+    padding: 1.75rem 2rem;
+    margin-top: 22px;
 }
 
-hr.my-4 {
-    border: none;
-    height: 1px;
-    background: var(--line);
-    margin: 2rem 0;
-    opacity: 1;
-}
-
-/* ── Booking grid: calendar + slots ───────────────────── */
 .panel-title,
 h5.mb-3 {
     font-family: var(--font-display);
@@ -510,6 +562,22 @@ h5.mb-3 {
     font-weight: 560;
     color: var(--ink);
     margin-bottom: 14px;
+}
+
+.booking-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 28px;
+}
+
+.calendar-panel {
+    flex: 1 1 280px;
+    max-width: 300px;
+}
+
+.slots-panel {
+    flex: 1 1 320px;
+    min-width: 280px;
 }
 
 .slot-date-label,
@@ -524,25 +592,56 @@ h5.mb-3 {
     display: none;
 }
 
-/* flatpickr theme */
+/* flatpickr theme — cosmetic overrides only; leave sizing to flatpickr
+   itself, or the day-grid math goes out of sync and the header wraps. */
 .flatpickr-calendar {
     box-shadow: none !important;
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
     font-family: var(--font-body);
-    width: 100% !important;
-    max-width: 320px;
 }
 
 .flatpickr-months {
-    padding: 10px 6px 4px;
+    padding: 8px 6px 2px;
 }
 
 .flatpickr-current-month {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
     font-family: var(--font-display);
     font-size: 15px;
     color: var(--ink);
+    padding: 0;
 }
+
+    .flatpickr-current-month .flatpickr-monthDropdown-months {
+        font-family: var(--font-display);
+        font-weight: 560;
+        font-size: 15px;
+        color: var(--ink);
+        background: transparent;
+        border: none;
+        padding: 2px 2px 2px 0;
+    }
+
+    .flatpickr-current-month .numInputWrapper {
+        width: 4.2em;
+    }
+
+    .flatpickr-current-month input.cur-year {
+        font-family: var(--font-mono);
+        font-size: 15px;
+        font-weight: 500;
+        color: var(--ink);
+        background: transparent;
+    }
+
+    .flatpickr-current-month .numInputWrapper span.arrowUp,
+    .flatpickr-current-month .numInputWrapper span.arrowDown {
+        display: none;
+    }
 
 .flatpickr-weekday {
     font-family: var(--font-mono);
@@ -689,9 +788,23 @@ h5.mb-3 {
 }
 
 /* ── Continue button ───────────────────────────────────── */
+.booking-divider {
+    height: 1px;
+    background: var(--line);
+    margin: 1.75rem 0;
+}
+
+hr.my-4 {
+    border: none;
+    height: 1px;
+    background: var(--line);
+    margin: 1.75rem 0;
+    opacity: 1;
+}
+
 .booking-actions {
     text-align: right;
-    margin-top: 2.5rem;
+    margin-top: 2rem;
 }
 
 #continueBtn,
@@ -720,34 +833,26 @@ h5.mb-3 {
     }
 
 /* ── Responsive ────────────────────────────────────────── */
+@media (max-width: 991px) {
+    .appointment-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .side-panel {
+        position: static;
+        max-width: 480px;
+        margin: 0 auto;
+        width: 100%;
+    }
+}
+
 @media (max-width: 767px) {
-    #doctorDetailsCard.doctor-card {
-        padding: 1.75rem 1.5rem 1.75rem 2.5rem;
+    #doctorIdentityCard.doctor-card {
+        padding: 1.75rem 1.25rem;
     }
 
-        #doctorDetailsCard.doctor-card::before {
-            width: 26px;
-            font-size: 9.5px;
-            letter-spacing: 0;
-        }
-
-    .empty-state {
-        padding: 3rem 1.5rem;
-    }
-
-    .doctor-card-body {
-        flex-direction: column;
-        align-items: center;
-        gap: 1.25rem;
-    }
-
-    .doctor-info {
-        text-align: center;
-    }
-
-    .doctor-vitals {
-        grid-template-columns: repeat(2, 1fr);
-        text-align: left;
+    #bookingPanel {
+        padding: 1.5rem 1.25rem;
     }
 
     .progress-bar {
@@ -772,7 +877,6 @@ h5.mb-3 {
         width: 100%;
     }
 }
-
 
 
 
