@@ -27,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Remove="wwwroot\Image\Logo\logo.png" />
+    <Content Remove="wwwroot\Images\Logo\logo.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,8 +35,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="wwwroot\Image\default-doctor.png" />
-    <None Include="wwwroot\Image\Logo\logo.png" />
+    <None Include="wwwroot\Images\default-doctor.png" />
+    <None Include="wwwroot\Images\Logo\logo.png" />
   </ItemGroup>
 
 </Project>

@@ -83,6 +83,17 @@ body {
     font-family: var(--font-body);
 }
 
+/* ── Client-side validation error box ─────────────────── */
+#clientValidationError:not(:empty) {
+    background: var(--danger-tint);
+    border: 1px solid #F1C4BA;
+    color: var(--danger);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    margin-bottom: 1rem;
+    font-size: 14px;
+}
+
 /* ── Progress bar ──────────────────────────────────────── */
 .progress-bar {
     display: flex;
@@ -168,18 +179,24 @@ body {
 /* ── Two-column booking layout ─────────────────────────── */
 .appointment-layout {
     display: grid;
-    grid-template-columns: 460px 1fr;
+    grid-template-columns: 75% 25%;
     gap: 32px;
     align-items: start;
 }
 
 .side-panel {
-    position: sticky;
-    top: 24px;
+    position: static;
 }
 
 .main-panel {
     min-width: 0;
+    /* Right column now reads as its own card, so it never
+       looks thin/cramped next to the wide left panel. */
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+    padding: 1.75rem 1.5rem;
 }
 
 /* ── Hospital photo carousel ───────────────────────────── */
@@ -188,6 +205,7 @@ body {
     border-radius: var(--radius-lg);
     overflow: hidden;
     aspect-ratio: 4 / 5;
+    max-height: 460px; /* stop the empty state from growing huge on wide columns */
     box-shadow: var(--shadow-card);
     background: var(--surface-alt);
 }
@@ -266,7 +284,7 @@ body {
 .dropdown-stack {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 22px;
 }
 
 .dropdown-group {
@@ -287,9 +305,11 @@ body {
     color: var(--accent) !important;
 }
 
-/* ── Select2 dropdowns ─────────────────────────────────── */
+/* ── Select2 dropdowns ─────────────────────────────────── *
+   Font sizes intentionally kept modest (13.5–14px) so the
+   dropdown text reads as refined, not oversized/native-looking. */
 .select2-container--default .select2-selection--single {
-    height: 50px;
+    height: 48px;
     border: 1.5px solid var(--line);
     border-radius: var(--radius-sm);
     background: var(--surface);
@@ -302,10 +322,10 @@ body {
 
     .select2-container--default .select2-selection--single .select2-selection__rendered {
         font-family: var(--font-body);
-        font-size: 14.5px;
+        font-size: 14px;
         font-weight: 500;
         color: var(--ink);
-        line-height: 50px;
+        line-height: 48px;
         padding-left: 14px;
     }
 
@@ -314,7 +334,7 @@ body {
     }
 
     .select2-container--default .select2-selection--single .select2-selection__arrow {
-        height: 48px;
+        height: 46px;
         right: 10px;
     }
 
@@ -332,16 +352,33 @@ body {
     overflow: hidden;
 }
 
+.select2-container--default .select2-results > .select2-results__options {
+    max-height: 260px;
+}
+
+.select2-results__option {
+    font-size: 13.5px !important;
+    font-weight: 500;
+    padding: 9px 14px !important;
+    color: var(--ink);
+}
+
 .select2-container--default .select2-results__option--highlighted[aria-selected] {
     background: var(--primary);
     color: #fff;
 }
 
-.select2-search--dropdown .select2-search__field {
-    border: 1.5px solid var(--line);
-    border-radius: var(--radius-sm);
-    padding: 6px 10px;
+.select2-search--dropdown {
+    padding: 8px;
 }
+
+    .select2-search--dropdown .select2-search__field {
+        border: 1.5px solid var(--line);
+        border-radius: var(--radius-sm);
+        padding: 8px 10px;
+        font-family: var(--font-body);
+        font-size: 13.5px;
+    }
 
 .select2-container--default.select2-container--disabled .select2-selection--single {
     background: var(--surface-alt);
@@ -417,31 +454,44 @@ body {
         color: var(--primary);
     }
 
-/* ── Doctor identity card (left rail, signature element) ─ */
+/* ── Doctor identity card (left rail, signature element) ─ *
+   Height trimmed down (smaller avatar, tighter padding/gaps)
+   so the slots panel is visible sooner without scrolling.   */
 #doctorIdentityCard.doctor-card {
     background: var(--surface);
     border: 1px solid rgba(18, 40, 61, .05);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-card);
-    padding: 2rem 1.75rem;
+    padding: 1.5rem 1.5rem;
     position: relative;
     overflow: hidden;
 }
 
 .doctor-profile {
     display: flex;
+    flex-direction: row;
+    align-items: center;
+    text-align: left;
+    gap: 18px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+
+/* Avatar + rating stacked together as one column */
+.avatar-col {
+    display: flex;
     flex-direction: column;
     align-items: center;
-    text-align: center;
-    gap: 10px;
-    margin-bottom: 20px;
+    gap: 8px;
+    flex-shrink: 0;
 }
 
 .doctor-avatar-wrap {
-    width: 132px;
-    height: 132px;
+    width: 72px;
+    height: 72px;
+    flex-shrink: 0;
     border-radius: 50%;
-    padding: 4px;
+    overflow: hidden;
     background: linear-gradient(160deg, var(--primary-tint), var(--surface-alt));
     border: 1px solid var(--line);
 }
@@ -450,14 +500,21 @@ body {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 50%;
     display: block;
+}
+
+.doctor-info-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 6px;
 }
 
 .doctor-rating {
     display: flex;
-    align-items: baseline;
-    gap: 6px;
+    align-items: center;
+    gap: 5px;
     flex-wrap: wrap;
     justify-content: center;
 }
@@ -468,51 +525,59 @@ body {
     gap: 4px;
     background: var(--gold-tint);
     color: var(--gold);
-    font-family: var(--font-mono);
-    font-size: 12.5px;
+    font-family: var(--font-body);
+    font-size: 12px;
     font-weight: 600;
-    padding: 4px 10px;
+    padding: 3px 9px;
     border-radius: var(--radius-pill);
+    white-space: nowrap;
 }
 
 .review-count {
     color: var(--ink-faint);
-    font-size: 12px;
+    font-family: var(--font-body);
+    font-size: 11px;
+    white-space: nowrap;
 }
 
 .teleconsult-badge {
     display: inline-block;
     background: var(--success-tint);
     color: var(--success);
+    font-family: var(--font-body);
     font-size: 12px;
     font-weight: 600;
-    padding: 5px 12px;
+    padding: 4px 11px;
     border-radius: var(--radius-pill);
 }
 
 .doctor-name {
     font-family: var(--font-display);
-    font-size: 23px;
+    font-size: 21px;
     font-weight: 560;
     color: var(--ink);
-    margin: 0 0 2px;
-    text-align: center;
+    text-align: left;
+    margin: 0;
 }
 
 .doctor-specialisation {
     color: var(--ink-soft);
-    font-size: 13.5px;
-    margin: 0 0 0;
-    text-align: center;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    margin: 0;
+    text-align: left;
 }
 
+/* Vitals — same font family/size language as the select2
+   dropdown text, so the whole page feels typographically one thing. */
 .doctor-vitals {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 16px 16px;
+    gap: 12px 14px;
     border-top: 1px dashed var(--line);
-    padding-top: 18px;
-    margin-top: 18px;
+    padding-top: 14px;
+    margin-top: 4px;
 }
 
 .vital {
@@ -525,34 +590,50 @@ body {
     grid-column: 1 / -1;
 }
 
+/* Consultation fee gets its own highlighted chip so the eye
+   lands on it immediately. */
+.vital-highlight {
+    background: var(--accent-tint);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+}
+
 .vital-label {
     font-family: var(--font-body);
-    font-size: 13px;
+    font-size: 12.5px;
     font-weight: 600;
     letter-spacing: .01em;
     color: var(--ink);
 }
 
 .vital-value {
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: 13.5px;
+    font-weight: 500;
     color: var(--ink);
     line-height: 1.4;
 }
 
 .vital-accent {
     color: var(--accent-dark);
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 15px;
 }
 
-/* ── Booking panel (right column, appears once a doctor is chosen) ── */
+/* ── Booking panel (calendar + slots + continue) ───────── *
+   Fixed-height card so the panel never overlaps the page
+   footer; only the slots list scrolls internally.          */
 #bookingPanel {
+    display: flex;
+    flex-direction: column;
+    height: 600px;
+    overflow: hidden;
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-soft);
     padding: 1.75rem 2rem;
-    margin-top: 22px;
+    margin-top: 18px;
 }
 
 .panel-title,
@@ -564,25 +645,33 @@ h5.mb-3 {
     margin-bottom: 14px;
 }
 
+/* Calendar (left) + slots (right), side by side, sharing
+   the remaining height inside #bookingPanel.                */
 .booking-grid {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 28px;
+    flex: 1 1 auto;
+    min-height: 0;
 }
 
 .calendar-panel {
-    flex: 1 1 280px;
-    max-width: 300px;
+    flex: 0 0 320px;
+    max-width: 320px;
+    overflow: hidden;
 }
 
 .slots-panel {
-    flex: 1 1 320px;
-    min-width: 280px;
+    flex: 1 1 0%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 
 .slot-date-label,
 #slotDateLabel {
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: 12.5px;
     font-weight: 500;
     color: var(--ink-faint);
@@ -679,14 +768,29 @@ h5.mb-3 {
         opacity: .4;
     }
 
-/* Slots */
+/* Slots — same font language as the dropdown text (font-body),
+   only this list scrolls, never the whole page. */
 .slots-container,
 #slotsContainer {
-    min-height: 60px;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 8px;
     display: flex;
     flex-direction: column;
-    gap: 22px;
+    gap: 20px;
 }
+
+    .slots-container::-webkit-scrollbar,
+    #slotsContainer::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .slots-container::-webkit-scrollbar-thumb,
+    #slotsContainer::-webkit-scrollbar-thumb {
+        background: var(--line);
+        border-radius: var(--radius-pill);
+    }
 
 .slot-group {
     display: flex;
@@ -698,6 +802,7 @@ h5.mb-3 {
     display: flex;
     align-items: center;
     gap: 8px;
+    font-family: var(--font-body);
     font-size: 11.5px;
     font-weight: 700;
     letter-spacing: .08em;
@@ -713,8 +818,8 @@ h5.mb-3 {
     }
 
 .slot-group-count {
-    font-family: var(--font-mono);
-    font-weight: 500;
+    font-family: var(--font-body);
+    font-weight: 600;
     letter-spacing: 0;
     text-transform: none;
     color: var(--ink-faint);
@@ -770,15 +875,16 @@ h5.mb-3 {
         }
 
 .slot-time {
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: 13.5px;
     font-weight: 600;
     color: var(--ink);
 }
 
 .slot-date {
-    font-family: var(--font-mono);
+    font-family: var(--font-body);
     font-size: 10.5px;
+    font-weight: 500;
     color: var(--ink-faint);
 }
 
@@ -787,7 +893,10 @@ h5.mb-3 {
     font-size: 14px;
 }
 
-/* ── Continue button ───────────────────────────────────── */
+/* ── Continue button ───────────────────────────────────── *
+   Pinned to the bottom of #bookingPanel (flex-shrink: 0),
+   sits above a hairline so it never overlaps the slot grid
+   or the page footer.                                       */
 .booking-divider {
     height: 1px;
     background: var(--line);
@@ -803,8 +912,12 @@ hr.my-4 {
 }
 
 .booking-actions {
+    flex-shrink: 0;
+    margin-top: 1rem;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+    background: var(--surface);
     text-align: right;
-    margin-top: 2rem;
 }
 
 #continueBtn,
@@ -844,15 +957,61 @@ hr.my-4 {
         margin: 0 auto;
         width: 100%;
     }
+
+    .carousel {
+        max-height: 400px;
+    }
 }
 
 @media (max-width: 767px) {
     #doctorIdentityCard.doctor-card {
-        padding: 1.75rem 1.25rem;
+        padding: 1.25rem 1.25rem;
     }
 
+    .main-panel {
+        padding: 1.25rem 1.25rem;
+    }
+
+    .doctor-profile {
+        flex-direction: column;
+        text-align: center;
+        align-items: center;
+    }
+
+    .doctor-info-right {
+        align-items: center;
+        text-align: center;
+    }
+
+    .doctor-name,
+    .doctor-specialisation {
+        text-align: center;
+    }
+
+    /* Calendar stacks above slots; panel grows naturally with
+       the page instead of a fixed internal height, since mobile
+       users scroll the whole page anyway. Only the slot list
+       keeps its own capped, scrollable height. */
     #bookingPanel {
+        height: auto;
+        max-height: none;
+        overflow: visible;
         padding: 1.5rem 1.25rem;
+    }
+
+    .booking-grid {
+        flex-direction: column;
+    }
+
+    .calendar-panel {
+        flex: 0 0 auto;
+        max-width: 100%;
+    }
+
+    .slots-container,
+    #slotsContainer {
+        flex: none;
+        max-height: 420px;
     }
 
     .progress-bar {

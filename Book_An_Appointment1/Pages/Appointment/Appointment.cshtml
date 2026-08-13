@@ -19,7 +19,6 @@
 
     <div class="container mt-5">
 
-        @* Error Message *@
         @if (!string.IsNullOrEmpty(Model.ErrorMessage))
         {
             <div class="alert alert-danger mb-4">
@@ -27,7 +26,6 @@
             </div>
         }
 
-        @* Server Side Validation Errors *@
         @if (!ViewData.ModelState.IsValid)
         {
             <div class="alert alert-danger mb-4">
@@ -40,10 +38,8 @@
             </div>
         }
 
-        @* Client Validation *@
         <div id="clientValidationError"></div>
 
-        @* Tracker *@
         <div class="progress-bar">
             <div class="step-item">
                 <div class="step-circle active">1</div>
@@ -72,7 +68,6 @@
 
         <div class="appointment-layout">
 
-            @* ── LEFT: hospital photo carousel → doctor identity ── *@
             <div class="side-panel">
 
                 <div id="hospitalCarousel" class="carousel" style="@(hasDoctor ? "display:none" : "")">
@@ -99,21 +94,46 @@
                         var imageUrl = (doc.ImageUrl ?? "").Replace("http://", "https://");
 
                         <div class="doctor-profile">
+                            <div class="avatar-col">
+                                <div class="doctor-avatar-wrap">
+                                    <img class="doctor-avatar"
+                                         src="@imageUrl"
+                                         onerror="this.onerror=null; this.src='/Image/default-doctor.png';" />
+                                </div>
+                                <div class="doctor-rating">
+                                    <span class="rating-badge">⭐ @(doc.Rating ?? "N/A")</span>
+                                    <span class="review-count">(@(doc.Review ?? "0") reviews)</span>
+                                </div>
+                            </div>
+                            <div class="doctor-info-right">
+                                @if (doc.IsTeleconsult)
+                                {
+                                    <span class="teleconsult-badge">Teleconsultation available</span>
+                                }
+                                <h3 class="doctor-name">@doc.Name</h3>
+                            </div>
+                        </div>
+
+                        @* <div class="doctor-profile">
                             <div class="doctor-avatar-wrap">
                                 <img class="doctor-avatar"
                                      src="@imageUrl"
                                      onerror="this.onerror=null; this.src='/Image/default-doctor.png';" />
                             </div>
-                            <div class="doctor-rating">
-                                <span class="rating-badge">⭐ @(doc.Rating ?? "N/A")</span>
-                                <span class="review-count">(@(doc.Review ?? "0") reviews)</span>
+                            <div class="doctor-info-right">
+                                <div class="doctor-rating">
+                                    <span class="rating-badge">⭐ @(doc.Rating ?? "N/A")</span>
+                                    <span class="review-count">(@(doc.Review ?? "0") reviews)</span>
+                                </div>
+
+                           
+                                @if (doc.IsTeleconsult)
+                                {
+                                    <span class="teleconsult-badge">Teleconsultation available</span>
+                                }
+                                <h3 class="doctor-name">@doc.Name</h3>
                             </div>
-                            @if (doc.IsTeleconsult)
-                            {
-                                <span class="teleconsult-badge">Teleconsultation available</span>
-                            }
-                            <h3 class="doctor-name">@doc.Name</h3>
-                        </div>
+                        </div> *@
 
                         <div class="doctor-vitals">
                             <div class="vital">
@@ -124,7 +144,7 @@
                                 <span class="vital-label">Experience</span>
                                 <span class="vital-value">@doc.Experience</span>
                             </div>
-                            <div class="vital">
+                            <div class="vital vital-highlight">
                                 <span class="vital-label">Consultation fee</span>
                                 <span class="vital-value vital-accent">₹ @fee</span>
                             </div>
@@ -149,71 +169,7 @@
                         </div>
                     }
                 </div>
-            </div>
 
-            @* ── RIGHT: pick facility/speciality/doctor, then date + slots ── *@
-            <div class="main-panel">
-
-                <div class="dropdown-stack">
-
-                    <div class="dropdown-group">
-                        <label class="form-label fw-bold">Facility <span class="text-danger">*</span></label>
-                        <select name="FacilityId" id="facilityDropdown" class="form-select select2">
-                            <option value="">Select Facility</option>
-                            @foreach (var item in Model.Wizard.Facilities)
-                            {
-                                <option value="@item.FacilityId" selected="@(item.FacilityId == Model.FacilityId)">
-                                    @(item.FacilityName ?? "N/A")
-                                </option>
-                            }
-                        </select>
-                    </div>
-
-                    <div class="dropdown-group">
-                        <label class="form-label fw-bold">Speciality <span class="text-danger">*</span></label>
-                        <span class="dropdown-lock-wrap" id="specialityLockWrap" data-tooltip="Please select a facility first">
-                            <select name="SpecialityId" id="specialityDropdown" class="form-select select2" disabled>
-                                <option value="">Search Speciality</option>
-                                @foreach (var item in Model.Wizard.Specialities)
-                                {
-                                    <option value="@item.Id" selected="@(item.Id == (Model.SpecialityId ?? 0).ToString())">
-                                        @(item.SpecialisationName ?? "N/A")
-                                    </option>
-                                }
-                            </select>
-                        </span>
-                    </div>
-
-                    <div class="dropdown-group">
-                        <label class="form-label fw-bold">Doctor <span class="text-danger">*</span></label>
-                        <span class="dropdown-lock-wrap" id="doctorLockWrap" data-tooltip="Please select a facility first">
-                            <select name="DoctorId" id="doctorDropdown" class="form-select select2" disabled>
-                                <option value="">Search Doctor</option>
-                                @if (Model.Wizard.Doctors != null)
-                                {
-                                    foreach (var item in Model.Wizard.Doctors)
-                                    {
-                                        <option value="@item.Id" selected="@(item.Id == (Model.DoctorId ?? 0).ToString())">
-                                            @(item.Name ?? "N/A")
-                                        </option>
-                                    }
-                                }
-                            </select>
-                        </span>
-                    </div>
-
-                </div>
-
-                @* Hint shown until a doctor is chosen *@
-                <div id="emptyState" class="empty-hint" style="@(hasDoctor ? "display:none" : "")">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="5" width="18" height="16" rx="3"></rect>
-                        <path d="M8 3v4M16 3v4M3 10h18"></path>
-                    </svg>
-                    <span>Pick a facility, speciality and doctor to see their profile and live slots.</span>
-                </div>
-
-                @* Date + slots + continue — appears once a doctor is chosen *@
                 <div id="bookingPanel" style="@(hasDoctor ? "" : "display:none")">
                     @if (hasDoctor)
                     {
@@ -286,6 +242,69 @@
                 </div>
 
             </div>
+
+            <div class="main-panel">
+
+                <div class="dropdown-stack">
+
+                    <div class="dropdown-group">
+                        <label class="form-label fw-bold">Facility <span class="text-danger">*</span></label>
+                        <select name="FacilityId" id="facilityDropdown" class="form-select select2">
+                            <option value="">Select Facility</option>
+                            @foreach (var item in Model.Wizard.Facilities)
+                            {
+                                <option value="@item.FacilityId" selected="@(item.FacilityId == Model.FacilityId)">
+                                    @(item.FacilityName ?? "N/A")
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="dropdown-group">
+                        <label class="form-label fw-bold">Speciality <span class="text-danger">*</span></label>
+                        <span class="dropdown-lock-wrap" id="specialityLockWrap" data-tooltip="Please select a facility first">
+                            <select name="SpecialityId" id="specialityDropdown" class="form-select select2" disabled>
+                                <option value="">Search Speciality</option>
+                                @foreach (var item in Model.Wizard.Specialities)
+                                {
+                                    <option value="@item.Id" selected="@(item.Id == (Model.SpecialityId ?? 0).ToString())">
+                                        @(item.SpecialisationName ?? "N/A")
+                                    </option>
+                                }
+                            </select>
+                        </span>
+                    </div>
+
+                    <div class="dropdown-group">
+                        <label class="form-label fw-bold">Doctor <span class="text-danger">*</span></label>
+                        <span class="dropdown-lock-wrap" id="doctorLockWrap" data-tooltip="Please select a facility first">
+                            <select name="DoctorId" id="doctorDropdown" class="form-select select2" disabled>
+                                <option value="">Search Doctor</option>
+                                @if (Model.Wizard.Doctors != null)
+                                {
+                                    foreach (var item in Model.Wizard.Doctors)
+                                    {
+                                        <option value="@item.Id" selected="@(item.Id == (Model.DoctorId ?? 0).ToString())">
+                                            @(item.Name ?? "N/A")
+                                        </option>
+                                    }
+                                }
+                            </select>
+                        </span>
+                    </div>
+
+                </div>
+
+                @* Hint shown until a doctor is chosen *@
+                <div id="emptyState" class="empty-hint" style="@(hasDoctor ? "display:none" : "")">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="5" width="18" height="16" rx="3"></rect>
+                        <path d="M8 3v4M16 3v4M3 10h18"></path>
+                    </svg>
+                    <span>Pick a facility, speciality and doctor to see their profile and live slots.</span>
+                </div>
+
+            </div>
         </div>
 
     </div>
@@ -301,17 +320,16 @@
             savedSlotStart: '@(Model.SavedSlotStart ?? "")',
             hospitalLocationId: @(Model.Wizard.SelectedDoctor?.HospitalLocationId ?? 0),
             hospitalImages: [
-                { src: '/images/img1.jpg', caption: 'Akhil Systems Pvt. Ltd' },
-                { src: '/images/img2.jpg', caption: '' },
-                { src: '/images/img3.jpg', caption: '' },
-                { src: '/images/img4.jpg', caption: '' },
-                { src: '/images/img5.jpg', caption: '' }
+                { src: '/images/img1.png', caption: 'Akhil Systems Pvt. Ltd' },
+                { src: '/images/img2.png', caption: '' },
+                { src: '/images/img3.png', caption: '' },
+                { src: '/images/img4.png', caption: '' },
+                { src: '/images/img5.png', caption: '' }
             ]
         };
     </script>
     <script src="~/js/pages/appointment.js"></script>
 }
-
 
 
 
