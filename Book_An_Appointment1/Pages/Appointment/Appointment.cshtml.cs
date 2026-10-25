@@ -17,6 +17,9 @@ namespace Book_An_Appointment1.Pages.Appointment
         private readonly ISlotService _slotService;
         private readonly ILogger<AppointmentModel> _logger;
 
+        private static readonly HttpClient _imageClient = new() { Timeout = TimeSpan.FromSeconds(10) };
+        private const string ImageSessionKey = "AllowedDoctorImages";
+
         public AppointmentViewModel Wizard { get; set; } = new();
         public record GetDoctorsRequest(int FacilityId, int SpecialityId);
         public record GetDoctorDetailsRequest(int FacilityId, int SpecialityId, int DoctorId);
@@ -27,6 +30,7 @@ namespace Book_An_Appointment1.Pages.Appointment
         public string? SavedSlotDate { get; set; }
         public string? SavedSlotStart { get; set; }
         [BindProperty] public string? ErrorMessage { get; set; }
+
 
         public AppointmentModel(
             IFacilityService facilityService,
@@ -157,9 +161,7 @@ namespace Book_An_Appointment1.Pages.Appointment
                                ?? Wizard.ConsultationFeeList?.FirstOrDefault()?.NetAmount
                                ?? "0";
                 // Trailing zeros remove karo
-                var fee = decimal.TryParse(feeRaw, out var feeDecimal)
-                          ? ((int)feeDecimal).ToString()
-                          : feeRaw;
+                var fee = FormatFee(feeRaw);
 
                 var existing = SessionHelper.GetAppointmentData(HttpContext.Session)
                                ?? new AppointmentSessionData();
@@ -172,7 +174,9 @@ namespace Book_An_Appointment1.Pages.Appointment
                 existing.DoctorInitials = GetInitials(doc?.FullName ?? "");
                 existing.Specialisation = doc?.SpecialisationName ?? "";
                 existing.Hospital = hospital?.FacilityName ?? "";
-                existing.ConsultationFee = decimal.TryParse(fee, out var f) ? f : 0;
+
+                existing.ConsultationFee = decimal.TryParse(feeRaw, System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture, out var f) ? f : 0;
 
                 SessionHelper.SetAppointmentData(HttpContext.Session, existing);
 
@@ -198,6 +202,8 @@ namespace Book_An_Appointment1.Pages.Appointment
                         hospitalName = hospital?.FacilityName ?? "",
                         hospitalCity = hospital?.CityName ?? "",
                         hospitalLocationId = doc?.HospitalLocationId ?? 0,
+                        icon = doc?.Icon ?? "",
+                        education = doc?.Education ?? "",
                         slots = Wizard.Slots.Select(s => new
                         {
                             startTime = s.StartTime,
@@ -237,11 +243,12 @@ namespace Book_An_Appointment1.Pages.Appointment
         // ── POST: Continue Button ────────────────────────────
         // MODIFIED: Validation fail hone pe ab poora Wizard reload karta hai
         // taaki dropdowns/doctor card UI mein blank na dikhein
+
         public async Task<IActionResult> OnPostContinueAsync(string selectedSlotStart, string selectedSlotEnd,
-            int facilityId, int? specialityId, int? doctorId)
+            int facilityId, int? specialityId, int? doctorId, string? patientType)
         {
             _logger.LogInformation("OnPostContinueAsync | Slot={Slot} FacilityId={F} SpecialityId={S} DoctorId={D}",
-                selectedSlotStart, facilityId, specialityId, doctorId);
+                selectedSlotStart, facilityId, specialityId, doctorId, patientType);
 
             ModelState.Clear();
 
@@ -297,9 +304,11 @@ namespace Book_An_Appointment1.Pages.Appointment
 
             SessionHelper.SetAppointmentData(HttpContext.Session, sessionData);
 
+            var type = string.Equals(patientType, "registered", StringComparison.OrdinalIgnoreCase) ? "registered" : "new";
+
             _logger.LogInformation("Session slot saved | SlotDisplayText={S}", sessionData.SlotDisplayText);
 
-            return RedirectToPage("/PatientDetails/PatientDetails");
+            return RedirectToPage("/PatientDetails/PatientDetails", new { patientType = type });
         }
 
         // ── Private Loaders ──────────────────────────────────
@@ -382,9 +391,12 @@ namespace Book_An_Appointment1.Pages.Appointment
                     return;
                 }
 
+                RegisterDoctorImages(Wizard.SelectedDoctor.Icon, Wizard.SelectedDoctor.ImageUrl);
+
                 var today = DateTime.Now.ToString("yyyy-MM-dd");
 
                 var consultationTask = _consultationService.GetConsultationFeeAsync(FacilityId, (DoctorId ?? 0));
+
                 var slotsTask = GetDoctorSlotsAsync(FacilityId, DoctorId ?? 0, Wizard.SelectedDoctor.HospitalLocationId, today); 
 
                 await Task.WhenAll(consultationTask, slotsTask);  
@@ -445,6 +457,54 @@ namespace Book_An_Appointment1.Pages.Appointment
                 return $"{date} · {timeStr}";
             }
             return slotTime;
+        }
+
+        public static string FormatFee(string? raw) =>
+                decimal.TryParse(raw, System.Globalization.NumberStyles.Any,
+                         System.Globalization.CultureInfo.InvariantCulture, out var d)
+            ? Math.Round(d, 0, MidpointRounding.AwayFromZero).ToString("0", System.Globalization.CultureInfo.InvariantCulture)
+            : (raw ?? "0");
+
+
+        private void RegisterDoctorImages(params string?[] urls)
+        {
+            var list = (HttpContext.Session.GetString(ImageSessionKey) ?? "")
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries).ToList();
+            foreach (var u in urls)
+            {
+                var url = u?.Trim();
+                if (!string.IsNullOrEmpty(url) && !list.Contains(url)) list.Add(url);
+            }
+            if (list.Count > 50) list = list.Skip(list.Count - 50).ToList();
+            HttpContext.Session.SetString(ImageSessionKey, string.Join('\n', list));
+        }
+
+        public async Task<IActionResult> OnGetDoctorImageAsync(string url)
+        {
+            var allowed = (HttpContext.Session.GetString(ImageSessionKey) ?? "")
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+            if (string.IsNullOrWhiteSpace(url) || !allowed.Contains(url, StringComparer.Ordinal) ||
+                !Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
+                (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+                return NotFound();
+
+            try
+            {
+                using var resp = await _imageClient.GetAsync(uri);
+                var type = resp.Content.Headers.ContentType?.MediaType ?? "";
+                if (!resp.IsSuccessStatusCode || !type.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+                    return NotFound();
+                var bytes = await resp.Content.ReadAsByteArrayAsync();
+                if (bytes.Length > 2_000_000) return NotFound();
+                Response.Headers["Cache-Control"] = "private,max-age=86400";
+                return File(bytes, type);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "DoctorImage fetch failed | Url={U}", url);
+                return NotFound();
+            }
         }
     }
 }

@@ -1,120 +1,173 @@
-﻿var AppointmentValidation = {
-
+﻿/* ── Validation ───────────────────────────────────────── */
+var AppointmentValidation = {
     rules: {
-        facility: {
-            selector: '#facilityDropdown',
-            message: 'Please select a facility.'
-        },
-        speciality: {
-            selector: '#specialityDropdown',
-            message: 'Please select a speciality.'
-        },
-        doctor: {
-            selector: '#doctorDropdown',
-            message: 'Please select a doctor.'
-        },
-        slot: {
-            selector: '#hdnSelectedSlotStart',
-            message: 'Please select a time slot.'
-        }
+        facility: { selector: '#facilityDropdown', message: 'Please select a facility.' },
+        speciality: { selector: '#specialityDropdown', message: 'Please select a speciality.' },
+        doctor: { selector: '#doctorDropdown', message: 'Please select a doctor.' },
+        slot: { selector: '#hdnSelectedSlotStart', message: 'Please select a time slot.' }
     },
-
     validate: function () {
         var errors = [];
         $.each(this.rules, function (key, rule) {
-            if (!$(rule.selector).val()) {
-                errors.push(rule.message);
-            }
+            if (!$(rule.selector).val()) errors.push(rule.message);
         });
         return errors;
     },
-
     showErrors: function (errors) {
-        $('#clientErrors').remove();
-        if (errors.length === 0) return;
-
-        var html = '<div id="clientErrors" class="alert alert-danger mt-3"><ul class="mb-0">';
-        $.each(errors, function (i, e) {
-            html += '<li>' + e + '</li>';
-        });
-        html += '</ul></div>';
-
-        $('.wizard-track').after(html);
-        $('html, body').animate({ scrollTop: 0 }, 300);
+        var $box = $('#clientValidationError').empty();
+        if (!errors.length) return;
+        var $ul = $('<ul class="mb-0"></ul>');
+        $.each(errors, function (i, e) { $ul.append($('<li></li>').text(e)); });
+        $box.append($ul);
+        if ($box[0] && $box[0].scrollIntoView) $box[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
     },
-
-    clearErrors: function () {
-        $('#clientErrors').remove();
-    }
+    clearErrors: function () { $('#clientValidationError').empty(); }
 };
 
+/* ── Pure helpers (no DOM reads) ──────────────────────── */
+var AppointmentUI = (function () {
+    var DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var BUCKETS = ['Morning', 'Afternoon', 'Evening', 'Slots'];
+
+    function esc(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+    function pad(n) { return n < 10 ? '0' + n : '' + n; }
+    function parseSlot(str) {
+        var d = new Date(String(str || '').replace(' ', 'T'));
+        return isNaN(d.getTime()) ? null : d;
+    }
+    function formatTime(d) {
+        var h = d.getHours();
+        return pad(h % 12 || 12) + ':' + pad(d.getMinutes()) + ' ' + (h < 12 ? 'AM' : 'PM');
+    }
+    function formatDay(d) { return DAYS[d.getDay()] + ', ' + d.getDate() + ' ' + MONTHS[d.getMonth()]; }
+    function toDateStr(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+    function bucketOf(d) {
+        if (!d) return 'Slots';
+        return d.getHours() < 12 ? 'Morning' : d.getHours() < 17 ? 'Afternoon' : 'Evening';
+    }
+    function clean(v) {
+        v = (v == null ? '' : String(v)).trim();
+        return (!v || /^(n\/?a|null|undefined|-+)$/i.test(v)) ? '' : v;
+    }
+    function list(v) {
+        return clean(v).split(',').map(function (x) { return x.trim(); }).filter(Boolean).join(', ');
+    }
+    function initials(name) {
+        return String(name || '').replace(/^dr\.?\s+/i, '').split(/\s+/).filter(Boolean).slice(0, 2)
+            .map(function (w) { return w.charAt(0).toUpperCase(); }).join('') || 'Dr';
+    }
+    // Icon first, then ImageUrl. http images go through the server handler (browsers block/fail http assets from an https site).
+    function photoSrc(doc) {
+        var u = clean(doc.icon) || clean(doc.imageUrl);
+        if (!u) return '';
+        return /^http:\/\//i.test(u) ? '?handler=DoctorImage&url=' + encodeURIComponent(u) : u;
+    }
+
+    function groupSlots(slots) {
+        var map = {};
+        (slots || []).forEach(function (s) {
+            var d = parseSlot(s.startTime);
+            (map[bucketOf(d)] = map[bucketOf(d)] || []).push({ slot: s, label: d ? formatTime(d) : s.startTime });
+        });
+        return BUCKETS.filter(function (b) { return map[b]; }).map(function (b) { return { name: b, items: map[b] }; });
+    }
+
+    function renderSlots(slots, selectedStart, emptyMsg) {
+        var groups = groupSlots(slots);
+        if (!groups.length) return '<div class="text-muted">' + esc(emptyMsg || 'No slots available for this date.') + '</div>';
+        return groups.map(function (g) {
+            var btns = g.items.map(function (it) {
+                var on = selectedStart && it.slot.startTime === selectedStart;
+                return '<button type="button" class="slot-btn' + (on ? ' is-selected' : '') + '" aria-pressed="' + (on ? 'true' : 'false') +
+                    '" data-start="' + esc(it.slot.startTime) + '" data-end="' + esc(it.slot.endTime) + '">' + esc(it.label) + '</button>';
+            }).join('');
+            return '<div class="slot-group"><div class="slot-group-label">' + g.name +
+                ' <span class="slot-group-count">' + g.items.length + '</span></div><div class="slot-group-grid">' + btns + '</div></div>';
+        }).join('');
+    }
+
+    function renderDoctorCard(doc) {
+        var src = photoSrc(doc);
+        var rows = [];
+        if (list(doc.education)) rows.push(['Education', list(doc.education)]);
+        if (clean(doc.experience)) rows.push(['Experience', clean(doc.experience)]);
+        rows.push(['Next available', clean(doc.timing) || 'Not specified']);
+        if (list(doc.treatment)) rows.push(['Treatments', list(doc.treatment)]);
+        if (clean(doc.hospitalName)) rows.push(['Hospital', doc.hospitalName + (clean(doc.hospitalCity) ? ', ' + doc.hospitalCity : '')]);
+
+        return '<div class="doctor-head"><div class="doctor-avatar-col">' +
+            '<div class="doctor-avatar-wrap' + (src ? '' : ' no-photo') + '" data-initials="' + esc(initials(doc.name)) + '">' +
+            (src ? '<img class="doctor-avatar" src="' + esc(src) + '" alt="" onerror="this.onerror=null; this.parentNode.classList.add(\'no-photo\'); this.remove();" />' : '') + '</div>' +
+            '<div class="doctor-rating"><span class="rating-badge">★ ' + esc(clean(doc.rating) || 'N/A') + '</span>' +
+            '<span class="review-count">' + esc(clean(doc.review) || '0') + ' reviews</span></div></div>' +
+            '<div class="doctor-info"><h3 class="doctor-name">' + esc(doc.name) + '</h3>' +
+            '<p class="doctor-speciality">' + esc(clean(doc.specialisation)) + '</p>' +
+            (doc.isTeleconsult ? '<span class="teleconsult-badge">Teleconsultation available</span>' : '') + '</div></div>' +
+            '<div class="fee-block"><span class="fee-label">Consultation fee</span><span class="fee-value">₹ ' + esc(doc.fee) + '</span></div>' +
+            '<dl class="doctor-details">' + rows.map(function (r) {
+                return '<div class="detail"><dt>' + r[0] + '</dt><dd>' + esc(r[1]) + '</dd></div>';
+            }).join('') + '</dl>';
+    }
+
+    function renderBooking(slotsHtml, noteText) {
+        return '<div id="selectionSummary" class="selection-banner" aria-live="polite"><span class="selection-label">Your slot</span>' +
+            '<span id="selectionValue" class="selection-value">Select a date and time</span></div>' +
+            '<div class="booking-grid">' +
+            '<div class="calendar-panel"><h5 class="panel-title">Select date</h5>' +
+            '<input type="text" id="slotCalendar" class="form-control" placeholder="Select date" readonly style="display:none;" />' +
+            '<p class="calendar-note">' + esc(noteText || '') + '</p></div>' +
+            '<div class="slots-panel"><div class="slots-head"><h5 class="panel-title">Available slots</h5><span id="slotDateLabel"></span></div>' +
+            '<div id="slotsContainer" class="slots-container">' + slotsHtml + '</div></div></div>' +
+            '<div class="booking-actions"><button type="button" id="continueBtn" class="btn-continue">Continue →</button></div>';
+    }
+
+    return {
+        esc: esc, parseSlot: parseSlot, formatTime: formatTime, formatDay: formatDay, toDateStr: toDateStr,
+        groupSlots: groupSlots, renderSlots: renderSlots, renderDoctorCard: renderDoctorCard, renderBooking: renderBooking, initials: initials, photoSrc: photoSrc
+    };
+})();
+
 $(document).ready(function () {
-
+    var UI = AppointmentUI;
+    var cfg = window.AppointmentConfig || {};
     var token = $('input[name="__RequestVerificationToken"]').val();
+    var slotRequestId = 0, doctorRequestId = 0;
+    var maxDays = cfg.maxAdvanceDays || 90;
+    var currentDate = '';
 
-    // ── Select2 Initialize ───────────────────────────────
     $('#facilityDropdown').select2({ width: '100%', placeholder: 'Select Facility' });
     $('#specialityDropdown').select2({ width: '100%', placeholder: 'Search Speciality' });
     $('#doctorDropdown').select2({ width: '100%', placeholder: 'Search Doctor' });
 
-    // ── Initial Lock State (based on what's already selected on load) ──
     refreshLockState();
 
-    // ── Tooltip on disabled dropdown hover ───────────────
     $('#specialityLockWrap, #doctorLockWrap').on('mouseenter', function () {
-        var $select = $(this).find('select');
-        if ($select.prop('disabled')) {
-            showTooltip($(this), $(this).attr('data-tooltip'));
-        }
-    }).on('mouseleave', function () {
-        hideTooltip();
-    });
+        if ($(this).find('select').prop('disabled')) showTooltip($(this), $(this).attr('data-tooltip'));
+    }).on('mouseleave', hideTooltip);
 
-    // ── Hospital carousel (left rail, until a doctor is chosen) ──
     buildCarousel();
-    if ($('#hospitalCarousel').css('display') !== 'none') {
-        startCarousel();
+
+    // Page load / back button / server re-render: draw the doctor that Razor selected
+    if (cfg.initialDoctor) {
+        mountDoctor(cfg.initialDoctor, cfg.facilityId, cfg.doctorId, cfg.savedSlotDate, cfg.savedSlotStart);
     }
 
-    // ── Back button case: Razor ne already card render kiya hai ──
-    // Fresh select case mein #slotCalendar tab nahi hota DOM mein
-    if ($('#slotCalendar').length > 0) {
-        var savedDate = window.AppointmentConfig.savedSlotDate || 'today';
-        var savedStart = window.AppointmentConfig.savedSlotStart || '';
-
-        // Calendar initialize karo
-        initCalendar(
-            window.AppointmentConfig.hospitalLocationId,
-            window.AppointmentConfig.facilityId,
-            window.AppointmentConfig.doctorId
-        );
-
-        // Saved slot highlight karo
-        if (savedStart) {
-            $('#hdnSelectedSlotStart').val(savedStart);
-            $('.slot-btn').each(function () {
-                if ($(this).data('start') === savedStart) {
-                    $(this).removeClass('btn-outline-primary')
-                        .addClass('btn-primary');
-                }
-            });
-        }
-    }
-
+    /* ── Tooltip & lock state ─────────────────────────── */
     function showTooltip($wrap, message) {
-        $('.dropdown-tooltip').remove();
-        var tip = $('<div class="dropdown-tooltip">' + message + '</div>');
-        $wrap.append(tip);
+        hideTooltip();
+        $wrap.append($('<div class="dropdown-tooltip"></div>').text(message));
     }
+    function hideTooltip() { $('.dropdown-tooltip').remove(); }
 
-    function hideTooltip() {
-        $('.dropdown-tooltip').remove();
-    }
-
-    // ── Lock/Unlock logic ─────────────────────────────────
     function refreshLockState() {
         var facilityId = $('#facilityDropdown').val();
         var specialityId = $('#specialityDropdown').val();
+        var doctorId = $('#doctorDropdown').val();
 
         if (!facilityId) {
             lockDropdown('#specialityDropdown', '#specialityLockWrap', 'Please select a facility first');
@@ -126,1206 +179,927 @@ $(document).ready(function () {
             unlockDropdown('#specialityDropdown', '#specialityLockWrap');
             unlockDropdown('#doctorDropdown', '#doctorLockWrap');
         }
+        var current = !facilityId ? 'facility' : !specialityId ? 'speciality' : !doctorId ? 'doctor' : 'slot';
+        var order = ['facility', 'speciality', 'doctor', 'slot'];
+        $('#welcomeSteps li').each(function () {
+            var idx = order.indexOf($(this).data('step'));
+            $(this).toggleClass('done', idx < order.indexOf(current)).toggleClass('current', idx === order.indexOf(current));
+        });
+    }
+    function lockDropdown(sel, wrap, msg) {
+        $(sel).prop('disabled', true).trigger('change.select2');
+        $(wrap).attr('data-tooltip', msg).addClass('is-locked');
+    }
+    function unlockDropdown(sel, wrap) {
+        $(sel).prop('disabled', false).trigger('change.select2');
+        $(wrap).removeClass('is-locked');
     }
 
-    function lockDropdown(selector, wrapSelector, tooltipMsg) {
-        $(selector).prop('disabled', true).trigger('change.select2');
-        $(wrapSelector).attr('data-tooltip', tooltipMsg).addClass('is-locked');
-    }
-
-    function unlockDropdown(selector, wrapSelector) {
-        $(selector).prop('disabled', false).trigger('change.select2');
-        $(wrapSelector).removeClass('is-locked');
-    }
-
-    // ── Hospital carousel helpers ─────────────────────────
+    /* ── Hospital carousel (skips images that fail to load) ─ */
     function buildCarousel() {
-        var images = (window.AppointmentConfig && window.AppointmentConfig.hospitalImages) || [];
-        if (!images.length) {
-            $('#hospitalCarousel').hide();
-            return;
-        }
-
-        var $track = $('#carouselTrack').empty();
-        var $dots = $('#carouselDots').empty();
+        var images = cfg.hospitalImages || [];
+        var loaded = new Array(images.length), pending = images.length;
+        if (!pending) return finish();
 
         images.forEach(function (img, i) {
-            $track.append(
-                $('<div class="carousel-slide"></div>').append(
-                    $('<img>').attr('src', img.src).attr('alt', img.caption || '')
-                )
-            );
-            var $dot = $('<button type="button" class="carousel-dot"></button>')
-                .toggleClass('active', i === 0)
-                .attr('aria-label', 'Slide ' + (i + 1))
-                .on('click', function () { goToSlide(i); startCarousel(); });
-            $dots.append($dot);
+            var probe = new Image();
+            probe.onload = function () { loaded[i] = img; done(); };
+            probe.onerror = function () { done(); };
+            probe.src = img.src;
         });
+        function done() { if (--pending === 0) finish(); }
 
-        window._carouselIndex = 0;
+        function finish() {
+            var ok = loaded.filter(Boolean);
+            window._carouselImages = ok;
+            if (!ok.length) { $('#hospitalCarousel').hide(); $('#welcomeStage').removeClass('has-media'); return; }
+
+            var $track = $('#carouselTrack').empty(), $dots = $('#carouselDots').empty();
+            ok.forEach(function (img, i) {
+                var $slide = $('<div class="carousel-slide"></div>').append($('<img>').attr({ src: img.src, alt: img.caption || 'Hospital photo' }));
+                if (img.caption) $slide.append($('<div class="carousel-caption"></div>').text(img.caption));
+                $track.append($slide);
+                $dots.append($('<button type="button" class="carousel-dot"></button>')
+                    .toggleClass('active', i === 0).attr('aria-label', 'Slide ' + (i + 1))
+                    .on('click', function () { goToSlide(i); startCarousel(); }));
+            });
+            window._carouselIndex = 0;
+            $('#welcomeStage').addClass('has-media');
+            $('#hospitalCarousel').show();
+            if ($('#welcomeStage').css('display') !== 'none') startCarousel();
+        }
     }
-
     function goToSlide(index) {
-        var images = (window.AppointmentConfig && window.AppointmentConfig.hospitalImages) || [];
-        if (!images.length) return;
-        window._carouselIndex = (index + images.length) % images.length;
+        var n = (window._carouselImages || []).length;
+        if (!n) return;
+        window._carouselIndex = (index + n) % n;
         $('#carouselTrack').css('transform', 'translateX(-' + (window._carouselIndex * 100) + '%)');
         $('.carousel-dot').removeClass('active').eq(window._carouselIndex).addClass('active');
     }
-
     function startCarousel() {
         stopCarousel();
-        var images = (window.AppointmentConfig && window.AppointmentConfig.hospitalImages) || [];
-        if (images.length < 2) return;
+        if ((window._carouselImages || []).length < 2) return;
         if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-        window._carouselInterval = setInterval(function () {
-            goToSlide((window._carouselIndex || 0) + 1);
-        }, 3000);
+        window._carouselInterval = setInterval(function () { goToSlide((window._carouselIndex || 0) + 1); }, 3500);
     }
-
     function stopCarousel() {
-        if (window._carouselInterval) {
-            clearInterval(window._carouselInterval);
-            window._carouselInterval = null;
-        }
+        if (window._carouselInterval) { clearInterval(window._carouselInterval); window._carouselInterval = null; }
     }
 
-    function showCarousel() {
-        $('#doctorIdentityCard').hide().html('').removeAttr('data-speciality');
-        $('#hospitalCarousel').show();
+    /* ── Stage switching ──────────────────────────────── */
+    function showWelcome() {
+        doctorRequestId++; slotRequestId++;
+        if (window._flatpickrInstance) { window._flatpickrInstance.destroy(); window._flatpickrInstance = null; }
+        $('#doctorIdentityCard').empty();
+        $('#bookingPanel').empty();
+        $('#bookingStage').hide();
+        $('#hdnSelectedSlotStart').val('');
+        $('#hdnSelectedSlotEnd').val('');
+        $('#welcomeStage').show();
         startCarousel();
     }
-
-    function showDoctorIdentity() {
+    function showBookingStage() {
         stopCarousel();
-        $('#hospitalCarousel').hide();
-        $('#doctorIdentityCard').show();
+        $('#welcomeStage').hide();
+        $('#bookingStage').show();
     }
 
-    // ── Facility Change → Load Specialities ──────────────
+    /* ── Dropdown cascade ─────────────────────────────── */
     $('#facilityDropdown').on('change', function () {
         var facilityId = parseInt($(this).val());
-
         resetDropdown('#specialityDropdown', 'Search Speciality');
         resetDropdown('#doctorDropdown', 'Search Doctor');
-        $('#bookingPanel').hide().html('');
-        showCarousel();
-        $('#emptyState').show();
+        showWelcome();
         AppointmentValidation.clearErrors();
-
-        refreshLockState(); // pehle lock karo
-
+        refreshLockState();
         if (!facilityId) return;
 
         $.ajax({
-            url: '?handler=GetSpecialities',
-            method: 'POST',
-            contentType: 'application/json',
-            headers: { 'RequestVerificationToken': token },
-            data: JSON.stringify(facilityId),
+            url: '?handler=GetSpecialities', method: 'POST', contentType: 'application/json',
+            headers: { 'RequestVerificationToken': token }, data: JSON.stringify(facilityId),
             success: function (res) {
-                if (!res.success) return;
-                populateDropdown(
-                    '#specialityDropdown', res.data,
-                    'id', 'specialisationName', 'Search Speciality');
-                refreshLockState(); // ← YAHAN UNCOMMENT/ADD KARO ✅
-            }
-        });
-    });
-
-
-    // ── Speciality Change → Load Doctors ─────────────────
-    $('#specialityDropdown').on('change', function () {
-        var facilityId = parseInt($('#facilityDropdown').val());
-        var specialityId = parseInt($(this).val());
-
-        resetDropdown('#doctorDropdown', 'Search Doctor');
-        $('#bookingPanel').hide().html('');
-        showCarousel();
-        $('#emptyState').show();
-        AppointmentValidation.clearErrors();
-
-        refreshLockState();
-
-        if (!facilityId || !specialityId) return;
-
-        $.ajax({
-            url: '?handler=GetDoctors',
-            method: 'POST',
-            contentType: 'application/json',
-            headers: { 'RequestVerificationToken': token },
-            data: JSON.stringify({
-                facilityId: facilityId,
-                specialityId: specialityId
-            }),
-            success: function (res) {
-                if (!res.success) return;
-                populateDropdown(
-                    '#doctorDropdown', res.data,
-                    'id', 'fullName', 'Search Doctor');
+                if (!res.success || parseInt($('#facilityDropdown').val()) !== facilityId) return;
+                populateDropdown('#specialityDropdown', res.data, 'id', 'specialisationName', 'Search Speciality');
                 refreshLockState();
             }
         });
     });
 
-    // ── Doctor Change → Load Doctor Details ──────────────
+    $('#specialityDropdown').on('change', function () {
+        var facilityId = parseInt($('#facilityDropdown').val());
+        var specialityId = parseInt($(this).val());
+        resetDropdown('#doctorDropdown', 'Search Doctor');
+        showWelcome();
+        AppointmentValidation.clearErrors();
+        refreshLockState();
+        if (!facilityId || !specialityId) return;
+
+        $.ajax({
+            url: '?handler=GetDoctors', method: 'POST', contentType: 'application/json',
+            headers: { 'RequestVerificationToken': token },
+            data: JSON.stringify({ facilityId: facilityId, specialityId: specialityId }),
+            success: function (res) {
+                if (!res.success || parseInt($('#specialityDropdown').val()) !== specialityId) return;
+                populateDropdown('#doctorDropdown', res.data, 'id', 'fullName', 'Search Doctor');
+                refreshLockState();
+            }
+        });
+    });
+
     $('#doctorDropdown').on('change', function () {
         var facilityId = parseInt($('#facilityDropdown').val());
         var specialityId = parseInt($('#specialityDropdown').val());
         var doctorId = parseInt($(this).val());
-
-        $('#doctorIdentityCard').html('').removeAttr('data-speciality');
         AppointmentValidation.clearErrors();
+        refreshLockState();
 
-        if (!facilityId || !specialityId || !doctorId) {
-            $('#bookingPanel').hide().html('');
-            showCarousel();
-            $('#emptyState').show();
-            return;
-        }
+        if (!facilityId || !specialityId || !doctorId) { showWelcome(); return; }
 
-        $('#emptyState').hide();
-        $('#bookingPanel')
-            .show()
-            .html('<div class="text-muted p-3">Loading doctor details...</div>');
+        var reqId = ++doctorRequestId;
+        showBookingStage();
+        $('#hdnSelectedSlotStart').val('');
+        $('#hdnSelectedSlotEnd').val('');
+        $('#doctorIdentityCard').html('<div class="loading-note">Loading doctor details…</div>');
+        $('#bookingPanel').empty();
 
         $.ajax({
-            url: '?handler=GetDoctorDetails',
-            method: 'POST',
-            contentType: 'application/json',
+            url: '?handler=GetDoctorDetails', method: 'POST', contentType: 'application/json',
             headers: { 'RequestVerificationToken': token },
-            data: JSON.stringify({
-                facilityId: facilityId,
-                specialityId: specialityId,
-                doctorId: doctorId
-            }),
+            data: JSON.stringify({ facilityId: facilityId, specialityId: specialityId, doctorId: doctorId }),
             success: function (res) {
-                if (!res.success) {
-                    $('#bookingPanel').html(
-                        '<div class="text-danger p-3">Failed to load doctor details.</div>');
-                    return;
-                }
-                renderDoctorCard(res.data, facilityId, doctorId);
+                if (reqId !== doctorRequestId) return;
+                if (!res.success) { $('#doctorIdentityCard').html('<div class="text-danger">Failed to load doctor details.</div>'); return; }
+                mountDoctor(res.data, facilityId, doctorId, '', '');
             },
             error: function () {
-                $('#bookingPanel').html(
-                    '<div class="text-danger p-3">Something went wrong.</div>');
+                if (reqId !== doctorRequestId) return;
+                $('#doctorIdentityCard').html('<div class="text-danger">Something went wrong. Please try again.</div>');
             }
         });
     });
 
-    // ── Slot Select ───────────────────────────────────────
+    /* ── Render doctor + booking panel ────────────────── */
+    function mountDoctor(doc, facilityId, doctorId, savedDate, savedStart) {
+        var slots = doc.slots || [];
+        var firstSlot = slots.length ? UI.parseSlot(slots[0].startTime) : null;
+        var date = savedDate || (firstSlot ? UI.toDateStr(firstSlot) : UI.toDateStr(new Date()));
+
+        $('#doctorIdentityCard').html(UI.renderDoctorCard(doc));
+        $('#bookingPanel').html(UI.renderBooking(UI.renderSlots(slots, savedStart, 'No slots available for this date.'), noteText()));
+        showBookingStage();
+        setDateLabel(date);
+
+        var saved = savedStart && slots.filter(function (s) { return s.startTime === savedStart; })[0];
+        if (saved) { $('#hdnSelectedSlotStart').val(saved.startTime); $('#hdnSelectedSlotEnd').val(saved.endTime); }
+        updateSummary();
+        initCalendar(doc.hospitalLocationId, facilityId, doctorId, date);
+    }
+
+    function setDateLabel(dateStr) {
+        var d = UI.parseSlot(dateStr + 'T00:00:00');
+        $('#slotDateLabel').text(d ? UI.formatDay(d) : '');
+    }
+
+    function updateSummary() {
+        var start = $('#hdnSelectedSlotStart').val();
+        var d = start ? UI.parseSlot(start) : null;
+        $('#selectionSummary').toggleClass('has-slot', !!d);
+        $('#selectionValue').text(d ? UI.formatDay(d) + ' · ' + UI.formatTime(d) : 'Select a date and time');
+    }
+
+    /* ── Slot select & continue ───────────────────────── */
     $(document).on('click', '.slot-btn', function () {
-        $('.slot-btn').removeClass('btn-primary').addClass('btn-outline-primary');
-        $(this).removeClass('btn-outline-primary').addClass('btn-primary');
-        $('#hdnSelectedSlotStart').val($(this).data('start'));
-        $('#hdnSelectedSlotEnd').val($(this).data('end'));
+        $('.slot-btn').removeClass('is-selected').attr('aria-pressed', 'false');
+        $(this).addClass('is-selected').attr('aria-pressed', 'true');
+        $('#hdnSelectedSlotStart').val($(this).attr('data-start'));
+        $('#hdnSelectedSlotEnd').val($(this).attr('data-end'));
         AppointmentValidation.clearErrors();
+        updateSummary();
     });
 
-    // ── Continue Button ───────────────────────────────────
     $(document).on('click', '#continueBtn', function () {
         var errors = AppointmentValidation.validate();
-        if (errors.length > 0) {
-            AppointmentValidation.showErrors(errors);
-            return;
-        }
+        if (errors.length) { AppointmentValidation.showErrors(errors); return; }
         AppointmentValidation.clearErrors();
+        openPatientTypeDialog();
+    });
 
-        // Hidden fields update karo before submit
+    /* ── New / already-registered popup ───────────────── */
+    function openPatientTypeDialog() {
+        $('.choice-card').prop('disabled', false);
+        $('#patientTypeDialog').prop('hidden', false);
+        $('.choice-card').first().trigger('focus');
+    }
+    function closePatientTypeDialog() {
+        if ($('#patientTypeDialog').prop('hidden')) return;
+        $('#patientTypeDialog').prop('hidden', true);
+        $('#continueBtn').trigger('focus');
+    }
+    $('#patientTypeClose').on('click', closePatientTypeDialog);
+    $('#patientTypeDialog').on('click', function (e) { if (e.target === this) closePatientTypeDialog(); });
+
+    $('.choice-card').on('click', function () {
+        if ($('.choice-card').first().prop('disabled')) return;   // already submitting
+        var type = $(this).attr('data-type') === 'existing' ? 'existing' : 'new';
+        $('.choice-card').prop('disabled', true);          // block double submit
+        $('#hdnPatientType').val(type);
         $('#hdnFacilityId').val($('#facilityDropdown').val());
         $('#hdnSpecialityId').val($('#specialityDropdown').val());
         $('#hdnDoctorId').val($('#doctorDropdown').val());
-
-        $('#appointmentForm')
-            .attr('action', '?handler=Continue')
-            .submit();
+        $('#appointmentForm').attr('action', '?handler=Continue').submit();
     });
 
-    function toHttps(url) {
-        if (!url) return '/Image/default-doctor.png';
-        return url.replace('http://', 'https://');
+    /* ── Calendar & slots by date ─────────────────────── */
+    function startOfToday() { var d = new Date(); d.setHours(0, 0, 0, 0); return d; }
+    function lastBookable() { var d = startOfToday(); d.setDate(d.getDate() + maxDays); return d; }
+    function windowText() { return maxDays === 90 ? '3 months' : maxDays + ' days'; }
+    function noteText() { return 'Appointments can be booked up to ' + windowText() + ' in advance.'; }
+
+    function showLimitDialog() {
+        var last = lastBookable();
+        $('#limitDialogText').text("Appointments can't be booked beyond " + windowText() + " from today. Please choose a date on or before " +
+            UI.formatDay(last) + ' ' + last.getFullYear() + '.');
+        $('#limitDialog').prop('hidden', false);
+        $('#limitDialogClose').trigger('focus');
     }
+    function hideLimitDialog() { $('#limitDialog').prop('hidden', true); }
+    $('#limitDialogClose').on('click', hideLimitDialog);
+    $('#limitDialog').on('click', function (e) { if (e.target === this) hideLimitDialog(); });
+    $(document).on('keydown', function (e) { if (e.key === 'Escape') { hideLimitDialog(); closePatientTypeDialog(); } });
 
-    // ── Render Doctor Card (identity → left rail, booking → right panel) ──
-    function renderDoctorCard(doc, facilityId, doctorId) {
-        var identityHtml = `
-        <div class="doctor-profile">
-            <div class="doctor-avatar-wrap">
-                <img class="doctor-avatar"
-                     src="${toHttps(doc.imageUrl)}"
-                     onerror="this.onerror=null; this.src='/Image/default-doctor.png';" />
-            </div>
-            <div class="doctor-rating">
-                <span class="rating-badge">
-                    ⭐ ${doc.rating || 'N/A'}
-                </span>
-                <span class="review-count">
-                    (${doc.review || '0'} reviews)
-                </span>
-            </div>
-            ${doc.isTeleconsult
-                ? `<span class="teleconsult-badge">Teleconsultation available</span>`
-                : ''}
-            <h3 class="doctor-name">${doc.name}</h3>
-        </div>
-        <div class="doctor-vitals">
-            <div class="vital">
-                <span class="vital-label">Speciality</span>
-                <span class="vital-value">${doc.specialisation}</span>
-            </div>
-            <div class="vital">
-                <span class="vital-label">Experience</span>
-                <span class="vital-value">${doc.experience}</span>
-            </div>
-            <div class="vital">
-                <span class="vital-label">Consultation fee</span>
-                <span class="vital-value vital-accent">₹ ${doc.fee}</span>
-            </div>
-            <div class="vital vital-wide">
-                <span class="vital-label">Next available</span>
-                <span class="vital-value">${doc.timing}</span>
-            </div>
-            ${doc.treatment
-                ? `<div class="vital vital-wide">
-                       <span class="vital-label">Treatments</span>
-                       <span class="vital-value">${doc.treatment}</span>
-                   </div>`
-                : ''}
-            ${doc.hospitalName
-                ? `<div class="vital vital-wide">
-                       <span class="vital-label">Hospital</span>
-                       <span class="vital-value">${doc.hospitalName}, ${doc.hospitalCity}</span>
-                   </div>`
-                : ''}
-        </div>`;
+    function initCalendar(hospitalLocationId, facilityId, doctorId, date) {
+        if (window._flatpickrInstance) window._flatpickrInstance.destroy();
+        currentDate = date;
+        var today = startOfToday(), max = lastBookable(), $year;
 
-        var bookingHtml = `
-        <div class="booking-grid">
-            <div class="calendar-panel">
-                <h5 class="panel-title">Select date</h5>
-                <input type="text" id="slotCalendar"
-                       class="form-control"
-                       placeholder="Select date"
-                       readonly 
-                       style="display:none;" />
-            </div>
-            <div class="slots-panel">
-                <h5 class="panel-title">
-                    Available slots
-                    <span id="slotDateLabel"></span>
-                </h5>
-                <div id="slotsContainer" class="slots-container">
-                    ${renderSlots(doc.slots)}
-                </div>
-            </div>
-        </div>
-
-        <input type="hidden" id="hdnHospitalLocationId" value="${doc.hospitalLocationId}" />
-        <input type="hidden" id="hdnDoctorIdForSlot"    value="${doctorId}" />
-        <input type="hidden" id="hdnFacilityIdForSlot"  value="${facilityId}" />
-
-        <div class="booking-actions">
-            <button type="button" id="continueBtn" class="btn-continue">
-                Continue →
-            </button>
-        </div>`;
-
-        $('#doctorIdentityCard').html(identityHtml);
-        $('#bookingPanel').html(bookingHtml);
-        showDoctorIdentity();
-        initCalendar(doc.hospitalLocationId, facilityId, doctorId);
-    }
-
-    // ── Render Slots (grouped Morning / Afternoon / Evening) ──
-    function renderSlots(slots) {
-        if (!slots || slots.length === 0)
-            return '<div class="text-muted">No slots available for today.</div>';
-
-        var savedStart = window.AppointmentConfig.savedSlotStart;
-        var bucketOrder = ['Morning', 'Afternoon', 'Evening', 'Slots'];
-        var groups = {};
-
-        slots.forEach(function (slot) {
-            var parsed = new Date(slot.startTime.replace(' ', 'T'));
-            var isValid = !isNaN(parsed.getTime());
-            var bucket = !isValid ? 'Slots' : (parsed.getHours() < 12 ? 'Morning' : parsed.getHours() < 17 ? 'Afternoon' : 'Evening');
-            (groups[bucket] = groups[bucket] || []).push(slot);
-        });
-
-        return bucketOrder
-            .filter(function (bucket) { return groups[bucket] && groups[bucket].length; })
-            .map(function (bucket) {
-                var buttons = groups[bucket].map(function (slot) {
-                    var isSelected = savedStart && slot.startTime === savedStart;
-
-                    // ── Saved slot ke hidden fields restore karo ──
-                    if (isSelected) {
-                        $('#hdnSelectedSlotStart').val(slot.startTime);
-                        $('#hdnSelectedSlotEnd').val(slot.endTime);
-                    }
-
-                    var parsed = new Date(slot.startTime.replace(' ', 'T'));
-                    var isValid = !isNaN(parsed.getTime());
-                    var timePart = isValid
-                        ? parsed.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-                        : slot.startTime;
-                    var datePart = isValid
-                        ? parsed.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
-                        : '';
-
-                    return `<button type="button"
-                            class="slot-btn ${isSelected ? 'btn-primary' : 'btn-outline-primary'}"
-                            data-start="${slot.startTime}"
-                            data-end="${slot.endTime}">
-                            <span class="slot-time">${timePart}</span>
-                            <span class="slot-date">${datePart}</span>
-                        </button>`;
-                }).join('');
-
-                return `<div class="slot-group">
-                        <div class="slot-group-label">${bucket} <span class="slot-group-count">${groups[bucket].length}</span></div>
-                        <div class="slot-group-grid">${buttons}</div>
-                    </div>`;
-            }).join('');
-    }
-
-    // ── Calendar ──────────────────────────────────────────
-    function initCalendar(hospitalLocationId, facilityId, doctorId) {
-        if (window._flatpickrInstance)
-            window._flatpickrInstance.destroy();
-
-        var savedDate = window.AppointmentConfig.savedSlotDate || 'today';
-
+        // No minDate: that would trim the month dropdown. Past days are disabled instead.
         window._flatpickrInstance = flatpickr('#slotCalendar', {
-            inline: true,        // ← hamesha open rahega
-            minDate: 'today',
-            dateFormat: 'Y-m-d',
-            defaultDate: savedDate,
-            onChange: function (selectedDates, dateStr) {
+            inline: true, dateFormat: 'Y-m-d', defaultDate: date,
+            disable: [function (d) { return d < today; }],
+            onReady: function (sel, str, fp) {
+                var first = Math.min(today.getFullYear(), fp.currentYear);
+                $year = $('<select class="fp-year" aria-label="Year"></select>');
+                for (var y = first; y <= today.getFullYear() + 5; y++) $year.append($('<option></option>').val(y).text(y));
+                $year.val(fp.currentYear).on('change', function () { fp.changeYear(parseInt(this.value)); });
+                $(fp.currentYearElement).closest('.flatpickr-current-month').append($year);
+            },
+            onYearChange: function (sel, str, fp) { if ($year) $year.val(fp.currentYear); },
+            onDayCreate: function (sel, str, fp, el) { if (el.dateObj > max) el.classList.add('beyond-window'); },
+            onChange: function (selectedDates, dateStr, fp) {
+                if (!selectedDates.length) return;
+                if (selectedDates[0] > max) {
+                    fp.setDate(currentDate, false);   // revert silently, keep the current slots
+                    showLimitDialog();
+                    return;
+                }
+                currentDate = dateStr;
                 loadSlots(dateStr, hospitalLocationId, facilityId, doctorId);
-
-                var today = new Date().toISOString().split('T')[0];
-                var dateToLoad = (savedDate && savedDate !== 'today' && savedDate !== today);
-                loadSlots(savedDate, hospitalLocationId, facilityId, doctorId);
             }
         });
     }
-    // ── Load Slots by Date ────────────────────────────────
+
     function loadSlots(date, hospitalLocationId, facilityId, doctorId) {
-        $('#slotsContainer').html(
-            '<div class="text-muted">Loading slots...</div>');
-        $('#slotDateLabel').text('— ' + date);
+        var reqId = ++slotRequestId;
+        setDateLabel(date);
         $('#hdnSelectedSlotStart').val('');
         $('#hdnSelectedSlotEnd').val('');
+        updateSummary();
+        $('#slotsContainer').html('<div class="text-muted">Loading slots…</div>');
 
         $.get('?handler=SlotsByDate', {
-            facilityId: facilityId,
-            doctorId: doctorId,
-            hospitalLocationId: hospitalLocationId,
-            date: date
-        }, function (data) {
-            $('#slotsContainer').html(
-                data && data.length > 0
-                    ? renderSlots(data)
-                    : '<div class="text-muted">No slots available for this date.</div>'
-            );
+            facilityId: facilityId, doctorId: doctorId, hospitalLocationId: hospitalLocationId, date: date
+        }).done(function (data) {
+            if (reqId !== slotRequestId) return;
+            $('#slotsContainer').html(UI.renderSlots(data, '', 'No slots available for this date.'));
+        }).fail(function () {
+            if (reqId !== slotRequestId) return;
+            $('#slotsContainer').html('<div class="text-danger">Could not load slots. Please pick the date again.</div>');
         });
     }
 
-    // ── Helpers ───────────────────────────────────────────
+    /* ── Dropdown helpers ─────────────────────────────── */
     function resetDropdown(selector, placeholder) {
-        $(selector)
-            .empty()
-            .append($('<option>', { value: '', text: placeholder }))
-            .trigger('change.select2');
+        $(selector).empty().append($('<option>', { value: '', text: placeholder })).trigger('change.select2');
     }
-
     function populateDropdown(selector, data, valField, textField, placeholder) {
         var $el = $(selector);
         $el.empty().append($('<option>', { value: '', text: placeholder }));
-        $.each(data, function (i, item) {
-            $el.append($('<option>', {
-                value: item[valField],
-                text: item[textField] || 'N/A'
-            }));
+        $.each(data || [], function (i, item) {
+            $el.append($('<option>', { value: item[valField], text: item[textField] || item.name || 'N/A' }));
         });
-        // Select2 ko UI update ke liye notify karo bina change event fire kiye
-        if ($el.data('select2')) {
-            $el[0].dispatchEvent(new Event('change.select2'));
-        }
+        $el.trigger('change.select2');
     }
 });
 
 
 
 
+// /* ── Validation ───────────────────────────────────────── */
+// var AppointmentValidation = {
+//     rules: {
+//         facility: { selector: '#facilityDropdown', message: 'Please select a facility.' },
+//         speciality: { selector: '#specialityDropdown', message: 'Please select a speciality.' },
+//         doctor: { selector: '#doctorDropdown', message: 'Please select a doctor.' },
+//         slot: { selector: '#hdnSelectedSlotStart', message: 'Please select a time slot.' }
+//     },
+//     validate: function () {
+//         var errors = [];
+//         $.each(this.rules, function (key, rule) {
+//             if (!$(rule.selector).val()) errors.push(rule.message);
+//         });
+//         return errors;
+//     },
+//     showErrors: function (errors) {
+//         var $box = $('#clientValidationError').empty();
+//         if (!errors.length) return;
+//         var $ul = $('<ul class="mb-0"></ul>');
+//         $.each(errors, function (i, e) { $ul.append($('<li></li>').text(e)); });
+//         $box.append($ul);
+//         if ($box[0] && $box[0].scrollIntoView) $box[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+//     },
+//     clearErrors: function () { $('#clientValidationError').empty(); }
+// };
+
+// /* ── Pure helpers (no DOM reads) ──────────────────────── */
+// var AppointmentUI = (function () {
+//     var DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+//     var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+//     var BUCKETS = ['Morning', 'Afternoon', 'Evening', 'Slots'];
+
+//     function esc(s) {
+//         return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+//             return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+//         });
+//     }
+//     function pad(n) { return n < 10 ? '0' + n : '' + n; }
+//     function parseSlot(str) {
+//         var d = new Date(String(str || '').replace(' ', 'T'));
+//         return isNaN(d.getTime()) ? null : d;
+//     }
+//     function formatTime(d) {
+//         var h = d.getHours();
+//         return pad(h % 12 || 12) + ':' + pad(d.getMinutes()) + ' ' + (h < 12 ? 'AM' : 'PM');
+//     }
+//     function formatDay(d) { return DAYS[d.getDay()] + ', ' + d.getDate() + ' ' + MONTHS[d.getMonth()]; }
+//     function toDateStr(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+//     function bucketOf(d) {
+//         if (!d) return 'Slots';
+//         return d.getHours() < 12 ? 'Morning' : d.getHours() < 17 ? 'Afternoon' : 'Evening';
+//     }
+//     function clean(v) {
+//         v = (v == null ? '' : String(v)).trim();
+//         return (!v || /^(n\/?a|null|undefined|-+)$/i.test(v)) ? '' : v;
+//     }
+//     function list(v) {
+//         return clean(v).split(',').map(function (x) { return x.trim(); }).filter(Boolean).join(', ');
+//     }
+//     function initials(name) {
+//         return String(name || '').replace(/^dr\.?\s+/i, '').split(/\s+/).filter(Boolean).slice(0, 2)
+//             .map(function (w) { return w.charAt(0).toUpperCase(); }).join('') || 'Dr';
+//     }
+//     // Icon first, then ImageUrl. http images go through the server handler (browsers block/fail http assets from an https site).
+//     function photoSrc(doc) {
+//         var u = clean(doc.icon) || clean(doc.imageUrl);
+//         if (!u) return '';
+//         return /^http:\/\//i.test(u) ? '?handler=DoctorImage&url=' + encodeURIComponent(u) : u;
+//     }
+
+//     function groupSlots(slots) {
+//         var map = {};
+//         (slots || []).forEach(function (s) {
+//             var d = parseSlot(s.startTime);
+//             (map[bucketOf(d)] = map[bucketOf(d)] || []).push({ slot: s, label: d ? formatTime(d) : s.startTime });
+//         });
+//         return BUCKETS.filter(function (b) { return map[b]; }).map(function (b) { return { name: b, items: map[b] }; });
+//     }
+
+//     function renderSlots(slots, selectedStart, emptyMsg) {
+//         var groups = groupSlots(slots);
+//         if (!groups.length) return '<div class="text-muted">' + esc(emptyMsg || 'No slots available for this date.') + '</div>';
+//         return groups.map(function (g) {
+//             var btns = g.items.map(function (it) {
+//                 var on = selectedStart && it.slot.startTime === selectedStart;
+//                 return '<button type="button" class="slot-btn' + (on ? ' is-selected' : '') + '" aria-pressed="' + (on ? 'true' : 'false') +
+//                     '" data-start="' + esc(it.slot.startTime) + '" data-end="' + esc(it.slot.endTime) + '">' + esc(it.label) + '</button>';
+//             }).join('');
+//             return '<div class="slot-group"><div class="slot-group-label">' + g.name +
+//                 ' <span class="slot-group-count">' + g.items.length + '</span></div><div class="slot-group-grid">' + btns + '</div></div>';
+//         }).join('');
+//     }
+
+//     function renderDoctorCard(doc) {
+//         var src = photoSrc(doc);
+//         var rows = [];
+//         if (list(doc.education)) rows.push(['Education', list(doc.education)]);
+//         if (clean(doc.experience)) rows.push(['Experience', clean(doc.experience)]);
+//         rows.push(['Next available', clean(doc.timing) || 'Not specified']);
+//         if (list(doc.treatment)) rows.push(['Treatments', list(doc.treatment)]);
+//         if (clean(doc.hospitalName)) rows.push(['Hospital', doc.hospitalName + (clean(doc.hospitalCity) ? ', ' + doc.hospitalCity : '')]);
+
+//         return '<div class="doctor-head">' +
+//             '<div class="doctor-avatar-wrap' + (src ? '' : ' no-photo') + '" data-initials="' + esc(initials(doc.name)) + '">' +
+//             (src ? '<img class="doctor-avatar" src="' + esc(src) + '" alt="" onerror="this.onerror=null; this.parentNode.classList.add(\'no-photo\'); this.remove();" />' : '') + '</div>' +
+//             '<div class="doctor-info"><h3 class="doctor-name">' + esc(doc.name) + '</h3>' +
+//             '<p class="doctor-speciality">' + esc(clean(doc.specialisation)) + '</p>' +
+//             '<div class="doctor-rating"><span class="rating-badge">★ ' + esc(clean(doc.rating) || 'N/A') + '</span>' +
+//             '<span class="review-count">' + esc(clean(doc.review) || '0') + ' reviews</span></div>' +
+//             (doc.isTeleconsult ? '<span class="teleconsult-badge">Teleconsultation available</span>' : '') + '</div></div>' +
+//             '<div class="fee-block"><span class="fee-label">Consultation fee</span><span class="fee-value">₹ ' + esc(doc.fee) + '</span></div>' +
+//             '<dl class="doctor-details">' + rows.map(function (r) {
+//                 return '<div class="detail"><dt>' + r[0] + '</dt><dd>' + esc(r[1]) + '</dd></div>';
+//             }).join('') + '</dl>';
+//     }
+
+//     function renderBooking(slotsHtml, noteText) {
+//         return '<div id="selectionSummary" class="selection-banner" aria-live="polite"><span class="selection-label">Your slot</span>' +
+//             '<span id="selectionValue" class="selection-value">Select a date and time</span></div>' +
+//             '<div class="booking-grid">' +
+//             '<div class="calendar-panel"><h5 class="panel-title">Select date</h5>' +
+//             '<input type="text" id="slotCalendar" class="form-control" placeholder="Select date" readonly style="display:none;" />' +
+//             '<p class="calendar-note">' + esc(noteText || '') + '</p></div>' +
+//             '<div class="slots-panel"><div class="slots-head"><h5 class="panel-title">Available slots</h5><span id="slotDateLabel"></span></div>' +
+//             '<div id="slotsContainer" class="slots-container">' + slotsHtml + '</div></div></div>' +
+//             '<div class="booking-actions"><button type="button" id="continueBtn" class="btn-continue">Continue →</button></div>';
+//     }
+
+//     return {
+//         esc: esc, parseSlot: parseSlot, formatTime: formatTime, formatDay: formatDay, toDateStr: toDateStr,
+//         groupSlots: groupSlots, renderSlots: renderSlots, renderDoctorCard: renderDoctorCard, renderBooking: renderBooking, initials: initials, photoSrc: photoSrc
+//     };
+// })();
+
+// /* ── Validation ───────────────────────────────────────── */
+// var AppointmentValidation = {
+//     rules: {
+//         facility: { selector: '#facilityDropdown', message: 'Please select a facility.' },
+//         speciality: { selector: '#specialityDropdown', message: 'Please select a speciality.' },
+//         doctor: { selector: '#doctorDropdown', message: 'Please select a doctor.' },
+//         slot: { selector: '#hdnSelectedSlotStart', message: 'Please select a time slot.' }
+//     },
+//     validate: function () {
+//         var errors = [];
+//         $.each(this.rules, function (key, rule) {
+//             if (!$(rule.selector).val()) errors.push(rule.message);
+//         });
+//         return errors;
+//     },
+//     showErrors: function (errors) {
+//         var $box = $('#clientValidationError').empty();
+//         if (!errors.length) return;
+//         var $ul = $('<ul class="mb-0"></ul>');
+//         $.each(errors, function (i, e) { $ul.append($('<li></li>').text(e)); });
+//         $box.append($ul);
+//         if ($box[0] && $box[0].scrollIntoView) $box[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+//     },
+//     clearErrors: function () { $('#clientValidationError').empty(); }
+// };
+
+// /* ── Pure helpers (no DOM reads) ──────────────────────── */
+// var AppointmentUI = (function () {
+//     var DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+//     var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+//     var BUCKETS = ['Morning', 'Afternoon', 'Evening', 'Slots'];
+
+//     function esc(s) {
+//         return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+//             return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+//         });
+//     }
+//     function pad(n) { return n < 10 ? '0' + n : '' + n; }
+//     function parseSlot(str) {
+//         var d = new Date(String(str || '').replace(' ', 'T'));
+//         return isNaN(d.getTime()) ? null : d;
+//     }
+//     function formatTime(d) {
+//         var h = d.getHours();
+//         return pad(h % 12 || 12) + ':' + pad(d.getMinutes()) + ' ' + (h < 12 ? 'AM' : 'PM');
+//     }
+//     function formatDay(d) { return DAYS[d.getDay()] + ', ' + d.getDate() + ' ' + MONTHS[d.getMonth()]; }
+//     function toDateStr(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+//     function bucketOf(d) {
+//         if (!d) return 'Slots';
+//         return d.getHours() < 12 ? 'Morning' : d.getHours() < 17 ? 'Afternoon' : 'Evening';
+//     }
+//     function clean(v) {
+//         v = (v == null ? '' : String(v)).trim();
+//         return (!v || /^(n\/?a|null|undefined|-+)$/i.test(v)) ? '' : v;
+//     }
+//     function list(v) {
+//         return clean(v).split(',').map(function (x) { return x.trim(); }).filter(Boolean).join(', ');
+//     }
+//     function initials(name) {
+//         return String(name || '').replace(/^dr\.?\s+/i, '').split(/\s+/).filter(Boolean).slice(0, 2)
+//             .map(function (w) { return w.charAt(0).toUpperCase(); }).join('') || 'Dr';
+//     }
+//     // Icon first, then ImageUrl. http images go through the server handler (browsers block/fail http assets from an https site).
+//     function photoSrc(doc) {
+//         var u = clean(doc.icon) || clean(doc.imageUrl);
+//         if (!u) return '';
+//         return /^http:\/\//i.test(u) ? '?handler=DoctorImage&url=' + encodeURIComponent(u) : u;
+//     }
+
+//     function groupSlots(slots) {
+//         var map = {};
+//         (slots || []).forEach(function (s) {
+//             var d = parseSlot(s.startTime);
+//             (map[bucketOf(d)] = map[bucketOf(d)] || []).push({ slot: s, label: d ? formatTime(d) : s.startTime });
+//         });
+//         return BUCKETS.filter(function (b) { return map[b]; }).map(function (b) { return { name: b, items: map[b] }; });
+//     }
+
+//     function renderSlots(slots, selectedStart, emptyMsg) {
+//         var groups = groupSlots(slots);
+//         if (!groups.length) return '<div class="text-muted">' + esc(emptyMsg || 'No slots available for this date.') + '</div>';
+//         return groups.map(function (g) {
+//             var btns = g.items.map(function (it) {
+//                 var on = selectedStart && it.slot.startTime === selectedStart;
+//                 return '<button type="button" class="slot-btn' + (on ? ' is-selected' : '') + '" aria-pressed="' + (on ? 'true' : 'false') +
+//                     '" data-start="' + esc(it.slot.startTime) + '" data-end="' + esc(it.slot.endTime) + '">' + esc(it.label) + '</button>';
+//             }).join('');
+//             return '<div class="slot-group"><div class="slot-group-label">' + g.name +
+//                 ' <span class="slot-group-count">' + g.items.length + '</span></div><div class="slot-group-grid">' + btns + '</div></div>';
+//         }).join('');
+//     }
+
+//     function renderDoctorCard(doc) {
+//         var src = photoSrc(doc);
+//         var rows = [];
+//         if (list(doc.education)) rows.push(['Education', list(doc.education)]);
+//         if (clean(doc.experience)) rows.push(['Experience', clean(doc.experience)]);
+//         rows.push(['Next available', clean(doc.timing) || 'Not specified']);
+//         if (list(doc.treatment)) rows.push(['Treatments', list(doc.treatment)]);
+//         if (clean(doc.hospitalName)) rows.push(['Hospital', doc.hospitalName + (clean(doc.hospitalCity) ? ', ' + doc.hospitalCity : '')]);
+
+//         return '<div class="doctor-head"><div class="doctor-avatar-col">' +
+//             '<div class="doctor-avatar-wrap' + (src ? '' : ' no-photo') + '" data-initials="' + esc(initials(doc.name)) + '">' +
+//             (src ? '<img class="doctor-avatar" src="' + esc(src) + '" alt="" onerror="this.onerror=null; this.parentNode.classList.add(\'no-photo\'); this.remove();" />' : '') + '</div>' +
+//             '<div class="doctor-rating"><span class="rating-badge">★ ' + esc(clean(doc.rating) || 'N/A') + '</span>' +
+//             '<span class="review-count">' + esc(clean(doc.review) || '0') + ' reviews</span></div></div>' +
+//             '<div class="doctor-info"><h3 class="doctor-name">' + esc(doc.name) + '</h3>' +
+//             '<p class="doctor-speciality">' + esc(clean(doc.specialisation)) + '</p>' +
+//             (doc.isTeleconsult ? '<span class="teleconsult-badge">Teleconsultation available</span>' : '') + '</div></div>' +
+//             '<div class="fee-block"><span class="fee-label">Consultation fee</span><span class="fee-value">₹ ' + esc(doc.fee) + '</span></div>' +
+//             '<dl class="doctor-details">' + rows.map(function (r) {
+//                 return '<div class="detail"><dt>' + r[0] + '</dt><dd>' + esc(r[1]) + '</dd></div>';
+//             }).join('') + '</dl>';
+//     }
+
+//     function renderBooking(slotsHtml, noteText) {
+//         return '<div id="selectionSummary" class="selection-banner" aria-live="polite"><span class="selection-label">Your slot</span>' +
+//             '<span id="selectionValue" class="selection-value">Select a date and time</span></div>' +
+//             '<div class="booking-grid">' +
+//             '<div class="calendar-panel"><h5 class="panel-title">Select date</h5>' +
+//             '<input type="text" id="slotCalendar" class="form-control" placeholder="Select date" readonly style="display:none;" />' +
+//             '<p class="calendar-note">' + esc(noteText || '') + '</p></div>' +
+//             '<div class="slots-panel"><div class="slots-head"><h5 class="panel-title">Available slots</h5><span id="slotDateLabel"></span></div>' +
+//             '<div id="slotsContainer" class="slots-container">' + slotsHtml + '</div></div></div>' +
+//             '<div class="booking-actions"><button type="button" id="continueBtn" class="btn-continue">Continue →</button></div>';
+//     }
+
+//     return {
+//         esc: esc, parseSlot: parseSlot, formatTime: formatTime, formatDay: formatDay, toDateStr: toDateStr,
+//         groupSlots: groupSlots, renderSlots: renderSlots, renderDoctorCard: renderDoctorCard, renderBooking: renderBooking, initials: initials, photoSrc: photoSrc
+//     };
+// })();
+
+// $(document).ready(function () {
+//     var UI = AppointmentUI;
+//     var cfg = window.AppointmentConfig || {};
+//     var token = $('input[name="__RequestVerificationToken"]').val();
+//     var slotRequestId = 0, doctorRequestId = 0;
+//     var maxDays = cfg.maxAdvanceDays || 90;
+//     var currentDate = '';
+
+//     $('#facilityDropdown').select2({ width: '100%', placeholder: 'Select Facility' });
+//     $('#specialityDropdown').select2({ width: '100%', placeholder: 'Search Speciality' });
+//     $('#doctorDropdown').select2({ width: '100%', placeholder: 'Search Doctor' });
+
+//     refreshLockState();
+
+//     $('#specialityLockWrap, #doctorLockWrap').on('mouseenter', function () {
+//         if ($(this).find('select').prop('disabled')) showTooltip($(this), $(this).attr('data-tooltip'));
+//     }).on('mouseleave', hideTooltip);
+
+//     buildCarousel();
+
+//     // Page load / back button / server re-render: draw the doctor that Razor selected
+//     if (cfg.initialDoctor) {
+//         mountDoctor(cfg.initialDoctor, cfg.facilityId, cfg.doctorId, cfg.savedSlotDate, cfg.savedSlotStart);
+//     }
+
+//     /* ── Tooltip & lock state ─────────────────────────── */
+//     function showTooltip($wrap, message) {
+//         hideTooltip();
+//         $wrap.append($('<div class="dropdown-tooltip"></div>').text(message));
+//     }
+//     function hideTooltip() { $('.dropdown-tooltip').remove(); }
+
+//     function refreshLockState() {
+//         var facilityId = $('#facilityDropdown').val();
+//         var specialityId = $('#specialityDropdown').val();
+//         var doctorId = $('#doctorDropdown').val();
+
+//         if (!facilityId) {
+//             lockDropdown('#specialityDropdown', '#specialityLockWrap', 'Please select a facility first');
+//             lockDropdown('#doctorDropdown', '#doctorLockWrap', 'Please select a facility first');
+//         } else if (!specialityId) {
+//             unlockDropdown('#specialityDropdown', '#specialityLockWrap');
+//             lockDropdown('#doctorDropdown', '#doctorLockWrap', 'Please select a speciality first');
+//         } else {
+//             unlockDropdown('#specialityDropdown', '#specialityLockWrap');
+//             unlockDropdown('#doctorDropdown', '#doctorLockWrap');
+//         }
+//         var current = !facilityId ? 'facility' : !specialityId ? 'speciality' : !doctorId ? 'doctor' : 'slot';
+//         var order = ['facility', 'speciality', 'doctor', 'slot'];
+//         $('#welcomeSteps li').each(function () {
+//             var idx = order.indexOf($(this).data('step'));
+//             $(this).toggleClass('done', idx < order.indexOf(current)).toggleClass('current', idx === order.indexOf(current));
+//         });
+//     }
+//     function lockDropdown(sel, wrap, msg) {
+//         $(sel).prop('disabled', true).trigger('change.select2');
+//         $(wrap).attr('data-tooltip', msg).addClass('is-locked');
+//     }
+//     function unlockDropdown(sel, wrap) {
+//         $(sel).prop('disabled', false).trigger('change.select2');
+//         $(wrap).removeClass('is-locked');
+//     }
+
+//     /* ── Hospital carousel (skips images that fail to load) ─ */
+//     function buildCarousel() {
+//         var images = cfg.hospitalImages || [];
+//         var loaded = new Array(images.length), pending = images.length;
+//         if (!pending) return finish();
+
+//         images.forEach(function (img, i) {
+//             var probe = new Image();
+//             probe.onload = function () { loaded[i] = img; done(); };
+//             probe.onerror = function () { done(); };
+//             probe.src = img.src;
+//         });
+//         function done() { if (--pending === 0) finish(); }
+
+//         function finish() {
+//             var ok = loaded.filter(Boolean);
+//             window._carouselImages = ok;
+//             if (!ok.length) { $('#hospitalCarousel').hide(); $('#welcomeStage').removeClass('has-media'); return; }
+
+//             var $track = $('#carouselTrack').empty(), $dots = $('#carouselDots').empty();
+//             ok.forEach(function (img, i) {
+//                 var $slide = $('<div class="carousel-slide"></div>').append($('<img>').attr({ src: img.src, alt: img.caption || 'Hospital photo' }));
+//                 if (img.caption) $slide.append($('<div class="carousel-caption"></div>').text(img.caption));
+//                 $track.append($slide);
+//                 $dots.append($('<button type="button" class="carousel-dot"></button>')
+//                     .toggleClass('active', i === 0).attr('aria-label', 'Slide ' + (i + 1))
+//                     .on('click', function () { goToSlide(i); startCarousel(); }));
+//             });
+//             window._carouselIndex = 0;
+//             $('#welcomeStage').addClass('has-media');
+//             $('#hospitalCarousel').show();
+//             if ($('#welcomeStage').css('display') !== 'none') startCarousel();
+//         }
+//     }
+//     function goToSlide(index) {
+//         var n = (window._carouselImages || []).length;
+//         if (!n) return;
+//         window._carouselIndex = (index + n) % n;
+//         $('#carouselTrack').css('transform', 'translateX(-' + (window._carouselIndex * 100) + '%)');
+//         $('.carousel-dot').removeClass('active').eq(window._carouselIndex).addClass('active');
+//     }
+//     function startCarousel() {
+//         stopCarousel();
+//         if ((window._carouselImages || []).length < 2) return;
+//         if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+//         window._carouselInterval = setInterval(function () { goToSlide((window._carouselIndex || 0) + 1); }, 3500);
+//     }
+//     function stopCarousel() {
+//         if (window._carouselInterval) { clearInterval(window._carouselInterval); window._carouselInterval = null; }
+//     }
+
+//     /* ── Stage switching ──────────────────────────────── */
+//     function showWelcome() {
+//         doctorRequestId++; slotRequestId++;
+//         if (window._flatpickrInstance) { window._flatpickrInstance.destroy(); window._flatpickrInstance = null; }
+//         $('#doctorIdentityCard').empty();
+//         $('#bookingPanel').empty();
+//         $('#bookingStage').hide();
+//         $('#hdnSelectedSlotStart').val('');
+//         $('#hdnSelectedSlotEnd').val('');
+//         $('#welcomeStage').show();
+//         startCarousel();
+//     }
+//     function showBookingStage() {
+//         stopCarousel();
+//         $('#welcomeStage').hide();
+//         $('#bookingStage').show();
+//     }
+
+//     /* ── Dropdown cascade ─────────────────────────────── */
+//     $('#facilityDropdown').on('change', function () {
+//         var facilityId = parseInt($(this).val());
+//         resetDropdown('#specialityDropdown', 'Search Speciality');
+//         resetDropdown('#doctorDropdown', 'Search Doctor');
+//         showWelcome();
+//         AppointmentValidation.clearErrors();
+//         refreshLockState();
+//         if (!facilityId) return;
+
+//         $.ajax({
+//             url: '?handler=GetSpecialities', method: 'POST', contentType: 'application/json',
+//             headers: { 'RequestVerificationToken': token }, data: JSON.stringify(facilityId),
+//             success: function (res) {
+//                 if (!res.success || parseInt($('#facilityDropdown').val()) !== facilityId) return;
+//                 populateDropdown('#specialityDropdown', res.data, 'id', 'specialisationName', 'Search Speciality');
+//                 refreshLockState();
+//             }
+//         });
+//     });
+
+//     $('#specialityDropdown').on('change', function () {
+//         var facilityId = parseInt($('#facilityDropdown').val());
+//         var specialityId = parseInt($(this).val());
+//         resetDropdown('#doctorDropdown', 'Search Doctor');
+//         showWelcome();
+//         AppointmentValidation.clearErrors();
+//         refreshLockState();
+//         if (!facilityId || !specialityId) return;
+
+//         $.ajax({
+//             url: '?handler=GetDoctors', method: 'POST', contentType: 'application/json',
+//             headers: { 'RequestVerificationToken': token },
+//             data: JSON.stringify({ facilityId: facilityId, specialityId: specialityId }),
+//             success: function (res) {
+//                 if (!res.success || parseInt($('#specialityDropdown').val()) !== specialityId) return;
+//                 populateDropdown('#doctorDropdown', res.data, 'id', 'fullName', 'Search Doctor');
+//                 refreshLockState();
+//             }
+//         });
+//     });
+
+//     $('#doctorDropdown').on('change', function () {
+//         var facilityId = parseInt($('#facilityDropdown').val());
+//         var specialityId = parseInt($('#specialityDropdown').val());
+//         var doctorId = parseInt($(this).val());
+//         AppointmentValidation.clearErrors();
+//         refreshLockState();
+
+//         if (!facilityId || !specialityId || !doctorId) { showWelcome(); return; }
+
+//         var reqId = ++doctorRequestId;
+//         showBookingStage();
+//         $('#hdnSelectedSlotStart').val('');
+//         $('#hdnSelectedSlotEnd').val('');
+//         $('#doctorIdentityCard').html('<div class="loading-note">Loading doctor details…</div>');
+//         $('#bookingPanel').empty();
+
+//         $.ajax({
+//             url: '?handler=GetDoctorDetails', method: 'POST', contentType: 'application/json',
+//             headers: { 'RequestVerificationToken': token },
+//             data: JSON.stringify({ facilityId: facilityId, specialityId: specialityId, doctorId: doctorId }),
+//             success: function (res) {
+//                 if (reqId !== doctorRequestId) return;
+//                 if (!res.success) { $('#doctorIdentityCard').html('<div class="text-danger">Failed to load doctor details.</div>'); return; }
+//                 mountDoctor(res.data, facilityId, doctorId, '', '');
+//             },
+//             error: function () {
+//                 if (reqId !== doctorRequestId) return;
+//                 $('#doctorIdentityCard').html('<div class="text-danger">Something went wrong. Please try again.</div>');
+//             }
+//         });
+//     });
+
+//     /* ── Render doctor + booking panel ────────────────── */
+//     function mountDoctor(doc, facilityId, doctorId, savedDate, savedStart) {
+//         var slots = doc.slots || [];
+//         var firstSlot = slots.length ? UI.parseSlot(slots[0].startTime) : null;
+//         var date = savedDate || (firstSlot ? UI.toDateStr(firstSlot) : UI.toDateStr(new Date()));
+
+//         $('#doctorIdentityCard').html(UI.renderDoctorCard(doc));
+//         $('#bookingPanel').html(UI.renderBooking(UI.renderSlots(slots, savedStart, 'No slots available for this date.'), noteText()));
+//         showBookingStage();
+//         setDateLabel(date);
+
+//         var saved = savedStart && slots.filter(function (s) { return s.startTime === savedStart; })[0];
+//         if (saved) { $('#hdnSelectedSlotStart').val(saved.startTime); $('#hdnSelectedSlotEnd').val(saved.endTime); }
+//         updateSummary();
+//         initCalendar(doc.hospitalLocationId, facilityId, doctorId, date);
+//     }
+
+//     function setDateLabel(dateStr) {
+//         var d = UI.parseSlot(dateStr + 'T00:00:00');
+//         $('#slotDateLabel').text(d ? UI.formatDay(d) : '');
+//     }
+
+//     function updateSummary() {
+//         var start = $('#hdnSelectedSlotStart').val();
+//         var d = start ? UI.parseSlot(start) : null;
+//         $('#selectionSummary').toggleClass('has-slot', !!d);
+//         $('#selectionValue').text(d ? UI.formatDay(d) + ' · ' + UI.formatTime(d) : 'Select a date and time');
+//     }
+
+//     /* ── Slot select & continue ───────────────────────── */
+//     $(document).on('click', '.slot-btn', function () {
+//         $('.slot-btn').removeClass('is-selected').attr('aria-pressed', 'false');
+//         $(this).addClass('is-selected').attr('aria-pressed', 'true');
+//         $('#hdnSelectedSlotStart').val($(this).attr('data-start'));
+//         $('#hdnSelectedSlotEnd').val($(this).attr('data-end'));
+//         AppointmentValidation.clearErrors();
+//         updateSummary();
+//     });
+
+//     $(document).on('click', '#continueBtn', function () {
+//         var errors = AppointmentValidation.validate();
+//         if (errors.length) { AppointmentValidation.showErrors(errors); return; }
+//         AppointmentValidation.clearErrors();
+
+//         $('#hdnFacilityId').val($('#facilityDropdown').val());
+//         $('#hdnSpecialityId').val($('#specialityDropdown').val());
+//         $('#hdnDoctorId').val($('#doctorDropdown').val());
+//         $('#appointmentForm').attr('action', '?handler=Continue').submit();
+//     });
+
+//     /* ── Calendar & slots by date ─────────────────────── */
+//     function startOfToday() { var d = new Date(); d.setHours(0, 0, 0, 0); return d; }
+//     function lastBookable() { var d = startOfToday(); d.setDate(d.getDate() + maxDays); return d; }
+//     function windowText() { return maxDays === 90 ? '3 months' : maxDays + ' days'; }
+//     function noteText() { return 'Appointments can be booked up to ' + windowText() + ' in advance.'; }
+
+//     function showLimitDialog() {
+//         var last = lastBookable();
+//         $('#limitDialogText').text("Appointments can't be booked beyond " + windowText() + " from today. Please choose a date on or before " +
+//             UI.formatDay(last) + ' ' + last.getFullYear() + '.');
+//         $('#limitDialog').prop('hidden', false);
+//         $('#limitDialogClose').trigger('focus');
+//     }
+//     function hideLimitDialog() { $('#limitDialog').prop('hidden', true); }
+//     $('#limitDialogClose').on('click', hideLimitDialog);
+//     $('#limitDialog').on('click', function (e) { if (e.target === this) hideLimitDialog(); });
+//     $(document).on('keydown', function (e) { if (e.key === 'Escape') hideLimitDialog(); });
+
+//     function initCalendar(hospitalLocationId, facilityId, doctorId, date) {
+//         if (window._flatpickrInstance) window._flatpickrInstance.destroy();
+//         currentDate = date;
+//         var today = startOfToday(), max = lastBookable(), $year;
+
+//         // No minDate: that would trim the month dropdown. Past days are disabled instead.
+//         window._flatpickrInstance = flatpickr('#slotCalendar', {
+//             inline: true, dateFormat: 'Y-m-d', defaultDate: date,
+//             disable: [function (d) { return d < today; }],
+//             onReady: function (sel, str, fp) {
+//                 var first = Math.min(today.getFullYear(), fp.currentYear);
+//                 $year = $('<select class="fp-year" aria-label="Year"></select>');
+//                 for (var y = first; y <= today.getFullYear() + 5; y++) $year.append($('<option></option>').val(y).text(y));
+//                 $year.val(fp.currentYear).on('change', function () { fp.changeYear(parseInt(this.value)); });
+//                 $(fp.currentYearElement).closest('.flatpickr-current-month').append($year);
+//             },
+//             onYearChange: function (sel, str, fp) { if ($year) $year.val(fp.currentYear); },
+//             onDayCreate: function (sel, str, fp, el) { if (el.dateObj > max) el.classList.add('beyond-window'); },
+//             onChange: function (selectedDates, dateStr, fp) {
+//                 if (!selectedDates.length) return;
+//                 if (selectedDates[0] > max) {
+//                     fp.setDate(currentDate, false);   // revert silently, keep the current slots
+//                     showLimitDialog();
+//                     return;
+//                 }
+//                 currentDate = dateStr;
+//                 loadSlots(dateStr, hospitalLocationId, facilityId, doctorId);
+//             }
+//         });
+//     }
+
+//     function loadSlots(date, hospitalLocationId, facilityId, doctorId) {
+//         var reqId = ++slotRequestId;
+//         setDateLabel(date);
+//         $('#hdnSelectedSlotStart').val('');
+//         $('#hdnSelectedSlotEnd').val('');
+//         updateSummary();
+//         $('#slotsContainer').html('<div class="text-muted">Loading slots…</div>');
+
+//         $.get('?handler=SlotsByDate', {
+//             facilityId: facilityId, doctorId: doctorId, hospitalLocationId: hospitalLocationId, date: date
+//         }).done(function (data) {
+//             if (reqId !== slotRequestId) return;
+//             $('#slotsContainer').html(UI.renderSlots(data, '', 'No slots available for this date.'));
+//         }).fail(function () {
+//             if (reqId !== slotRequestId) return;
+//             $('#slotsContainer').html('<div class="text-danger">Could not load slots. Please pick the date again.</div>');
+//         });
+//     }
+
+//     /* ── Dropdown helpers ─────────────────────────────── */
+//     function resetDropdown(selector, placeholder) {
+//         $(selector).empty().append($('<option>', { value: '', text: placeholder })).trigger('change.select2');
+//     }
+//     function populateDropdown(selector, data, valField, textField, placeholder) {
+//         var $el = $(selector);
+//         $el.empty().append($('<option>', { value: '', text: placeholder }));
+//         $.each(data || [], function (i, item) {
+//             $el.append($('<option>', { value: item[valField], text: item[textField] || item.name || 'N/A' }));
+//         });
+//         $el.trigger('change.select2');
+//     }
+// });
 
 
 
-//var AppointmentValidation = {
-
-//    rules: {
-//        facility: {
-//            selector: '#facilityDropdown',
-//            message: 'Please select a facility.'
-//        },
-//        speciality: {
-//            selector: '#specialityDropdown',
-//            message: 'Please select a speciality.'
-//        },
-//        doctor: {
-//            selector: '#doctorDropdown',
-//            message: 'Please select a doctor.'
-//        },
-//        slot: {
-//            selector: '#hdnSelectedSlotStart',
-//            message: 'Please select a time slot.'
-//        }
-//    },
-
-//    validate: function () {
-//        var errors = [];
-//        $.each(this.rules, function (key, rule) {
-//            if (!$(rule.selector).val()) {
-//                errors.push(rule.message);
-//            }
-//        });
-//        return errors;
-//    },
-
-//    showErrors: function (errors) {
-//        $('#clientErrors').remove();
-//        if (errors.length === 0) return;
-
-//        var html = '<div id="clientErrors" class="alert alert-danger mt-3"><ul class="mb-0">';
-//        $.each(errors, function (i, e) {
-//            html += '<li>' + e + '</li>';
-//        });
-//        html += '</ul></div>';
-
-//        $('.wizard-track').after(html);
-//        $('html, body').animate({ scrollTop: 0 }, 300);
-//    },
-
-//    clearErrors: function () {
-//        $('#clientErrors').remove();
-//    }
-//};
-
-//$(document).ready(function () {
-
-//    var token = $('input[name="__RequestVerificationToken"]').val();
-
-//    // ── Select2 Initialize ───────────────────────────────
-//    $('#facilityDropdown').select2({ width: '100%', placeholder: 'Select Facility' });
-//    $('#specialityDropdown').select2({ width: '100%', placeholder: 'Search Speciality' });
-//    $('#doctorDropdown').select2({ width: '100%', placeholder: 'Search Doctor' });
-
-//    // ── Initial Lock State (based on what's already selected on load) ──
-//    refreshLockState();
-
-//    // ── Tooltip on disabled dropdown hover ───────────────
-//    $('#specialityLockWrap, #doctorLockWrap').on('mouseenter', function () {
-//        var $select = $(this).find('select');
-//        if ($select.prop('disabled')) {
-//            showTooltip($(this), $(this).attr('data-tooltip'));
-//        }
-//    }).on('mouseleave', function () {
-//        hideTooltip();
-//    });
-
-
-
-//    // ── Back button case: Razor ne already card render kiya hai ──
-//    // Fresh select case mein #slotCalendar tab nahi hota DOM mein
-//    if ($('#slotCalendar').length > 0) {
-//        var savedDate = window.AppointmentConfig.savedSlotDate || 'today';
-//        var savedStart = window.AppointmentConfig.savedSlotStart || '';
-
-//        // Calendar initialize karo
-//        initCalendar(
-//            window.AppointmentConfig.hospitalLocationId,
-//            window.AppointmentConfig.facilityId,
-//            window.AppointmentConfig.doctorId
-//        );
-
-//        // Saved slot highlight karo
-//        if (savedStart) {
-//            $('#hdnSelectedSlotStart').val(savedStart);
-//            $('.slot-btn').each(function () {
-//                if ($(this).data('start') === savedStart) {
-//                    $(this).removeClass('btn-outline-primary')
-//                        .addClass('btn-primary');
-//                }
-//            });
-//        }
-//    }
-//    function showTooltip($wrap, message) {
-//        $('.dropdown-tooltip').remove();
-//        var tip = $('<div class="dropdown-tooltip">' + message + '</div>');
-//        $wrap.append(tip);
-//    }
-
-//    function hideTooltip() {
-//        $('.dropdown-tooltip').remove();
-//    }
-
-//    // ── Lock/Unlock logic ─────────────────────────────────
-//    function refreshLockState() {
-//        var facilityId = $('#facilityDropdown').val();
-//        var specialityId = $('#specialityDropdown').val();
-
-//        if (!facilityId) {
-//            lockDropdown('#specialityDropdown', '#specialityLockWrap', 'Please select a facility first');
-//            lockDropdown('#doctorDropdown', '#doctorLockWrap', 'Please select a facility first');
-//        } else if (!specialityId) {
-//            unlockDropdown('#specialityDropdown', '#specialityLockWrap');
-//            lockDropdown('#doctorDropdown', '#doctorLockWrap', 'Please select a speciality first');
-//        } else {
-//            unlockDropdown('#specialityDropdown', '#specialityLockWrap');
-//            unlockDropdown('#doctorDropdown', '#doctorLockWrap');
-//        }
-//    }
-
-//    function lockDropdown(selector, wrapSelector, tooltipMsg) {
-//        $(selector).prop('disabled', true).trigger('change.select2');
-//        $(wrapSelector).attr('data-tooltip', tooltipMsg).addClass('is-locked');
-//    }
-
-//    function unlockDropdown(selector, wrapSelector) {
-//        $(selector).prop('disabled', false).trigger('change.select2');
-//        $(wrapSelector).removeClass('is-locked');
-//    }
-
-//    // ── Facility Change → Load Specialities ──────────────
-//    // ── Facility Change → Load Specialities ──────────────
-//    $('#facilityDropdown').on('change', function () {
-//        var facilityId = parseInt($(this).val());
-
-//        resetDropdown('#specialityDropdown', 'Search Speciality');
-//        resetDropdown('#doctorDropdown', 'Search Doctor');
-//        $('#doctorDetailsCard').hide().html('');
-//        AppointmentValidation.clearErrors();
-
-//        refreshLockState(); // pehle lock karo
-
-//        if (!facilityId) return;
-
-//        $.ajax({
-//            url: '?handler=GetSpecialities',
-//            method: 'POST',
-//            contentType: 'application/json',
-//            headers: { 'RequestVerificationToken': token },
-//            data: JSON.stringify(facilityId),
-//            success: function (res) {
-//                if (!res.success) return;
-//                populateDropdown(
-//                    '#specialityDropdown', res.data,
-//                    'id', 'specialisationName', 'Search Speciality');
-//                refreshLockState(); // ← YAHAN UNCOMMENT/ADD KARO ✅
-//            }
-//        });
-//    });
-
-
-//    // ── Speciality Change → Load Doctors ─────────────────
-//    $('#specialityDropdown').on('change', function () {
-//        var facilityId = parseInt($('#facilityDropdown').val());
-//        var specialityId = parseInt($(this).val());
-
-//        resetDropdown('#doctorDropdown', 'Search Doctor');
-//        $('#doctorDetailsCard').hide().html('');
-//        AppointmentValidation.clearErrors();
-
-//        refreshLockState();
-
-//        if (!facilityId || !specialityId) return;
-
-//        $.ajax({
-//            url: '?handler=GetDoctors',
-//            method: 'POST',
-//            contentType: 'application/json',
-//            headers: { 'RequestVerificationToken': token },
-//            data: JSON.stringify({
-//                facilityId: facilityId,
-//                specialityId: specialityId
-//            }),
-//            success: function (res) {
-//                if (!res.success) return;
-//                populateDropdown(
-//                    '#doctorDropdown', res.data,
-//                    'id', 'fullName', 'Search Doctor');
-//                refreshLockState();
-//            }
-//        });
-//    });
-
-//    // ── Doctor Change → Load Doctor Details ──────────────
-//    $('#doctorDropdown').on('change', function () {
-//        var facilityId = parseInt($('#facilityDropdown').val());
-//        var specialityId = parseInt($('#specialityDropdown').val());
-//        var doctorId = parseInt($(this).val());
-
-//        $('#doctorDetailsCard').hide().html('');
-//        AppointmentValidation.clearErrors();
-
-//        if (!facilityId || !specialityId || !doctorId) return;
-
-//        $('#doctorDetailsCard')
-//            .show()
-//            .html('<div class="text-muted p-3">Loading doctor details...</div>');
-
-//        $.ajax({
-//            url: '?handler=GetDoctorDetails',
-//            method: 'POST',
-//            contentType: 'application/json',
-//            headers: { 'RequestVerificationToken': token },
-//            data: JSON.stringify({
-//                facilityId: facilityId,
-//                specialityId: specialityId,
-//                doctorId: doctorId
-//            }),
-//            success: function (res) {
-//                if (!res.success) {
-//                    $('#doctorDetailsCard').html(
-//                        '<div class="text-danger p-3">Failed to load doctor details.</div>');
-//                    return;
-//                }
-//                renderDoctorCard(res.data, facilityId, doctorId);
-//            },
-//            error: function () {
-//                $('#doctorDetailsCard').html(
-//                    '<div class="text-danger p-3">Something went wrong.</div>');
-//            }
-//        });
-//    });
-
-//    // ── Slot Select ───────────────────────────────────────
-//    $(document).on('click', '.slot-btn', function () {
-//        $('.slot-btn').removeClass('btn-primary').addClass('btn-outline-primary');
-//        $(this).removeClass('btn-outline-primary').addClass('btn-primary');
-//        $('#hdnSelectedSlotStart').val($(this).data('start'));
-//        $('#hdnSelectedSlotEnd').val($(this).data('end'));
-//        AppointmentValidation.clearErrors();
-//    });
-
-//    // ── Continue Button ───────────────────────────────────
-//    $(document).on('click', '#continueBtn', function () {
-//        var errors = AppointmentValidation.validate();
-//        if (errors.length > 0) {
-//            AppointmentValidation.showErrors(errors);
-//            return;
-//        }
-//        AppointmentValidation.clearErrors();
-
-//        // Hidden fields update karo before submit
-//        $('#hdnFacilityId').val($('#facilityDropdown').val());
-//        $('#hdnSpecialityId').val($('#specialityDropdown').val());
-//        $('#hdnDoctorId').val($('#doctorDropdown').val());
-
-//        $('#appointmentForm')
-//            .attr('action', '?handler=Continue')
-//            .submit();
-//    });
-
-//    function toHttps(url) {
-//        if (!url) return '/Image/default-doctor.png';
-//        return url.replace('http://', 'https://');
-//    }
-//    // ── Render Doctor Card ────────────────────────────────
-//    function renderDoctorCard(doc, facilityId, doctorId) {
-//        var html = `
-//        <div class="row">
-//            <div class="col-md-3 text-center">
-//                <img src="${toHttps(doc.imageUrl)}"
-//                     style="width:180px;height:180px;object-fit:cover;border-radius:50%;"
-//                     onerror="this.onerror=null; this.src='/Image/default-doctor.png';" />
-//                <div class="mt-2">
-//                    <span class="badge bg-warning text-dark">
-//                        ⭐ ${doc.rating || 'N/A'}
-//                    </span>
-//                    <span class="text-muted ms-1" style="font-size:12px;">
-//                        (${doc.review || '0'} reviews)
-//                    </span>
-//                </div>
-//                ${doc.isTeleconsult
-//                ? `<div class="mt-2">
-//                           <span class="badge bg-success">Teleconsultation Available</span>
-//                       </div>`
-//                : ''}
-//            </div>
-//            <div class="col-md-9">
-//                <h3>${doc.name}</h3>
-//                <p class="text-muted mb-3">${doc.specialisation}</p>
-//                <div class="row g-2">
-//                    <div class="col-md-6">
-//                        <strong>Experience:</strong>
-//                        <span>${doc.experience}</span>
-//                    </div>
-//                    <div class="col-md-6">
-//                        <strong>Consultation Fee:</strong>
-//                        <span class="text-success fw-bold">₹ ${doc.fee}</span>
-//                    </div>
-//                    <div class="col-md-6">
-//                        <strong>Next Available:</strong>
-//                        <span>${doc.timing}</span>
-//                    </div>
-//                    ${doc.treatment
-//                ? `<div class="col-md-12">
-//                               <strong>Treatments:</strong>
-//                               <span>${doc.treatment}</span>
-//                           </div>`
-//                : ''}
-//                    ${doc.hospitalName
-//                ? `<div class="col-md-12">
-//                               <strong>Hospital:</strong>
-//                               <span>${doc.hospitalName}, ${doc.hospitalCity}</span>
-//                           </div>`
-//                : ''}
-//                </div>
-//            </div>
-//        </div>
-
-//        <hr class="my-4" />
-
-//        <div class="row g-4">
-//            <div class="col-md-4">
-//                <h5 class="mb-3">Select Date</h5>
-//                <input type="text" id="slotCalendar"
-//                       class="form-control"
-//                       placeholder="Select date"
-//                       readonly 
-//                       style="display:none;" />
-//            </div>
-//            <div class="col-md-8">
-//                <h5 class="mb-3">
-//                    Available Slots
-//                    <span id="slotDateLabel" class="text-muted fs-6 ms-2"></span>
-//                </h5>
-//                <div id="slotsContainer" class="d-flex flex-wrap gap-2">
-//                    ${renderSlots(doc.slots)}
-//                </div>
-//            </div>
-//        </div>
-
-//        <input type="hidden" id="hdnHospitalLocationId" value="${doc.hospitalLocationId}" />
-//        <input type="hidden" id="hdnDoctorIdForSlot"    value="${doctorId}" />
-//        <input type="hidden" id="hdnFacilityIdForSlot"  value="${facilityId}" />
-
-//        <div class="text-end mt-5">
-//            <button type="button" id="continueBtn"
-//                    class="btn btn-primary px-5 py-3 rounded-pill">
-//                Continue →
-//            </button>
-//        </div>`;
-
-//        $('#doctorDetailsCard').html(html);
-//        initCalendar(doc.hospitalLocationId, facilityId, doctorId);
-//    }
-
-//    // ── Render Slots ──────────────────────────────────────
-//    function renderSlots(slots) {
-//        if (!slots || slots.length === 0)
-//            return '<div class="text-muted">No slots available for today.</div>';
-
-//        var savedStart = window.AppointmentConfig.savedSlotStart;
-
-//        return slots.map(function (slot) {
-//            var isSelected = savedStart && slot.startTime === savedStart;
-
-//            // ── Saved slot ke hidden fields restore karo ──
-//            if (isSelected) {
-//                $('#hdnSelectedSlotStart').val(slot.startTime);
-//                $('#hdnSelectedSlotEnd').val(slot.endTime);
-//            }
-
-//            var parsed = new Date(slot.startTime.replace(' ', 'T'));
-//            var isValid = !isNaN(parsed.getTime());
-//            var timePart = isValid
-//                ? parsed.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-//                : slot.startTime;
-//            var datePart = isValid
-//                ? parsed.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
-//                : '';
-
-//            return `<button type="button"
-//                    class="btn ${isSelected ? 'btn-primary' : 'btn-outline-primary'} rounded-pill px-3 py-1 slot-btn"
-//                    style="font-size:13px;"
-//                    data-start="${slot.startTime}"
-//                    data-end="${slot.endTime}">
-//                    <div>${timePart}</div>
-//                    <div style="font-size:10px;color:#888;">${datePart}</div>
-//                </button>`;
-//        }).join('');
-//    }
-
-//    // ── Calendar ──────────────────────────────────────────
-//    function initCalendar(hospitalLocationId, facilityId, doctorId) {
-//        if (window._flatpickrInstance)
-//            window._flatpickrInstance.destroy();
-
-//        var savedDate = window.AppointmentConfig.savedSlotDate || 'today';
-
-//        window._flatpickrInstance = flatpickr('#slotCalendar', {
-//            inline: true,        // ← hamesha open rahega
-//            minDate: 'today',
-//            dateFormat: 'Y-m-d',
-//            defaultDate: savedDate,
-//            onChange: function (selectedDates, dateStr) {
-//                loadSlots(dateStr, hospitalLocationId, facilityId, doctorId);
-
-//                var today = new Date().toISOString().split('T')[0];
-//                var dateToLoad = (savedDate && savedDate !== 'today' && savedDate !== today);
-//                    loadSlots(savedDate, hospitalLocationId, facilityId, doctorId);
-//            }
-//        });
-//    }
-//    // ── Load Slots by Date ────────────────────────────────
-//    function loadSlots(date, hospitalLocationId, facilityId, doctorId) {
-//        $('#slotsContainer').html(
-//            '<div class="text-muted">Loading slots...</div>');
-//        $('#slotDateLabel').text('— ' + date);
-//        $('#hdnSelectedSlotStart').val('');
-//        $('#hdnSelectedSlotEnd').val('');
-
-//        $.get('?handler=SlotsByDate', {
-//            facilityId: facilityId,
-//            doctorId: doctorId,
-//            hospitalLocationId: hospitalLocationId,
-//            date: date
-//        }, function (data) {
-//            $('#slotsContainer').html(
-//                data && data.length > 0
-//                    ? renderSlots(data)
-//                    : '<div class="text-muted">No slots available for this date.</div>'
-//            );
-//        });
-//    }
-
-//    // ── Helpers ───────────────────────────────────────────
-//    function resetDropdown(selector, placeholder) {
-//        $(selector)
-//            .empty()
-//            .append($('<option>', { value: '', text: placeholder }))
-//            .trigger('change.select2');
-//    }
-
-//    function populateDropdown(selector, data, valField, textField, placeholder) {
-//        var $el = $(selector);
-//        $el.empty().append($('<option>', { value: '', text: placeholder }));
-//        $.each(data, function (i, item) {
-//            $el.append($('<option>', {
-//                value: item[valField],
-//                text: item[textField] || 'N/A'
-//            }));
-//        });
-//        // Select2 ko UI update ke liye notify karo bina change event fire kiye
-//        if ($el.data('select2')) {
-//            $el[0].dispatchEvent(new Event('change.select2'));
-//        }
-//    }
-//});
-
-
-
-
-//$(document).ready(function () {
-
-//    var token = $('input[name="__RequestVerificationToken"]').val();
-
-//    // ── Select2 Initialize ───────────────────────────────
-//    $('#facilityDropdown').select2({ width: '100%', placeholder: 'Select Facility' });
-//    $('#specialityDropdown').select2({ width: '100%', placeholder: 'Search Speciality' });
-//    $('#doctorDropdown').select2({ width: '100%', placeholder: 'Search Doctor' });
-
-//    // ── Facility Change → Load Specialities ──────────────
-//    $('#facilityDropdown').on('change', function () {
-//        var facilityId = parseInt($(this).val());
-
-//        resetDropdown('#specialityDropdown', 'Search Speciality');
-//        resetDropdown('#doctorDropdown', 'Search Doctor');
-//        $('#doctorDetailsCard').hide().html('');
-
-//        if (!facilityId) return;
-
-//        $.ajax({
-//            url: '?handler=GetSpecialities',
-//            method: 'POST',
-//            contentType: 'application/json',
-//            headers: { 'RequestVerificationToken': token },
-//            data: JSON.stringify(facilityId),
-//            success: function (res) {
-//                if (!res.success) return;
-//                populateDropdown(
-//                    '#specialityDropdown', res.data,
-//                    'id', 'specialisationName', 'Search Speciality');
-//            }
-//        });
-//    });
-
-//    // ── Speciality Change → Load Doctors ─────────────────
-//    $('#specialityDropdown').on('change', function () {
-//        var facilityId = parseInt($('#facilityDropdown').val());
-//        var specialityId = parseInt($(this).val());
-
-//        resetDropdown('#doctorDropdown', 'Search Doctor');
-//        $('#doctorDetailsCard').hide().html('');
-
-//        if (!facilityId || !specialityId) return;
-
-//        $.ajax({
-//            url: '?handler=GetDoctors',
-//            method: 'POST',
-//            contentType: 'application/json',
-//            headers: { 'RequestVerificationToken': token },
-//            data: JSON.stringify({
-//                facilityId: facilityId,
-//                specialityId: specialityId
-//            }),
-//            success: function (res) {
-//                if (!res.success) return;
-//                populateDropdown(
-//                    '#doctorDropdown', res.data,
-//                    'id', 'fullName', 'Search Doctor');
-//            }
-//        });
-//    });
-
-//    // ── Doctor Change → Load Doctor Details ──────────────
-//    $('#doctorDropdown').on('change', function () {
-//        var facilityId = parseInt($('#facilityDropdown').val());
-//        var specialityId = parseInt($('#specialityDropdown').val());
-//        var doctorId = parseInt($(this).val());
-
-//        $('#doctorDetailsCard').hide().html('');
-
-//        if (!facilityId || !specialityId || !doctorId) return;
-
-//        $('#doctorDetailsCard')
-//            .show()
-//            .html('<div class="text-muted p-3">Loading doctor details...</div>');
-
-//        $.ajax({
-//            url: '?handler=GetDoctorDetails',
-//            method: 'POST',
-//            contentType: 'application/json',
-//            headers: { 'RequestVerificationToken': token },
-//            data: JSON.stringify({
-//                facilityId: facilityId,
-//                specialityId: specialityId,
-//                doctorId: doctorId
-//            }),
-//            success: function (res) {
-//                if (!res.success) {
-//                    $('#doctorDetailsCard').html(
-//                        '<div class="text-danger p-3">Failed to load doctor details.</div>');
-//                    return;
-//                }
-//                renderDoctorCard(res.data, facilityId, doctorId);
-//            },
-//            error: function () {
-//                $('#doctorDetailsCard').html(
-//                    '<div class="text-danger p-3">Something went wrong.</div>');
-//            }
-//        });
-//    });
-
-//    // ── Slot Select ───────────────────────────────────────
-//    $(document).on('click', '.slot-btn', function () {
-//        $('.slot-btn').removeClass('btn-primary').addClass('btn-outline-primary');
-//        $(this).removeClass('btn-outline-primary').addClass('btn-primary');
-//        $('#hdnSelectedSlotStart').val($(this).data('start'));
-//        $('#hdnSelectedSlotEnd').val($(this).data('end'));
-//        AppointmentValidation.clearErrors();
-//    });
-
-//    // ── Continue Button ───────────────────────────────────
-//    $(document).on('click', '#continueBtn', function () {
-//        var errors = AppointmentValidation.validate();
-//        if (errors.length > 0) {
-//            AppointmentValidation.showErrors(errors);
-//            return;
-//        }
-//        AppointmentValidation.clearErrors();
-//        $('#appointmentForm')
-//            .attr('action', '?handler=Continue')
-//            .submit();
-//    });
-
-//    // ── Render Doctor Card ────────────────────────────────
-//    function renderDoctorCard(doc, facilityId, doctorId) {
-//        var html = `
-//        <div class="row">
-//            <div class="col-md-3 text-center">
-//                <img src="${doc.imageUrl}"
-//                     style="width:180px;height:180px;object-fit:cover;border-radius:50%;"
-//                     onerror="this.src='/images/default-doctor.png'" />
-//                <div class="mt-2">
-//                    <span class="badge bg-warning text-dark">
-//                        ⭐ ${doc.rating || 'N/A'}
-//                    </span>
-//                    <span class="text-muted ms-1" style="font-size:12px;">
-//                        (${doc.review || '0'} reviews)
-//                    </span>
-//                </div>
-//                ${doc.isTeleconsult
-//                ? `<div class="mt-2">
-//                           <span class="badge bg-success">Teleconsultation Available</span>
-//                       </div>`
-//                : ''}
-//            </div>
-//            <div class="col-md-9">
-//                <h3>${doc.name}</h3>
-//                <p class="text-muted mb-3">${doc.specialisation}</p>
-//                <div class="row g-2">
-//                    <div class="col-md-6">
-//                        <strong>Experience:</strong>
-//                        <span>${doc.experience}</span>
-//                    </div>
-//                    <div class="col-md-6">
-//                        <strong>Consultation Fee:</strong>
-//                        <span class="text-success fw-bold">₹ ${doc.fee}</span>
-//                    </div>
-//                    <div class="col-md-6">
-//                        <strong>Next Available:</strong>
-//                        <span>${doc.timing}</span>
-//                    </div>
-//                    ${doc.treatment
-//                ? `<div class="col-md-12">
-//                               <strong>Treatments:</strong>
-//                               <span>${doc.treatment}</span>
-//                           </div>`
-//                : ''}
-//                    ${doc.hospitalName
-//                ? `<div class="col-md-12">
-//                               <strong>Hospital:</strong>
-//                               <span>${doc.hospitalName}, ${doc.hospitalCity}</span>
-//                           </div>`
-//                : ''}
-//                </div>
-//            </div>
-//        </div>
-
-//        <hr class="my-4" />
-
-//        <div class="row g-4">
-//            <div class="col-md-4">
-//                <h5 class="mb-3">Select Date</h5>
-//                <input type="text" id="slotCalendar"
-//                       class="form-control"
-//                       placeholder="Select date"
-//                       readonly />
-//            </div>
-//            <div class="col-md-8">
-//                <h5 class="mb-3">
-//                    Available Slots
-//                    <span id="slotDateLabel" class="text-muted fs-6 ms-2"></span>
-//                </h5>
-//                <div id="slotsContainer" class="d-flex flex-wrap gap-2">
-//                    ${renderSlots(doc.slots)}
-//                </div>
-//            </div>
-//        </div>
-
-//        <input type="hidden" id="hdnHospitalLocationId" value="${doc.hospitalLocationId}" />
-//        <input type="hidden" id="hdnDoctorIdForSlot"    value="${doctorId}" />
-//        <input type="hidden" id="hdnFacilityIdForSlot"  value="${facilityId}" />
-
-//        <div class="text-end mt-5">
-//            <button type="button" id="continueBtn"
-//                    class="btn btn-primary px-5 py-3 rounded-pill">
-//                Continue →
-//            </button>
-//        </div>`;
-
-//        $('#doctorDetailsCard').html(html);
-//        initCalendar(doc.hospitalLocationId, facilityId, doctorId);
-//    }
-
-//    // ── Render Slots ──────────────────────────────────────
-//    function renderSlots(slots) {
-//        if (!slots || slots.length === 0)
-//            return '<div class="text-muted">No slots available for today.</div>';
-
-//        return slots.map(function (slot) {
-//            var parsed = new Date(slot.startTime.replace(' ', 'T'));
-//            var isValid = !isNaN(parsed.getTime());
-//            var timePart = isValid
-//                ? parsed.toLocaleTimeString('en-US',
-//                    { hour: '2-digit', minute: '2-digit' })
-//                : slot.startTime;
-//            var datePart = isValid
-//                ? parsed.toLocaleDateString('en-IN',
-//                    { day: '2-digit', month: 'short', year: 'numeric' })
-//                : '';
-
-//            return `<button type="button"
-//                        class="btn btn-outline-primary rounded-pill px-3 py-1 slot-btn"
-//                        style="font-size:13px;"
-//                        data-start="${slot.startTime}"
-//                        data-end="${slot.endTime}">
-//                        <div>${timePart}</div>
-//                        <div style="font-size:10px;color:#888;">${datePart}</div>
-//                    </button>`;
-//        }).join('');
-//    }
-
-//    // ── Calendar ──────────────────────────────────────────
-//    function initCalendar(hospitalLocationId, facilityId, doctorId) {
-//        if (window._flatpickrInstance)
-//            window._flatpickrInstance.destroy();
-
-//        window._flatpickrInstance = flatpickr('#slotCalendar', {
-//            minDate: 'today',
-//            dateFormat: 'Y-m-d',
-//            defaultDate: 'today',
-//            onChange: function (selectedDates, dateStr) {
-//                loadSlots(dateStr, hospitalLocationId, facilityId, doctorId);
-//            }
-//        });
-//    }
-
-//    // ── Load Slots by Date ────────────────────────────────
-//    function loadSlots(date, hospitalLocationId, facilityId, doctorId) {
-//        $('#slotsContainer').html(
-//            '<div class="text-muted">Loading slots...</div>');
-//        $('#slotDateLabel').text('— ' + date);
-//        $('#hdnSelectedSlotStart').val('');
-//        $('#hdnSelectedSlotEnd').val('');
-
-//        $.get('?handler=SlotsByDate', {
-//            facilityId: facilityId,
-//            doctorId: doctorId,
-//            hospitalLocationId: hospitalLocationId,
-//            date: date
-//        }, function (data) {
-//            $('#slotsContainer').html(
-//                data && data.length > 0
-//                    ? renderSlots(data)
-//                    : '<div class="text-muted">No slots available for this date.</div>'
-//            );
-//        });
-//    }
-
-//    // ── Helpers ───────────────────────────────────────────
-//    function resetDropdown(selector, placeholder) {
-//        $(selector)
-//            .empty()
-//            .append($('<option>', { value: '', text: placeholder }))
-//            .trigger('change.select2');
-//    }
-
-//    function populateDropdown(selector, data, valField, textField, placeholder) {
-//        var $el = $(selector);
-//        $el.empty().append($('<option>', { value: '', text: placeholder }));
-//        $.each(data, function (i, item) {
-//            $el.append($('<option>', {
-//                value: item[valField],
-//                text: item[textField] || 'N/A'
-//            }));
-//        });
-//        $el.trigger('change.select2');
-//    }
-//});
+

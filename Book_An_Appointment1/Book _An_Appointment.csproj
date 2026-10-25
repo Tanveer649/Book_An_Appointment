@@ -29,7 +29,7 @@
   <ItemGroup>
     <Content Remove="wwwroot\Images\Logo\logo.png" />
   </ItemGroup>
-
+	
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>

@@ -1,18 +1,4 @@
-﻿
-/* ============================================================
-   Book Appointment — visual identity
-   Concept: "patient chart" — a calm clinical paper background,
-   a serif display face for the doctor's identity, a monospace
-   face for anything measured (time, fee, experience), and a
-   single coral accent reserved for the things the patient must
-   act on (selected date, selected slot, Continue).
-
-   Layout: a fixed left rail (hospital photos → doctor identity
-   once chosen) beside a right column that carries the booking
-   steps (pick → date → slot → continue).
-   ============================================================ */
-
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,450;9..144,560;9..144,650&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,450;9..144,560;9..144,650&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
     --paper: #F3F7FB;
@@ -20,7 +6,7 @@
     --surface-alt: #EAF1F8;
     --ink: #12283D;
     --ink-soft: #56728A;
-    --ink-faint: #93A8BA;
+    --ink-faint: #8DA2B5;
     --line: #DCE6EF;
     --primary: #0F5C93;
     --primary-dark: #0A3F66;
@@ -30,23 +16,22 @@
     --accent-tint: #FDECE6;
     --success: #1C9A6C;
     --success-tint: #E4F5EE;
-    --gold: #C8890F;
+    --gold: #B87A08;
     --gold-tint: #FBF1DD;
     --danger: #C4432E;
     --danger-tint: #FBEAE6;
     --font-display: 'Fraunces', Georgia, serif;
     --font-body: 'Inter', 'Segoe UI', sans-serif;
-    --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
     --radius-lg: 22px;
     --radius-md: 14px;
     --radius-sm: 10px;
     --radius-pill: 999px;
-    --shadow-card: 0 32px 64px -32px rgba(10, 25, 40, .35);
-    --shadow-soft: 0 10px 24px -16px rgba(18, 40, 61, .20);
+    --shadow-card: 0 28px 56px -32px rgba(10, 25, 40, .35);
+    --shadow-soft: 0 10px 24px -16px rgba(18, 40, 61, .22);
     --shadow-lift: 0 2px 6px -2px rgba(18, 40, 61, .12);
 }
 
-/* ── Base ──────────────────────────────────────────────── */
+/* ── Base ─────────────────────────────────────────────── */
 body {
     background: var(--paper);
     font-family: var(--font-body);
@@ -74,7 +59,7 @@ body {
     }
 }
 
-/* ── Alerts ────────────────────────────────────────────── */
+/* ── Alerts / client validation ───────────────────────── */
 .alert-danger {
     background: var(--danger-tint);
     border: 1px solid #F1C4BA;
@@ -83,7 +68,6 @@ body {
     font-family: var(--font-body);
 }
 
-/* ── Client-side validation error box ─────────────────── */
 #clientValidationError:not(:empty) {
     background: var(--danger-tint);
     border: 1px solid #F1C4BA;
@@ -94,15 +78,14 @@ body {
     font-size: 14px;
 }
 
-/* ── Progress bar ──────────────────────────────────────── */
+/* ── Progress steps ───────────────────────────────────── */
 .progress-bar {
     display: flex;
     flex-direction: row;
     align-items: center;
     gap: 0;
-    margin-bottom: 2.75rem;
+    margin: -8px 0 2rem;
     width: 100%;
-    margin-top: -8px;
     padding: 0;
     background: none;
     border: none;
@@ -110,7 +93,6 @@ body {
 
 .step-item {
     display: flex;
-    flex-direction: row;
     align-items: center;
     gap: 10px;
     white-space: nowrap;
@@ -124,11 +106,9 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: var(--font-mono);
     font-size: 13px;
     font-weight: 600;
     flex-shrink: 0;
-    transition: background .2s ease, color .2s ease, box-shadow .2s ease;
 }
 
     .step-circle.done {
@@ -151,7 +131,6 @@ body {
 .step-label {
     font-size: 13px;
     color: var(--ink-faint);
-    white-space: nowrap;
     font-weight: 500;
 }
 
@@ -176,127 +155,26 @@ body {
         background: var(--success);
     }
 
-/* ── Two-column booking layout ─────────────────────────── */
-.appointment-layout {
+/* ── Selector bar (3 dropdowns in a row) ──────────────── */
+.selector-bar {
     display: grid;
-    grid-template-columns: 75% 25%;
-    gap: 32px;
-    align-items: start;
-}
-
-.side-panel {
-    position: static;
-}
-
-.main-panel {
-    min-width: 0;
-    /* Right column now reads as its own card, so it never
-       looks thin/cramped next to the wide left panel. */
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-soft);
-    padding: 1.75rem 1.5rem;
-}
-
-/* ── Hospital photo carousel ───────────────────────────── */
-.carousel {
-    position: relative;
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    aspect-ratio: 4 / 5;
-    max-height: 460px; /* stop the empty state from growing huge on wide columns */
-    box-shadow: var(--shadow-card);
-    background: var(--surface-alt);
-}
-
-.carousel-track {
-    display: flex;
-    height: 100%;
-    transition: transform .6s cubic-bezier(.65, 0, .35, 1);
-}
-
-.carousel-slide {
-    flex: 0 0 100%;
-    height: 100%;
-}
-
-    .carousel-slide img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-    }
-
-.carousel::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 45%;
-    background: linear-gradient(180deg, rgba(10, 25, 40, 0) 0%, rgba(10, 25, 40, .55) 100%);
-    pointer-events: none;
-}
-
-.carousel-caption {
-    position: absolute;
-    left: 20px;
-    right: 20px;
-    bottom: 40px;
-    color: #fff;
-    font-family: var(--font-display);
-    font-size: 17px;
-    font-weight: 560;
-    z-index: 2;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, .25);
-}
-
-.carousel-dots {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 16px;
-    display: flex;
-    justify-content: center;
-    gap: 7px;
-    z-index: 2;
-}
-
-.carousel-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, .5);
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    transition: width .2s ease, background .2s ease;
-}
-
-    .carousel-dot.active {
-        width: 20px;
-        border-radius: 4px;
-        background: #fff;
-    }
-
-/* ── Vertical dropdown stack (right column) ────────────── */
-.dropdown-stack {
-    display: flex;
-    flex-direction: column;
-    gap: 22px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 24px;
 }
 
 .dropdown-group {
-    width: 100%;
+    min-width: 0;
 }
 
-/* ── Field labels ──────────────────────────────────────── */
 .form-label.fw-bold {
-    font-family: var(--font-body);
     font-size: 13px;
     font-weight: 600;
-    letter-spacing: .01em;
     color: var(--ink);
     margin-bottom: 6px;
 }
@@ -305,9 +183,15 @@ body {
     color: var(--accent) !important;
 }
 
-/* ── Select2 dropdowns ─────────────────────────────────── *
-   Font sizes intentionally kept modest (13.5–14px) so the
-   dropdown text reads as refined, not oversized/native-looking. */
+.dropdown-lock-wrap {
+    position: relative;
+    display: block;
+}
+
+    .dropdown-lock-wrap.is-locked {
+        cursor: not-allowed;
+    }
+
 .select2-container--default .select2-selection--single {
     height: 48px;
     border: 1.5px solid var(--line);
@@ -321,12 +205,16 @@ body {
 }
 
     .select2-container--default .select2-selection--single .select2-selection__rendered {
-        font-family: var(--font-body);
         font-size: 14px;
         font-weight: 500;
         color: var(--ink);
         line-height: 48px;
         padding-left: 14px;
+        padding-right: 28px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        width: 100%;
     }
 
     .select2-container--default .select2-selection--single .select2-selection__placeholder {
@@ -344,16 +232,18 @@ body {
         box-shadow: 0 0 0 3px var(--primary-tint);
     }
 
+.select2-container--default.select2-container--disabled .select2-selection--single {
+    background: var(--surface-alt);
+    cursor: not-allowed;
+    box-shadow: none;
+    border-color: var(--line);
+}
+
 .select2-dropdown {
     border: 1.5px solid var(--line);
     border-radius: var(--radius-sm);
     box-shadow: var(--shadow-soft);
-    font-family: var(--font-body);
     overflow: hidden;
-}
-
-.select2-container--default .select2-results > .select2-results__options {
-    max-height: 260px;
 }
 
 .select2-results__option {
@@ -376,24 +266,7 @@ body {
         border: 1.5px solid var(--line);
         border-radius: var(--radius-sm);
         padding: 8px 10px;
-        font-family: var(--font-body);
         font-size: 13.5px;
-    }
-
-.select2-container--default.select2-container--disabled .select2-selection--single {
-    background: var(--surface-alt);
-    color: var(--ink-faint);
-    cursor: not-allowed;
-}
-
-/* ── Locked dropdown + tooltip ─────────────────────────── */
-.dropdown-lock-wrap {
-    position: relative;
-    display: block;
-}
-
-    .dropdown-lock-wrap.is-locked {
-        cursor: not-allowed;
     }
 
 .dropdown-tooltip {
@@ -403,7 +276,6 @@ body {
     z-index: 20;
     background: var(--ink);
     color: #fff;
-    font-family: var(--font-body);
     font-size: 12.5px;
     font-weight: 500;
     padding: 7px 12px;
@@ -436,65 +308,234 @@ body {
     }
 }
 
-/* ── Inline empty hint (right column, before a doctor is chosen) ── */
-.empty-hint {
-    margin-top: 22px;
-    border: 1.5px dashed var(--line);
-    border-radius: var(--radius-md);
-    padding: 16px 18px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: var(--ink-soft);
-    font-size: 13.5px;
+/* ── Welcome stage (before a doctor is chosen) ────────── */
+.welcome-stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+    align-items: stretch;
 }
 
-    .empty-hint svg {
-        flex-shrink: 0;
-        color: var(--primary);
+    .welcome-stage.has-media {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
     }
 
-/* ── Doctor identity card (left rail, signature element) ─ *
-   Height trimmed down (smaller avatar, tighter padding/gaps)
-   so the slots panel is visible sooner without scrolling.   */
+.empty-hint {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+    padding: 2.25rem 2.25rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1.5rem;
+}
+
+.welcome-title {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 560;
+    line-height: 1.2;
+    margin: 0 0 8px;
+    color: var(--ink);
+}
+
+.welcome-text {
+    color: var(--ink-soft);
+    font-size: 14.5px;
+    line-height: 1.6;
+    margin: 0;
+    max-width: 46ch;
+}
+
+.welcome-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+    .welcome-steps li {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--ink-soft);
+    }
+
+    .welcome-steps .num {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12.5px;
+        font-weight: 600;
+        background: var(--surface-alt);
+        color: var(--ink-soft);
+        transition: background .2s, color .2s;
+    }
+
+    .welcome-steps li.current {
+        color: var(--ink);
+    }
+
+        .welcome-steps li.current .num {
+            background: var(--primary);
+            color: #fff;
+        }
+
+    .welcome-steps li.done .num {
+        background: var(--success);
+        color: #fff;
+    }
+
+/* ── Hospital carousel ────────────────────────────────── */
+.carousel {
+    position: relative;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    aspect-ratio: 16 / 10;
+    min-height: 300px;
+    box-shadow: var(--shadow-card);
+    background: var(--surface-alt);
+}
+
+.carousel-track {
+    display: flex;
+    height: 100%;
+    transition: transform .6s cubic-bezier(.65, 0, .35, 1);
+}
+
+.carousel-slide {
+    position: relative;
+    flex: 0 0 100%;
+    height: 100%;
+}
+
+    .carousel-slide img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+.carousel::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 40%;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(10, 25, 40, 0), rgba(10, 25, 40, .6));
+}
+
+.carousel-caption {
+    position: absolute;
+    left: 22px;
+    right: 22px;
+    bottom: 38px;
+    z-index: 2;
+    color: #fff;
+    font-family: var(--font-display);
+    font-size: 19px;
+    font-weight: 560;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, .3);
+}
+
+.carousel-dots {
+    position: absolute;
+    inset: auto 0 14px 0;
+    display: flex;
+    justify-content: center;
+    gap: 7px;
+    z-index: 2;
+}
+
+.carousel-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .55);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: width .2s, background .2s;
+}
+
+    .carousel-dot.active {
+        width: 20px;
+        border-radius: 4px;
+        background: #fff;
+    }
+
+/* ── Booking stage: doctor card + booking panel ───────── */
+.booking-stage {
+    display: grid;
+    grid-template-columns: minmax(290px, 340px) minmax(0, 1fr);
+    gap: 24px;
+    align-items: stretch;
+}
+
 #doctorIdentityCard.doctor-card {
     background: var(--surface);
     border: 1px solid rgba(18, 40, 61, .05);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-card);
-    padding: 1.5rem 1.5rem;
-    position: relative;
-    overflow: hidden;
-}
-
-.doctor-profile {
+    padding: 1.75rem 1.5rem;
     display: flex;
-    flex-direction: row;
-    align-items: center;
-    text-align: left;
-    gap: 18px;
-    margin-bottom: 14px;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 1.25rem;
 }
 
-/* Avatar + rating stacked together as one column */
-.avatar-col {
+.doctor-head {
+    display: grid;
+    grid-template-columns: 88px minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+}
+
+.doctor-avatar-col {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 8px;
-    flex-shrink: 0;
+}
+
+.doctor-info {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding-top: 4px;
 }
 
 .doctor-avatar-wrap {
-    width: 72px;
-    height: 72px;
-    flex-shrink: 0;
+    width: 88px;
+    height: 88px;
     border-radius: 50%;
     overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background: linear-gradient(160deg, var(--primary-tint), var(--surface-alt));
-    border: 1px solid var(--line);
+    border: 3px solid var(--surface);
+    box-shadow: 0 0 0 1.5px var(--line), var(--shadow-soft);
 }
+
+    .doctor-avatar-wrap.no-photo::after {
+        content: attr(data-initials);
+        font-family: var(--font-display);
+        font-size: 30px;
+        font-weight: 560;
+        color: var(--primary);
+    }
 
 .doctor-avatar {
     width: 100%;
@@ -503,192 +544,185 @@ body {
     display: block;
 }
 
-.doctor-info-right {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
-    gap: 6px;
+.doctor-name {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 560;
+    color: var(--ink);
+    margin: 0;
+    line-height: 1.25;
+}
+
+.doctor-speciality {
+    margin: 0;
+    color: var(--primary);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .02em;
 }
 
 .doctor-rating {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 5px;
-    flex-wrap: wrap;
-    justify-content: center;
+    gap: 3px;
+    text-align: center;
 }
 
 .rating-badge {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     background: var(--gold-tint);
     color: var(--gold);
-    font-family: var(--font-body);
-    font-size: 12px;
-    font-weight: 600;
-    padding: 3px 9px;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 4px 12px;
     border-radius: var(--radius-pill);
-    white-space: nowrap;
 }
 
 .review-count {
     color: var(--ink-faint);
-    font-family: var(--font-body);
-    font-size: 11px;
-    white-space: nowrap;
+    font-size: 12px;
+    font-weight: 500;
 }
 
 .teleconsult-badge {
     display: inline-block;
+    margin-top: 8px;
     background: var(--success-tint);
     color: var(--success);
-    font-family: var(--font-body);
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 600;
-    padding: 4px 11px;
+    padding: 3px 10px;
     border-radius: var(--radius-pill);
 }
 
-.doctor-name {
-    font-family: var(--font-display);
-    font-size: 21px;
-    font-weight: 560;
-    color: var(--ink);
-    text-align: left;
-    margin: 0;
+.fee-block {
+    background: var(--accent-tint);
+    border: 1px solid #F8D3C7;
+    border-radius: var(--radius-md);
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
 }
 
-.doctor-specialisation {
-    color: var(--ink-soft);
-    font-family: var(--font-body);
+.fee-label {
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
+    color: var(--ink);
+}
+
+.fee-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--accent-dark);
+    line-height: 1;
+}
+
+.doctor-details {
     margin: 0;
-    text-align: left;
-}
-
-/* Vitals — same font family/size language as the select2
-   dropdown text, so the whole page feels typographically one thing. */
-.doctor-vitals {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px 14px;
-    border-top: 1px dashed var(--line);
-    padding-top: 14px;
-    margin-top: 4px;
-}
-
-.vital {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 14px;
+    border-top: 1px dashed var(--line);
+    padding-top: 1.1rem;
 }
 
-.vital-wide {
-    grid-column: 1 / -1;
-}
-
-/* Consultation fee gets its own highlighted chip so the eye
-   lands on it immediately. */
-.vital-highlight {
-    background: var(--accent-tint);
-    border-radius: var(--radius-sm);
-    padding: 8px 12px;
-}
-
-.vital-label {
-    font-family: var(--font-body);
-    font-size: 12.5px;
+.detail dt {
+    font-size: 12px;
     font-weight: 600;
-    letter-spacing: .01em;
-    color: var(--ink);
+    color: var(--ink-faint);
+    margin-bottom: 2px;
 }
 
-.vital-value {
-    font-family: var(--font-body);
+.detail dd {
+    margin: 0;
     font-size: 13.5px;
     font-weight: 500;
     color: var(--ink);
-    line-height: 1.4;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
 }
 
-.vital-accent {
-    color: var(--accent-dark);
-    font-weight: 700;
-    font-size: 15px;
+.loading-note {
+    color: var(--ink-faint);
+    font-size: 14px;
+    padding: .5rem 0;
 }
 
-/* ── Booking panel (calendar + slots + continue) ───────── *
-   Fixed-height card so the panel never overlaps the page
-   footer; only the slots list scrolls internally.          */
 #bookingPanel {
-    display: flex;
-    flex-direction: column;
-    height: 600px;
-    overflow: hidden;
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-soft);
-    padding: 1.75rem 2rem;
-    margin-top: 18px;
+    padding: 1.5rem 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    min-width: 0;
 }
 
-.panel-title,
-h5.mb-3 {
+.booking-grid {
+    display: grid;
+    grid-template-columns: 308px minmax(0, 1fr);
+    gap: 28px;
+    flex: 1 1 auto;
+}
+
+.panel-title {
     font-family: var(--font-display);
     font-size: 17px;
     font-weight: 560;
     color: var(--ink);
-    margin-bottom: 14px;
+    margin: 0 0 12px;
 }
 
-/* Calendar (left) + slots (right), side by side, sharing
-   the remaining height inside #bookingPanel.                */
-.booking-grid {
+.slots-head {
     display: flex;
-    flex-wrap: nowrap;
-    gap: 28px;
-    flex: 1 1 auto;
-    min-height: 0;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 30px;
+    margin-bottom: 12px;
 }
 
-.calendar-panel {
-    flex: 0 0 320px;
-    max-width: 320px;
-    overflow: hidden;
-}
+    .slots-head .panel-title {
+        margin: 0;
+    }
 
-.slots-panel {
-    flex: 1 1 0%;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-}
-
-.slot-date-label,
 #slotDateLabel {
-    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary);
+    text-align: right;
+}
+
+.calendar-panel, .slots-panel {
+    min-width: 0;
+}
+
+.calendar-note {
+    margin: 12px 0 0;
+    max-width: 308px;
     font-size: 12.5px;
-    font-weight: 500;
-    color: var(--ink-faint);
+    line-height: 1.5;
+    color: var(--ink-soft);
 }
 
-#calendarContainer {
-    display: none;
-}
-
-/* flatpickr theme — cosmetic overrides only; leave sizing to flatpickr
-   itself, or the day-grid math goes out of sync and the header wraps. */
+/* flatpickr — cosmetic only; sizing stays with flatpickr */
 .flatpickr-calendar {
     box-shadow: none !important;
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
     font-family: var(--font-body);
 }
+
+    .flatpickr-calendar.inline {
+        max-width: 100%;
+    }
 
 .flatpickr-months {
     padding: 8px 6px 2px;
@@ -716,39 +750,55 @@ h5.mb-3 {
     }
 
     .flatpickr-current-month .numInputWrapper {
-        width: 4.2em;
-    }
-
-    .flatpickr-current-month input.cur-year {
-        font-family: var(--font-mono);
-        font-size: 15px;
-        font-weight: 500;
-        color: var(--ink);
-        background: transparent;
-    }
-
-    .flatpickr-current-month .numInputWrapper span.arrowUp,
-    .flatpickr-current-month .numInputWrapper span.arrowDown {
         display: none;
     }
 
+    .flatpickr-current-month .fp-year {
+        font-family: var(--font-display);
+        font-size: 15px;
+        font-weight: 560;
+        color: var(--ink);
+        background: transparent;
+        border: none;
+        padding: 2px;
+        cursor: pointer;
+        margin-left: 2px;
+    }
+
+    .flatpickr-current-month .flatpickr-monthDropdown-months {
+        cursor: pointer;
+    }
+
+.flatpickr-day.beyond-window:not(.flatpickr-disabled) {
+    color: var(--ink-faint);
+    background: repeating-linear-gradient(135deg, transparent 0 4px, rgba(18, 40, 61, .05) 4px 8px);
+}
+
+.flatpickr-current-month input.cur-year {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink);
+    background: transparent;
+}
+
+.flatpickr-current-month .numInputWrapper span.arrowUp, .flatpickr-current-month .numInputWrapper span.arrowDown {
+    display: none;
+}
+
 .flatpickr-weekday {
-    font-family: var(--font-mono);
-    font-size: 10.5px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--ink-faint);
-    text-transform: uppercase;
 }
 
 .flatpickr-day {
     border-radius: var(--radius-sm);
-    font-family: var(--font-mono);
     font-size: 13px;
     color: var(--ink);
 }
 
     .flatpickr-day.today {
-        border-color: var(--accent);
+        border-color: var(--primary);
     }
 
     .flatpickr-day:hover {
@@ -756,8 +806,7 @@ h5.mb-3 {
         border-color: transparent;
     }
 
-    .flatpickr-day.selected,
-    .flatpickr-day.selected:hover {
+    .flatpickr-day.selected, .flatpickr-day.selected:hover {
         background: var(--primary);
         border-color: var(--primary);
         color: #fff;
@@ -768,31 +817,27 @@ h5.mb-3 {
         opacity: .4;
     }
 
-/* Slots — same font language as the dropdown text (font-body),
-   only this list scrolls, never the whole page. */
-.slots-container,
-#slotsContainer {
-    flex: 1 1 auto;
-    min-height: 0;
+/* Slots — only this list scrolls. Groups must never shrink (that clipped slots before). */
+.slots-container {
+    max-height: clamp(230px, 42vh, 340px);
     overflow-y: auto;
     padding-right: 8px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 18px;
 }
 
-    .slots-container::-webkit-scrollbar,
-    #slotsContainer::-webkit-scrollbar {
+    .slots-container::-webkit-scrollbar {
         width: 6px;
     }
 
-    .slots-container::-webkit-scrollbar-thumb,
-    #slotsContainer::-webkit-scrollbar-thumb {
+    .slots-container::-webkit-scrollbar-thumb {
         background: var(--line);
         border-radius: var(--radius-pill);
     }
 
 .slot-group {
+    flex: 0 0 auto;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -802,11 +847,8 @@ h5.mb-3 {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-family: var(--font-body);
-    font-size: 11.5px;
-    font-weight: 700;
-    letter-spacing: .08em;
-    text-transform: uppercase;
+    font-size: 12px;
+    font-weight: 600;
     color: var(--ink-soft);
 }
 
@@ -818,10 +860,7 @@ h5.mb-3 {
     }
 
 .slot-group-count {
-    font-family: var(--font-body);
     font-weight: 600;
-    letter-spacing: 0;
-    text-transform: none;
     color: var(--ink-faint);
     background: var(--surface-alt);
     padding: 1px 8px;
@@ -829,189 +868,347 @@ h5.mb-3 {
 }
 
 .slot-group-grid {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
     gap: 10px;
 }
 
 .slot-btn {
+    height: 40px;
     background: var(--surface);
     border: 1.5px solid var(--line);
-    border-radius: var(--radius-md);
-    padding: 9px 16px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    box-shadow: var(--shadow-lift);
-    transition: border-color .15s ease, background .15s ease, transform .1s ease, box-shadow .15s ease;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+    transition: border-color .15s, background .15s, color .15s, transform .1s;
 }
 
     .slot-btn:hover {
         border-color: var(--primary);
         background: var(--primary-tint);
-        box-shadow: var(--shadow-soft);
-        transform: translateY(-1px);
     }
 
     .slot-btn:active {
         transform: scale(.97);
     }
 
-    .slot-btn.btn-primary,
-    .slot-btn.selected {
-        background: var(--accent);
-        border-color: var(--accent);
+    .slot-btn.is-selected {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: #fff;
+        box-shadow: 0 8px 16px -10px rgba(15, 92, 147, .65);
     }
-
-        .slot-btn.btn-primary .slot-time,
-        .slot-btn.selected .slot-time {
-            color: #fff;
-        }
-
-        .slot-btn.btn-primary .slot-date,
-        .slot-btn.selected .slot-date {
-            color: rgba(255, 255, 255, .85);
-        }
-
-.slot-time {
-    font-family: var(--font-body);
-    font-size: 13.5px;
-    font-weight: 600;
-    color: var(--ink);
-}
-
-.slot-date {
-    font-family: var(--font-body);
-    font-size: 10.5px;
-    font-weight: 500;
-    color: var(--ink-faint);
-}
 
 .text-muted {
     color: var(--ink-faint) !important;
     font-size: 14px;
 }
 
-/* ── Continue button ───────────────────────────────────── *
-   Pinned to the bottom of #bookingPanel (flex-shrink: 0),
-   sits above a hairline so it never overlaps the slot grid
-   or the page footer.                                       */
-.booking-divider {
-    height: 1px;
-    background: var(--line);
-    margin: 1.75rem 0;
-}
-
-hr.my-4 {
-    border: none;
-    height: 1px;
-    background: var(--line);
-    margin: 1.75rem 0;
-    opacity: 1;
-}
-
 .booking-actions {
-    flex-shrink: 0;
-    margin-top: 1rem;
-    padding-top: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
     border-top: 1px solid var(--line);
-    background: var(--surface);
-    text-align: right;
+    padding-top: 1rem;
 }
 
-#continueBtn,
-.btn-continue {
-    background: var(--accent);
+.selection-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    background: var(--surface-alt);
+    border: 1px dashed #BFD2E3;
+    color: var(--ink-soft);
+    font-size: 14px;
+    font-weight: 500;
+    transition: background .2s, border-color .2s, color .2s;
+}
+
+.selection-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-faint);
+}
+
+.selection-banner.has-slot {
+    background: var(--primary-tint);
+    border: 1px solid #B9D3E8;
+    color: var(--primary-dark);
+}
+
+    .selection-banner.has-slot .selection-label {
+        color: var(--primary);
+    }
+
+.selection-value {
+    font-weight: 600;
+    font-size: 15px;
+}
+
+#continueBtn, .btn-continue {
+    background: var(--primary);
     border: none;
     color: #fff;
     font-family: var(--font-body);
     font-weight: 600;
     font-size: 15px;
-    padding: 13px 34px;
+    padding: 12px 32px;
     border-radius: var(--radius-pill);
-    box-shadow: 0 14px 24px -12px rgba(228, 98, 63, .55);
-    transition: background .15s ease, transform .1s ease;
+    cursor: pointer;
+    box-shadow: 0 14px 24px -12px rgba(15, 92, 147, .55);
+    transition: background .15s, transform .1s;
 }
 
-    #continueBtn:hover,
-    .btn-continue:hover {
-        background: var(--accent-dark);
+    #continueBtn:hover, .btn-continue:hover {
+        background: var(--primary-dark);
         transform: translateY(-1px);
     }
 
-    #continueBtn:active,
-    .btn-continue:active {
+    #continueBtn:active, .btn-continue:active {
         transform: translateY(0);
     }
 
-/* ── Responsive ────────────────────────────────────────── */
-@media (max-width: 991px) {
-    .appointment-layout {
-        grid-template-columns: 1fr;
+/* Desktop: slot list takes the full height of the panel, so no empty space under it */
+@media (min-width: 1100px) {
+    .slots-panel {
+        position: relative;
+        min-height: 340px;
     }
 
-    .side-panel {
-        position: static;
-        max-width: 480px;
-        margin: 0 auto;
-        width: 100%;
-    }
-
-    .carousel {
-        max-height: 400px;
+    .slots-container {
+        position: absolute;
+        top: 42px;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        max-height: none;
     }
 }
 
-@media (max-width: 767px) {
-    #doctorIdentityCard.doctor-card {
-        padding: 1.25rem 1.25rem;
+/* ── Booking-window dialog ────────────────────────────── */
+.app-dialog {
+    position: fixed;
+    inset: 0;
+    z-index: 1055;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(10, 25, 40, .5);
+}
+
+    .app-dialog[hidden] {
+        display: none;
     }
 
-    .main-panel {
-        padding: 1.25rem 1.25rem;
+.app-dialog-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: var(--shadow-card);
+    text-align: center;
+}
+
+    .app-dialog-card h4 {
+        font-family: var(--font-display);
+        font-size: 20px;
+        font-weight: 560;
+        margin: 0 0 8px;
     }
 
-    .doctor-profile {
-        flex-direction: column;
-        text-align: center;
+    .app-dialog-card p {
+        color: var(--ink-soft);
+        font-size: 14px;
+        line-height: 1.6;
+        margin: 0 0 1.25rem;
+    }
+
+/* Patient-type popup */
+.app-dialog-card {
+    position: relative;
+}
+
+    .app-dialog-card.wide {
+        max-width: 520px;
+        padding: 2rem 1.75rem 1.75rem;
+    }
+
+.dialog-close {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--ink-soft);
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+    .dialog-close:hover {
+        background: var(--surface-alt);
+        color: var(--ink);
+    }
+
+.choice-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.choice-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 1.25rem 1rem;
+    cursor: pointer;
+    background: var(--surface);
+    border: 1.5px solid var(--line);
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    transition: border-color .15s, background .15s, transform .1s, box-shadow .15s;
+}
+
+    .choice-card:hover, .choice-card:focus-visible {
+        border-color: var(--primary);
+        background: var(--primary-tint);
+        box-shadow: var(--shadow-soft);
+    }
+
+    .choice-card:active {
+        transform: scale(.98);
+    }
+
+    .choice-card:disabled {
+        opacity: .6;
+        cursor: progress;
+    }
+
+.choice-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-tint);
+    color: var(--primary);
+    margin-bottom: 4px;
+}
+
+.choice-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+}
+
+.choice-desc {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    line-height: 1.4;
+}
+
+@media (max-width: 480px) {
+    .choice-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .choice-card {
+        flex-direction: row;
+        text-align: left;
+        gap: 14px;
+        padding: 1rem;
+    }
+
+        .choice-card .choice-icon {
+            margin: 0;
+            flex-shrink: 0;
+        }
+
+        .choice-card .choice-title, .choice-card .choice-desc {
+            display: block;
+        }
+
+    .choice-card {
+        display: grid;
+        grid-template-columns: 52px 1fr;
+        grid-template-rows: auto auto;
+        column-gap: 14px;
+        row-gap: 2px;
         align-items: center;
+        justify-items: start;
     }
 
-    .doctor-info-right {
-        align-items: center;
-        text-align: center;
-    }
+        .choice-card .choice-icon {
+            grid-row: 1 / span 2;
+        }
+}
 
-    .doctor-name,
-    .doctor-specialisation {
-        text-align: center;
-    }
-
-    /* Calendar stacks above slots; panel grows naturally with
-       the page instead of a fixed internal height, since mobile
-       users scroll the whole page anyway. Only the slot list
-       keeps its own capped, scrollable height. */
-    #bookingPanel {
-        height: auto;
-        max-height: none;
-        overflow: visible;
-        padding: 1.5rem 1.25rem;
-    }
-
+/* ── Responsive ───────────────────────────────────────── */
+@media (max-width: 1099px) {
     .booking-grid {
-        flex-direction: column;
+        grid-template-columns: 1fr;
     }
 
     .calendar-panel {
-        flex: 0 0 auto;
-        max-width: 100%;
+        max-width: 308px;
+    }
+}
+
+@media (max-width: 991px) {
+    .selector-bar {
+        grid-template-columns: 1fr;
+        gap: 16px;
     }
 
-    .slots-container,
-    #slotsContainer {
-        flex: none;
-        max-height: 420px;
+    .booking-stage, .welcome-stage.has-media {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .carousel {
+        min-height: 0;
+    }
+
+    .calendar-panel {
+        max-width: none;
+    }
+
+    .flatpickr-calendar.inline {
+        margin: 0 auto;
+    }
+}
+
+@media (max-width: 380px) {
+    .container {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    .selector-bar, .empty-hint, #bookingPanel {
+        padding: 1rem;
+    }
+
+    .flatpickr-calendar.inline {
+        zoom: .82;
+    }
+    /* flatpickr has a fixed ~308px width */
+}
+
+@media (max-width: 767px) {
+    .container.mt-5 {
+        margin-top: 1rem !important;
     }
 
     .progress-bar {
@@ -1027,17 +1224,32 @@ hr.my-4 {
         margin: 0 6px;
     }
 
+    .selector-bar, .empty-hint, #bookingPanel {
+        padding: 1.25rem;
+    }
+
+    #doctorIdentityCard.doctor-card {
+        padding: 1.5rem 1.25rem;
+    }
+
+    .welcome-title {
+        font-size: 24px;
+    }
+
+    .slots-container {
+        max-height: 340px;
+    }
+
     .booking-actions {
+        flex-direction: column;
+        align-items: stretch;
         text-align: center;
     }
 
-    #continueBtn,
-    .btn-continue {
+    #continueBtn, .btn-continue {
         width: 100%;
     }
 }
-
-
 
 
 
