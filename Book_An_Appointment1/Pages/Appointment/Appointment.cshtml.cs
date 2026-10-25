@@ -292,10 +292,13 @@ namespace Book_An_Appointment1.Pages.Appointment
                 return Page();
             }
 
+            var type = string.Equals(patientType, "registered", StringComparison.OrdinalIgnoreCase) ? "registered" : "new";
+
+
             // ── Session Save ──────────────────────────────
             var sessionData = SessionHelper.GetAppointmentData(HttpContext.Session)
                               ?? new AppointmentSessionData();
-
+            sessionData.PatientType = type;
             sessionData.SlotTime = selectedSlotStart;
             sessionData.SlotDate = sessionData.SlotDate = DateTime.TryParse(selectedSlotStart, out var parsedSlot)
                        ? parsedSlot.ToString("yyyy-MM-dd")
@@ -304,7 +307,7 @@ namespace Book_An_Appointment1.Pages.Appointment
 
             SessionHelper.SetAppointmentData(HttpContext.Session, sessionData);
 
-            var type = string.Equals(patientType, "registered", StringComparison.OrdinalIgnoreCase) ? "registered" : "new";
+            
 
             _logger.LogInformation("Session slot saved | SlotDisplayText={S}", sessionData.SlotDisplayText);
 
