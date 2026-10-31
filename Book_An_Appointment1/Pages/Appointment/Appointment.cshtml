@@ -196,7 +196,7 @@
             savedSlotDate: '@(Model.SavedSlotDate ?? "")',
             savedSlotStart: '@(Model.SavedSlotStart ?? "")',
             hospitalLocationId: @(doc?.HospitalLocationId ?? 0),
-            maxAdvanceDays: 90,
+            maxAdvanceDays: @Model.Wizard.MaxAppointmentAllowedDays,
             initialDoctor: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(initialDoctor)),
             // Add these files under wwwroot/images (1600 x 1000 px, 16:10). Missing files are skipped automatically.
             hospitalImages: [

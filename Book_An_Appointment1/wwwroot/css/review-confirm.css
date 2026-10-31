@@ -1,13 +1,803 @@
-﻿/* ── Page ── */
+﻿
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    --paper: #F3F7FB;
+    --surface: #fff;
+    --surface-alt: #EAF1F8;
+    --ink: #12283D;
+    --ink-soft: #56728A;
+    --ink-faint: #8DA2B5;
+    --line: #DCE6EF;
+    --primary: #0F5C93;
+    --primary-dark: #0A3F66;
+    --primary-tint: #E4EFF8;
+    --success: #1C9A6C;
+    --success-tint: #E4F5EE;
+    --radius-lg: 22px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+    --shadow-soft: 0 10px 24px -16px rgba(18, 40, 61, .22);
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-body: 'Inter', 'Segoe UI', sans-serif;
+}
+
+body {
+    background: var(--paper);
+    font-family: var(--font-body);
+    color: var(--ink);
+}
+
 .rc-page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem 3.5rem;
+    width: 100%;
+}
+
+*:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: .001ms !important;
+        transition-duration: .001ms !important;
+    }
+}
+
+/* ── Progress (same as the other pages; also resets Bootstrap's .progress-bar) ── */
+.progress-bar {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 1.25rem;
+    padding: 0;
+    background: none;
+    color: inherit;
+    text-align: left;
+    overflow: visible;
+}
+
+.step-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.step-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+    .step-circle.done {
+        background: var(--success);
+        color: #fff;
+    }
+
+    .step-circle.active {
+        background: var(--primary);
+        color: #fff;
+        box-shadow: 0 0 0 5px var(--primary-tint);
+    }
+
+    .step-circle.pending {
+        background: var(--surface);
+        color: var(--ink-faint);
+        border: 1.5px solid var(--line);
+    }
+
+.step-label {
+    font-size: 13px;
+    color: var(--ink-faint);
+    font-weight: 500;
+}
+
+    .step-label.active {
+        color: var(--primary);
+        font-weight: 600;
+    }
+
+    .step-label.done {
+        color: var(--success);
+    }
+
+.step-connector {
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+    margin: 0 12px;
+    min-width: 16px;
+}
+
+    .step-connector.done {
+        background: var(--success);
+    }
+
+/* ── Header ───────────────────────────────────────────── */
+.rc-header {
+    margin-bottom: 1rem;
+}
+
+.rc-title {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 560;
+    margin: 0 0 4px;
+    line-height: 1.2;
+}
+
+.rc-sub {
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin: 0;
+}
+
+/* ── Layout: details on the left, payment summary on the right ── */
+.rc-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 24px;
+    align-items: start;
+}
+
+.rc-main {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+}
+
+.rc-aside {
+    position: sticky;
+    top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* ── Cards ────────────────────────────────────────────── */
+.rc-card, .rc-fee-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+    padding: 1.25rem 1.5rem;
+}
+
+.rc-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 6px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+}
+
+.rc-card-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.rc-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--primary-tint);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+}
+
+.rc-card-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.rc-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 32px;
+    padding: 0 12px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--primary);
+    background: var(--primary-tint);
+    border-radius: 999px;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background .12s;
+}
+
+    .rc-edit-btn svg {
+        flex-shrink: 0;
+    }
+
+    .rc-edit-btn:hover {
+        background: #d3e5f3;
+    }
+
+.rc-verified-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #15803d;
+    background: var(--success-tint);
+    padding: 4px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+/* ── Appointment rows ─────────────────────────────────── */
+.rc-detail-row {
+    display: grid;
+    grid-template-columns: 28px 150px minmax(0, 1fr);
+    align-items: start;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #EEF3F8;
+    font-size: 14px;
+}
+
+    .rc-detail-row:last-child {
+        border-bottom: none;
+        padding-bottom: 4px;
+    }
+
+.rc-detail-icon {
+    font-size: 15px;
+    text-align: center;
+    line-height: 1.5;
+}
+
+.rc-detail-label {
+    color: var(--ink-soft);
+}
+
+.rc-detail-value {
+    font-weight: 500;
+    overflow-wrap: anywhere;
+}
+
+    .rc-detail-value.rc-fee {
+        color: var(--primary);
+        font-weight: 700;
+        font-size: 16px;
+    }
+
+/* ── Patient grid ─────────────────────────────────────── */
+.rc-patient-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 28px;
+    padding-top: 14px;
+}
+
+.rc-patient-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.rc-full-width {
+    grid-column: 1 / -1;
+}
+
+.rc-patient-label, .rc-notes-label {
+    font-size: 11px;
+    color: var(--ink-faint);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+
+.rc-patient-value {
+    font-size: 14px;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+}
+
+/* ── Notes ────────────────────────────────────────────── */
+.rc-notes-label {
+    margin: 14px 0 6px;
+}
+
+.rc-notes-text {
+    font-size: 14px;
+    color: #3E566C;
+    line-height: 1.6;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+.rc-notes-empty {
+    font-size: 14px;
+    color: var(--ink-faint);
+    font-style: italic;
+}
+
+/* ── Payment summary ──────────────────────────────────── */
+.rc-fee-title {
+    margin: 0 0 6px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.rc-fee-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    color: var(--ink-soft);
+    padding: 12px 0;
+    border-bottom: 1px solid #EEF3F8;
+}
+
+.rc-fee-val {
+    color: var(--ink);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.rc-fee-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 14px 16px;
+    background: var(--primary-tint);
+    border-radius: var(--radius-md);
+    font-size: 15px;
+    font-weight: 600;
+}
+
+    .rc-fee-total .rc-fee-val {
+        color: var(--primary);
+        font-size: 22px;
+        font-weight: 700;
+    }
+
+/* ── Info box ─────────────────────────────────────────── */
+.rc-info-box {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 0;
+    padding: 14px 16px;
+    background: var(--primary-tint);
+    border-left: 3px solid var(--primary);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.rc-info-icon {
+    font-size: 18px;
+    color: var(--primary);
+    flex-shrink: 0;
+    line-height: 1.3;
+}
+
+.rc-info-title {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 2px;
+}
+
+.rc-info-sub {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+}
+
+/* ── Buttons: identical to page 2 ────────────────────── */
+.rc-btn-back {
+    height: 46px;
+    padding: 0 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: #fff;
+    color: #3E566C;
+    border: 1.5px solid var(--line);
+    border-radius: 999px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background .12s;
+}
+
+    .rc-btn-back:hover {
+        background: var(--surface-alt);
+        color: #3E566C;
+    }
+
+.rc-btn-confirm {
+    height: 46px;
+    padding: 0 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    font-family: var(--font-body);
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    box-shadow: 0 14px 24px -12px rgba(15, 92, 147, .55);
+    transition: background .15s, transform .1s;
+}
+
+    .rc-btn-confirm:hover {
+        background: var(--primary-dark);
+        transform: translateY(-1px);
+    }
+
+    .rc-btn-confirm:active {
+        transform: translateY(0);
+    }
+
+.rc-btn-block {
+    width: 100%;
+}
+
+/* Desktop: Confirm + Back live inside the sticky summary card */
+.rc-fee-card .rc-btn-confirm {
+    margin-top: 16px;
+}
+
+.rc-fee-card .rc-btn-back {
+    margin-top: 10px;
+}
+
+/* Tablet / phone only: Back at the end of the content + fixed bottom bar */
+.rc-footer, .rc-mobilebar {
+    display: none;
+}
+
+/* ── Payment modal ────────────────────────────────────── */
+.rc-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1055;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(10, 25, 40, .5);
+}
+
+    .rc-modal-overlay[hidden] {
+        display: none;
+    }
+
+.rc-modal {
+    background: #fff;
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 440px;
+    max-height: 92vh;
+    overflow: auto;
+    box-shadow: 0 28px 56px -24px rgba(10, 25, 40, .5);
+}
+
+.rc-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--line);
+}
+
+.rc-modal-title {
+    font-family: var(--font-display);
+    font-size: 19px;
+    font-weight: 560;
+}
+
+.rc-modal-sub {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+}
+
+.rc-modal-close {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: var(--surface-alt);
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--ink-soft);
+    flex-shrink: 0;
+}
+
+    .rc-modal-close:hover {
+        background: var(--line);
+    }
+
+.rc-modal-body {
+    padding: 1.25rem 1.5rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.rc-payment-option {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 14px 16px;
+    background: #fff;
+    text-align: left;
+    cursor: pointer;
+    font-family: var(--font-body);
+    border: 1.5px solid var(--line);
+    border-radius: var(--radius-md);
+    transition: border-color .15s, background .15s, box-shadow .15s;
+}
+
+    .rc-payment-option:hover, .rc-payment-option:focus-visible {
+        border-color: var(--primary);
+        background: var(--primary-tint);
+        box-shadow: var(--shadow-soft);
+    }
+
+.rc-pay-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: var(--primary-tint);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.rc-pay-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.rc-pay-title {
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--ink);
+}
+
+.rc-pay-sub {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+}
+
+.rc-pay-arrow {
+    font-size: 18px;
+    color: var(--primary);
+}
+
+.rc-payment-empty {
+    padding: 1rem;
+    text-align: center;
+    font-size: 14px;
+    color: var(--ink-soft);
+    background: var(--surface-alt);
+    border-radius: var(--radius-md);
+}
+
+/* ── Responsive ───────────────────────────────────────── */
+@media (max-width: 991px) {
+    .rc-layout {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
+    }
+
+    .rc-aside {
+        position: static;
+    }
+
+    .rc-cta-desktop {
+        display: none;
+    }
+    /* the fixed bottom bar takes over */
+    .rc-page {
+        padding-bottom: 7rem;
+    }
+    /* room so the bar never covers content */
+    .rc-footer {
+        display: flex;
+        justify-content: flex-start;
+        margin-top: 1rem;
+    }
+
+    .rc-mobilebar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1040;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 10px max(16px, env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left));
+        background: rgba(255, 255, 255, .97);
+        border-top: 1px solid var(--line);
+        box-shadow: 0 -10px 28px -16px rgba(18, 40, 61, .35);
+    }
+
+    .rc-mobilebar-total {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.2;
+        min-width: 0;
+    }
+
+        .rc-mobilebar-total span {
+            font-size: 11.5px;
+            font-weight: 600;
+            color: var(--ink-faint);
+        }
+
+        .rc-mobilebar-total strong {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary);
+            white-space: nowrap;
+        }
+
+    .rc-mobilebar .rc-btn-confirm {
+        padding: 0 22px;
+        flex-shrink: 0;
+    }
+}
+
+@media (max-width: 767px) {
+    .progress-bar {
+        margin-bottom: 1.25rem;
+    }
+
+    .step-label:not(.active) {
+        display: none;
+    }
+
+    .step-connector {
+        margin: 0 6px;
+    }
+
+    .rc-title {
+        font-size: 24px;
+    }
+
+    .rc-card, .rc-fee-card {
+        padding: 1.1rem 1.1rem;
+        border-radius: var(--radius-md);
+    }
+
+    .rc-detail-row {
+        grid-template-columns: 28px 120px minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .rc-page {
+        padding: 1rem .75rem 2.5rem;
+    }
+
+    .rc-footer .rc-btn-back {
+        width: 100%;
+    }
+
+    .rc-patient-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 14px;
+    }
+
+    .rc-card-header {
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 380px) {
+    .rc-mobilebar .rc-btn-confirm {
+        padding: 0 16px;
+        font-size: 13.5px;
+    }
+
+    .rc-mobilebar-total strong {
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 520px) {
+    /* label above value instead of side by side */
+    .rc-detail-row {
+        grid-template-columns: 28px minmax(0, 1fr);
+        gap: 2px 12px;
+    }
+
+    .rc-detail-icon {
+        grid-row: 1 / span 2;
+    }
+
+    .rc-detail-label {
+        font-size: 12px;
+    }
+
+    .rc-modal-header, .rc-modal-body {
+        padding-left: 1.1rem;
+        padding-right: 1.1rem;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ── Page ── */
+/*.rc-page {
     max-width: 900px;
     margin: 0 auto;
     padding: 1.5rem 1rem 3rem;
     width: 100%;
-}
+}*/
 
 /* ── Progress Bar ── */
-.progress-bar {
+/*.progress-bar {
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -76,10 +866,10 @@
 
     .step-connector.done {
         background: #1D9E75;
-    }
+    }*/
 
 /* ── Page Header ── */
-.rc-header {
+/*.rc-header {
     margin-bottom: 1.25rem;
 }
 
@@ -93,18 +883,18 @@
 .rc-sub {
     font-size: 13px;
     color: #64748b;
-}
+}*/
 
 /* ── Grid ── */
-.rc-grid {
+/*.rc-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 14px;
     margin-bottom: 14px;
-}
+}*/
 
 /* ── Card ── */
-.rc-card {
+/*.rc-card {
     background: #fff;
     border: 1px solid #e2e8f0;
     border-radius: 14px;
@@ -168,10 +958,10 @@
     padding: 3px 9px;
     border-radius: 20px;
     font-weight: 600;
-}
+}*/
 
 /* ── Appointment Detail Rows ── */
-.rc-detail-row {
+/*.rc-detail-row {
     display: flex;
     align-items: flex-start;
     gap: 10px;
@@ -207,10 +997,10 @@
         color: #185FA5;
         font-weight: 600;
         font-size: 15px;
-    }
+    }*/
 
 /* ── Patient Grid ── */
-.rc-patient-grid {
+/*.rc-patient-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0;
@@ -254,10 +1044,10 @@
 .rc-patient-value {
     font-size: 13px;
     color: #0f172a;
-}
+}*/
 
 /* ── Notes ── */
-.rc-notes-label {
+/*.rc-notes-label {
     font-size: 11px;
     color: #94a3b8;
     font-weight: 600;
@@ -276,10 +1066,10 @@
     font-size: 13px;
     color: #94a3b8;
     font-style: italic;
-}
+}*/
 
 /* ── Consent ── */
-.rc-consent-item {
+/*.rc-consent-item {
     display: flex;
     align-items: flex-start;
     gap: 8px;
@@ -305,10 +1095,10 @@
     font-size: 14px;
     flex-shrink: 0;
     margin-top: 1px;
-}
+}*/
 
 /* ── Fee Card ── */
-.rc-fee-card {
+/*.rc-fee-card {
     background: #fff;
     border: 1px solid #e2e8f0;
     border-radius: 14px;
@@ -356,10 +1146,10 @@
     .rc-fee-total .rc-fee-val {
         color: #185FA5;
         font-size: 16px;
-    }
+    }*/
 
 /* ── Info Box ── */
-.rc-info-box {
+/*.rc-info-box {
     display: flex;
     gap: 12px;
     padding: 12px 16px;
@@ -385,10 +1175,10 @@
 .rc-info-sub {
     font-size: 12px;
     color: #3b82f6;
-}
+}*/
 
 /* ── Footer ── */
-.rc-footer {
+/*.rc-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -433,10 +1223,10 @@
 
     .rc-btn-confirm:hover {
         background: #0c447c;
-    }
+    }*/
 
 /* ── Payment Modal ── */
-.rc-modal-overlay {
+/*.rc-modal-overlay {
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,.45);
@@ -531,10 +1321,10 @@
 .rc-pay-arrow {
     font-size: 18px;
     color: #185FA5;
-}
+}*/
 
 /* ── Responsive ── */
-@media (max-width: 700px) {
+/*@media (max-width: 700px) {
     .rc-grid {
         grid-template-columns: 1fr;
     }
@@ -558,4 +1348,4 @@
         width: 100%;
         justify-content: center;
     }
-}
+}*/

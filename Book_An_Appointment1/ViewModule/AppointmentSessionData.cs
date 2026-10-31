@@ -15,6 +15,7 @@
         public string SlotTime { get; set; } = "";
         public string SlotDisplayText { get; set; } = "";
         public decimal ConsultationFee { get; set; }
+        public decimal RegistrationFee { get; set; }
 
         // ── Common (Page 2) ────────────────────────────────
         public string PatientType { get; set; } = "new";

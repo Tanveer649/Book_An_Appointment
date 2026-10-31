@@ -3,17 +3,22 @@
     public class ReviewAndConfirmationViewModel
     {
         // Appointment
-        public string Hospital { get; set; } = "";
+        public string HospitalName { get; set; } = "";
+        public int FacilityId { get; set; }
         public string Specialisation { get; set; } = "";
+        public int SpecialisationId { get; set; }
         public string DoctorName { get; set; } = "";
+        public int DoctorId { get; set; }
         public string SlotDisplayText { get; set; } = "";
         public string SlotDate { get; set; } = "";
         public string SlotTime { get; set; } = "";
         public decimal ConsultationFee { get; set; }
+        public decimal RegistrationFee { get; set; }
 
         // Patient
         public string PatientType { get; set; } = "new";
         public string Title { get; set; } = "";
+        public int TitleId { get; set; }
         public string FirstName { get; set; } = "";
         public string? MiddleName { get; set; }
         public string LastName { get; set; } = "";

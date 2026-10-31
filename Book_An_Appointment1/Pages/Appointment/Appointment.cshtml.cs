@@ -16,6 +16,7 @@ namespace Book_An_Appointment1.Pages.Appointment
         private readonly IConsultationService _consultationService;
         private readonly ISlotService _slotService;
         private readonly ILogger<AppointmentModel> _logger;
+        private readonly IConfiguration _configuration;
 
         private static readonly HttpClient _imageClient = new() { Timeout = TimeSpan.FromSeconds(10) };
         private const string ImageSessionKey = "AllowedDoctorImages";
@@ -38,7 +39,8 @@ namespace Book_An_Appointment1.Pages.Appointment
             IDoctorService doctorService,
             IConsultationService consultationService,
             ISlotService slotService,
-            ILogger<AppointmentModel> logger)
+            ILogger<AppointmentModel> logger,
+            IConfiguration configuration    )
         {
             _facilityService = facilityService;
             _specialityService = specialityService;
@@ -46,11 +48,14 @@ namespace Book_An_Appointment1.Pages.Appointment
             _consultationService = consultationService;
             _slotService = slotService;
             _logger = logger;
+            _configuration = configuration;
         }
 
         public async Task OnGetAsync()
         {
             _logger.LogInformation("OnGetAsync started");
+
+            Wizard.MaxAppointmentAllowedDays = _configuration.GetValue<int>("MaxAppointmentAllowedDays:Days", 90);
 
             var sessionData = SessionHelper.GetAppointmentData(HttpContext.Session);
 
@@ -157,11 +162,18 @@ namespace Book_An_Appointment1.Pages.Appointment
 
                 var doc = Wizard.SelectedDoctor;
                 var hospital = doc?.ConsultingHospitals?.FirstOrDefault();
-                var feeRaw = Wizard.ConsultationFeeList?.FirstOrDefault()?.Price
-                               ?? Wizard.ConsultationFeeList?.FirstOrDefault()?.NetAmount
+
+                var feeRaw = Wizard.ConsultationFeeList?.FirstOrDefault()?.NetAmount
+                               ?? Wizard.ConsultationFeeList?.FirstOrDefault()?.Price
                                ?? "0";
+                var RegfeeRaw = Wizard.RegistrationFeeList?.FirstOrDefault()?.NetAmount
+                               ?? Wizard.RegistrationFeeList?.FirstOrDefault()?.Price
+                               ?? "0";
+
                 // Trailing zeros remove karo
                 var fee = FormatFee(feeRaw);
+
+                var Regfee = FormatFee(RegfeeRaw);
 
                 var existing = SessionHelper.GetAppointmentData(HttpContext.Session)
                                ?? new AppointmentSessionData();
@@ -177,6 +189,9 @@ namespace Book_An_Appointment1.Pages.Appointment
 
                 existing.ConsultationFee = decimal.TryParse(feeRaw, System.Globalization.NumberStyles.Any,
                     System.Globalization.CultureInfo.InvariantCulture, out var f) ? f : 0;
+
+                existing.RegistrationFee = decimal.TryParse(RegfeeRaw, System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture, out var Rf) ? Rf : 0;
 
                 SessionHelper.SetAppointmentData(HttpContext.Session, existing);
 
@@ -199,6 +214,7 @@ namespace Book_An_Appointment1.Pages.Appointment
                         timing = doc?.Timing ?? "",
                         isTeleconsult = doc?.IsTeleconsult ?? false,
                         fee = fee,
+                        regFee = Regfee,
                         hospitalName = hospital?.FacilityName ?? "",
                         hospitalCity = hospital?.CityName ?? "",
                         hospitalLocationId = doc?.HospitalLocationId ?? 0,
@@ -361,31 +377,6 @@ namespace Book_An_Appointment1.Pages.Appointment
         {
             try
             {
-                //Wizard.SelectedDoctor = Wizard.Doctors.FirstOrDefault(x => x.Id == (DoctorId ?? 0).ToString());
-
-                //if (Wizard.SelectedDoctor == null)
-                //{
-                //    _logger.LogWarning("Doctor not found | DoctorId={D}", DoctorId);
-                //    return;
-                //}
-
-                //var today = DateTime.Now.ToString("yyyy-MM-dd");
-
-                //var consultationTask = _consultationService.GetConsultationFeeAsync(FacilityId, (DoctorId ?? 0));
-                //var slotsTask = _slotService.GetSlotsAsync(FacilityId, (DoctorId ?? 0), Wizard.SelectedDoctor.HospitalLocationId, today, today);
-
-                //await Task.WhenAll(consultationTask, slotsTask);
-
-                //var consultantResponse = await consultationTask;
-                //var slotResponse = await slotsTask;
-
-                //Wizard.ConsultationFeeList = consultantResponse?.Where(x => x.ServiceType == "CL").ToList() ?? new();
-                //Wizard.Slots = slotResponse?.Data?.SlotsDetails ?? new List<SlotResponse>();
-
-                //_logger.LogInformation("LoadDoctorDetails | Slots={S} Fees={F}",
-                //    Wizard.Slots.Count, Wizard.ConsultationFeeList.Count);
-
-
                 Wizard.SelectedDoctor = Wizard.Doctors.FirstOrDefault(x => x.Id == (DoctorId ?? 0).ToString());
 
                 if (Wizard.SelectedDoctor == null)
@@ -407,7 +398,17 @@ namespace Book_An_Appointment1.Pages.Appointment
                 Wizard.Slots = await slotsTask;
                 var consultantResponse = await consultationTask;
 
+                // Consultation Fee
                 Wizard.ConsultationFeeList = consultantResponse?.Where(x => x.ServiceType == "CL").ToList() ?? new();
+
+                // Registration charge in case of Unregister patient
+
+                Wizard.RegistrationFeeList = consultantResponse?
+                                            .Where(x =>
+                                                string.Equals(x.ServiceType, "RF", StringComparison.OrdinalIgnoreCase) &&
+                                                string.Equals(x.ServiceName?.Trim(), "Registration Charges",
+                                                    StringComparison.OrdinalIgnoreCase))
+                                            .ToList() ?? new();
 
                 _logger.LogInformation("LoadDoctorDetails | Slots={S} Fees={F}",
                     Wizard.Slots.Count, Wizard.ConsultationFeeList.Count);
@@ -418,6 +419,7 @@ namespace Book_An_Appointment1.Pages.Appointment
                 _logger.LogError(ex, "LoadDoctorDetails failed | DoctorId={D} FacilityId={F}", DoctorId, FacilityId);
                 Wizard.Slots = new();
                 Wizard.ConsultationFeeList = new();
+                Wizard.RegistrationFeeList = new();
             }
         }
 
@@ -441,7 +443,6 @@ namespace Book_An_Appointment1.Pages.Appointment
                 return new List<SlotResponse>();
             }
         }
-
 
         // ── Helpers ──────────────────────────────────────────
         private static string GetInitials(string name) =>
@@ -467,7 +468,6 @@ namespace Book_An_Appointment1.Pages.Appointment
                          System.Globalization.CultureInfo.InvariantCulture, out var d)
             ? Math.Round(d, 0, MidpointRounding.AwayFromZero).ToString("0", System.Globalization.CultureInfo.InvariantCulture)
             : (raw ?? "0");
-
 
         private void RegisterDoctorImages(params string?[] urls)
         {

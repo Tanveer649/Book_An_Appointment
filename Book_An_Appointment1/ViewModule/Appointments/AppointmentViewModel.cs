@@ -16,11 +16,12 @@ namespace Book_An_Appointment1.ViewModels.Appointment
         public int SelectedFacilityId { get; set; }
         public int SelectedSpecialityId { get; set; }
         public int SelectedDoctorId { get; set; }
-
+        public int MaxAppointmentAllowedDays { get; set; }
         public DoctorItem? SelectedDoctor { get; set; }
         public List<ConsultationItem> ConsultationFeeList { get; set; } = new();
+        public List<ConsultationItem> RegistrationFeeList { get; set; } = new();
 
-        public string ConsultationAmount => ConsultationFeeList?.FirstOrDefault()?.Price ?? "N/A";
+        public string ConsultationAmount => ConsultationFeeList?.FirstOrDefault()?.NetAmount ?? "N/A";
         public string? ErrorMessage { get; set; }
     }
   

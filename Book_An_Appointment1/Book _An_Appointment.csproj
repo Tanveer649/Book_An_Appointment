@@ -39,4 +39,8 @@
     <None Include="wwwroot\Images\Logo\logo.png" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\css\pages\" />
+  </ItemGroup>
+
 </Project>

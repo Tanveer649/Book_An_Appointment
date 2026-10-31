@@ -25,6 +25,7 @@ var AppointmentValidation = {
 };
 
 /* ── Pure helpers (no DOM reads) ──────────────────────── */
+
 var AppointmentUI = (function () {
     var DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -377,6 +378,7 @@ $(document).ready(function () {
         updateSummary();
     });
 
+   
     $(document).on('click', '#continueBtn', function () {
         var errors = AppointmentValidation.validate();
         if (errors.length) { AppointmentValidation.showErrors(errors); return; }
@@ -400,7 +402,7 @@ $(document).ready(function () {
 
     $('.choice-card').on('click', function () {
         if ($('.choice-card').first().prop('disabled')) return;   // already submitting
-        var type = $(this).attr('data-type') === 'existing' ? 'existing' : 'new';
+        var type = $(this).attr('data-type') === 'registered' ? 'registered' : 'new';
         $('.choice-card').prop('disabled', true);          // block double submit
         $('#hdnPatientType').val(type);
         $('#hdnFacilityId').val($('#facilityDropdown').val());

@@ -56,6 +56,7 @@ namespace Book_An_Appointment1.Pages.Appointment
             Form.Hospital = SessionData.Hospital;
             Form.SlotDisplayText = SessionData.SlotDisplayText;
             Form.ConsultationFee = SessionData.ConsultationFee;
+            Form.RegistrationFee = SessionData.RegistrationFee;
 
             // Common
             Form.PatientType = SessionData.PatientType;
@@ -601,6 +602,7 @@ namespace Book_An_Appointment1.Pages.Appointment
             Form.Hospital = sessionData.Hospital;
             Form.SlotDisplayText = sessionData.SlotDisplayText;
             Form.ConsultationFee = sessionData.ConsultationFee;
+            Form.RegistrationFee = sessionData.RegistrationFee;
 
             // Config
             Form.OtpLength = _configuration.GetValue<int>("OtpSettings:OtpLength", 6);

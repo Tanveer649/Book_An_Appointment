@@ -9,6 +9,7 @@
         public string Hospital { get; set; } = "";
         public string SlotDisplayText { get; set; } = "";
         public decimal ConsultationFee { get; set; }
+        public decimal RegistrationFee { get; set; }
         public int OtpLength { get; set; }
         public int CountryId { get; set; }
         public string? CountryName { get; set; }

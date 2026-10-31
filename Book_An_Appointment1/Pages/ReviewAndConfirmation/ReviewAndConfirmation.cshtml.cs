@@ -29,13 +29,17 @@ namespace Book_An_Appointment1.Pages.ReviewAndConfimation
             }
 
             // Appointment details
-            Summary.Hospital = sessionData.Hospital ?? "";
+            Summary.HospitalName = sessionData.Hospital ?? "";
+            Summary.FacilityId = sessionData.FacilityId ;
             Summary.Specialisation = sessionData.Specialisation ?? "";
+            Summary.SpecialisationId = sessionData.SpecialityId;
             Summary.DoctorName = sessionData.DoctorName ?? "";
+            Summary.DoctorId = sessionData.DoctorId;
             Summary.SlotDisplayText = sessionData.SlotDisplayText ?? "";
             Summary.SlotDate = sessionData.SlotDate ?? "";
             Summary.SlotTime = sessionData.SlotTime ?? "";
             Summary.ConsultationFee = sessionData.ConsultationFee;
+            Summary.RegistrationFee = sessionData.RegistrationFee;
             Summary.PatientType = sessionData.PatientType;
 
             if (sessionData.PatientType == "registered")
@@ -47,6 +51,7 @@ namespace Book_An_Appointment1.Pages.ReviewAndConfimation
                 Summary.Gender = sessionData.RegisteredPatient.Gender;
                 Summary.DOB = sessionData.RegisteredPatient.DOB;
                 Summary.Title = sessionData.RegisteredPatient.TitleName;
+                Summary.TitleId= sessionData.RegisteredPatient.TitleId;
                 Summary.RegistrationNo = sessionData.RegisteredPatient.RegistrationNo;
             }
 
@@ -54,6 +59,7 @@ namespace Book_An_Appointment1.Pages.ReviewAndConfimation
             {
                 
                 Summary.Title = sessionData.NewPatient.TitleName ?? "";
+                Summary.TitleId = sessionData.NewPatient.TitleId;
                 Summary.FirstName = sessionData.NewPatient.FirstName ?? "";
                 Summary.MiddleName = sessionData.NewPatient.MiddleName ?? "";
                 Summary.LastName = sessionData.NewPatient.LastName ?? "";
