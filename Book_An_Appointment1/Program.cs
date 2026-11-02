@@ -53,7 +53,7 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IOtpService, OtpService>();
 builder.Services.AddScoped<ILocationService, LocationService>();
 builder.Services.AddScoped<ITitleService, TitleService>();
-
+builder.Services.AddScoped<IAppointmentBookingService, AppointmentBookingService>();
 
 var app = builder.Build();
 

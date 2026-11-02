@@ -59,7 +59,7 @@
                 <div class="rc-detail-row">
                     <span class="rc-detail-icon" aria-hidden="true">🏥</span>
                     <span class="rc-detail-label">Hospital</span>
-                    <span class="rc-detail-value">@Model.Summary.Hospital</span>
+                    <span class="rc-detail-value">@Model.Summary.HospitalName</span>
                 </div>
                 <div class="rc-detail-row">
                     <span class="rc-detail-icon" aria-hidden="true">🩺</span>
@@ -221,8 +221,12 @@
 
 </div>
 
-@* ── Payment modal (options come from PaymentSettings; payment itself is wired later via the "payment:selected" event) ── *@
-<div class="rc-modal-overlay" id="paymentModal" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle" hidden>
+@* Token for the CreateAppointment AJAX call (review-confirm.js) *@
+@Html.AntiForgeryToken()
+
+@* ── Payment modal (options come from PaymentSettings; choosing one calls ?handler=CreateAppointment) ── *@
+<div class="rc-modal-overlay" id="paymentModal" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle"
+     data-slot-start="@Model.Summary.SlotTime" hidden>
     <div class="rc-modal">
         <div class="rc-modal-header">
             <div>
@@ -232,6 +236,11 @@
             <button type="button" class="rc-modal-close" id="paymentModalClose" aria-label="Close">✕</button>
         </div>
         <div class="rc-modal-body">
+            <div class="rc-pay-error" id="paymentError" role="alert" hidden></div>
+            <div class="rc-pay-status" id="paymentStatus" role="status" hidden>
+                <span class="rc-spinner" aria-hidden="true"></span> Booking your appointment…
+            </div>
+
             @if (Model.Summary.EnablePayOnArrival)
             {
                 <button type="button" class="rc-payment-option" data-payment="arrival">
@@ -260,6 +269,58 @@
             {
                 <div class="rc-payment-empty">No payment options available. Please contact support.</div>
             }
+        </div>
+    </div>
+</div>
+
+@* ── Booked modal (Pay on arrival) — values filled by review-confirm.js from the CreateAppointment response ── *@
+<div class="rc-modal-overlay" id="bookedModal" role="dialog" aria-modal="true" aria-labelledby="bookedModalTitle" hidden>
+    <div class="rc-modal rc-booked">
+
+        @* Header — success + status badge *@
+        <div class="rc-booked-head">
+            <div class="rc-booked-icon" aria-hidden="true">✓</div>
+            <div class="rc-booked-heading">
+                <div class="rc-modal-title" id="bookedModalTitle">Appointment booked</div>
+                <div class="rc-modal-sub">Your appointment has been booked successfully</div>
+            </div>
+            <span class="rc-booked-status" data-booked-row><span data-booked="status"></span></span>
+        </div>
+
+        @* Hero — the three things the patient must remember *@
+        <div class="rc-booked-hero">
+            <div class="rc-hero-tile" data-booked-row>
+                <span class="rc-hero-label">Appointment ID</span>
+                <span class="rc-hero-value rc-hero-id" data-booked="appointmentId"></span>
+            </div>
+            <div class="rc-hero-tile" data-booked-row>
+                <span class="rc-hero-label">Date</span>
+                <span class="rc-hero-value" data-booked="appointmentDate"></span>
+                <span class="rc-hero-sub" data-booked="appointmentDay"></span>
+            </div>
+            <div class="rc-hero-tile" data-booked-row>
+                <span class="rc-hero-label">Time</span>
+                <span class="rc-hero-value" data-booked="appointmentTime"></span>
+            </div>
+        </div>
+
+        @* Details — compact grid instead of a long vertical list *@
+        <dl class="rc-booked-grid">
+            <div class="rc-booked-item" data-booked-row><dt>Patient</dt><dd data-booked="patientName"></dd></div>
+            <div class="rc-booked-item" data-booked-row><dt>UHID</dt><dd data-booked="registrationNo"></dd></div>
+            <div class="rc-booked-item" data-booked-row><dt>Mobile</dt><dd data-booked="mobile"></dd></div>
+            <div class="rc-booked-item" data-booked-row><dt>Doctor</dt><dd data-booked="doctorName"></dd></div>
+            <div class="rc-booked-item" data-booked-row><dt>Specialty</dt><dd data-booked="specialisation"></dd></div>
+            <div class="rc-booked-item" data-booked-row><dt>Hospital</dt><dd data-booked="hospitalName"></dd></div>
+            <div class="rc-booked-item" data-booked-row><dt>Visit type</dt><dd data-booked="visitType"></dd></div>
+            <div class="rc-booked-item" data-booked-row><dt>Payment</dt><dd data-booked="paymentMode"></dd></div>
+            <div class="rc-booked-item" data-booked-row><dt>Amount payable</dt><dd class="rc-booked-amount" data-booked="amountPayable"></dd></div>
+        </dl>
+
+        @* Footer — note + action side by side *@
+        <div class="rc-booked-foot">
+            <p class="rc-booked-note"><span aria-hidden="true">ℹ</span> Please reach the hospital 15 minutes before your appointment time and pay at the counter.</p>
+            <a asp-page="/Appointment/Appointment" class="rc-btn-confirm" id="bookedDone">Book another appointment</a>
         </div>
     </div>
 </div>

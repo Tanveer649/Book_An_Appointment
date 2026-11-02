@@ -15,5 +15,7 @@
         public const string GetCityList = "/api/vcp/GetCityList";
         public const string GetTitleList = "/api/vcp/GetTitles";
         public const string GenerateOtpForPatient = "/api/VCP/GenerateOTPForPatient";
+        public const string CreateAppointment = "/api/VCP/CreateAppointment";
+        public const string GetAppointmentByID = "/api/VCP/GetAppointmentByID";
     }
 }

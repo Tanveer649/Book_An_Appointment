@@ -17,5 +17,11 @@ namespace Book_An_Appointment1.Helpers
                 ? null
                 : JsonSerializer.Deserialize<AppointmentSessionData>(json);
         }
+        // Booking finished — wipe wizard data so Back/refresh cannot book the same slot again
+        public static void ClearAppointmentData(ISession session)
+        {
+            session.Remove(AppointmentKey);
+            session.Remove("Booking.SlotEnd");
+        }
     }
 }

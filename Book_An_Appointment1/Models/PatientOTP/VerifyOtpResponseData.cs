@@ -1,40 +1,42 @@
 ﻿using Newtonsoft.Json;
+using System.Text.Json.Serialization;
+
 namespace Book_An_Appointment1.Models.Patient
 {
     public class VerifyOtpResponseData
     {
-        [JsonProperty("mobileNo")]
-        public string MobileNo { get; set; } = "";
+        [JsonPropertyName("mobileNo")]
+        public string? MobileNo { get; set; }
 
-        [JsonProperty("otp")]
-        public string Otp { get; set; } = "";
+        [JsonPropertyName("otp")]
+        public string? Otp { get; set; }
 
-        [JsonProperty("isUserExist")]
+        [JsonPropertyName("isUserExist")]
         public bool IsUserExist { get; set; }
 
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public int Id { get; set; }
 
-        [JsonProperty("name")]
-        public string Name { get; set; } = "";
+        [JsonPropertyName("name")]
+        public string? Name { get; set; }
 
-        [JsonProperty("gender")]
-        public string Gender { get; set; } = "";
+        [JsonPropertyName("gender")]
+        public string? Gender { get; set; }
 
-        [JsonProperty("dob")]
-        public string Dob { get; set; } = "";
+        [JsonPropertyName("dob")]
+        public string? Dob { get; set; }
 
-        [JsonProperty("emailId")]
-        public string EmailId { get; set; } = "";
+        [JsonPropertyName("emailId")]
+        public string? EmailId { get; set; }
 
-        [JsonProperty("isHisRegistered")]
+        [JsonPropertyName("isHisRegistered")]
         public bool IsHisRegistered { get; set; }
 
-        [JsonProperty("verifyPatinetListCount")]
-        public string VerifyPatientListCount { get; set; } = "";
+        [JsonPropertyName("verifyPatinetListCount")]
+        public string? VerifyPatinetListCount { get; set; }
 
-        [JsonProperty("patinetList")]
-        public List<PatientListItem> PatientList { get; set; } = new();
+        [JsonPropertyName("patientList")]
+        public List<RegisteredPatientInfo> PatientList { get; set; } = new();
 
     }
     public class VerifyOtpResponseModel
@@ -44,54 +46,51 @@ namespace Book_An_Appointment1.Models.Patient
         public string? ErrorCode { get; set; }
         public string Status { get; set; } = "";
     }
-    public class PatientListItem
+    public class RegisteredPatientInfo
     {
-        [JsonProperty("GuestPateintId")]
-        public string GuestPatientId { get; set; } = "";
+        [JsonPropertyName("hospitalLocationId")]
+        public string? HospitalLocationId { get; set; }
 
-        [JsonProperty("registrationNo")]
-        public string RegistrationNo { get; set; } = "";
+        [JsonPropertyName("facilityID")]
+        public string? FacilityID { get; set; }
 
-        [JsonProperty("patientName")]
-        public string PatientName { get; set; } = "";
+        [JsonPropertyName("registrationId")]
+        public int RegistrationId { get; set; }
 
-        [JsonProperty("titleId")]
-        public string TitleId { get; set; } = "";
+        [JsonPropertyName("registrationNo")]
+        public string? RegistrationNo { get; set; }
 
-        [JsonProperty("titleName")]
-        public string TitleName { get; set; } = "";
+        [JsonPropertyName("encounterId")]
+        public string? EncounterId { get; set; }
 
-        [JsonProperty("firstName")]
-        public string FirstName { get; set; } = "";
+        [JsonPropertyName("encounterNo")]
+        public string? EncounterNo { get; set; }
 
-        [JsonProperty("middleName")]
-        public string MiddleName { get; set; } = "";
+        [JsonPropertyName("patientName")]
+        public string? PatientName { get; set; }
 
-        [JsonProperty("lastname")]
-        public string LastName { get; set; } = "";
+        [JsonPropertyName("gender")]
+        public string? Gender { get; set; }
 
-        [JsonProperty("gender")]
-        public string Gender { get; set; } = "";
+        [JsonPropertyName("dob")]
+        public string? Dob { get; set; }
 
-        [JsonProperty("dob")]
-        public string Dob { get; set; } = "";
+        [JsonPropertyName("age")]
+        public string? Age { get; set; }
 
-        [JsonProperty("age")]
-        public string Age { get; set; } = "";
+        [JsonPropertyName("emailId")]
+        public string? EmailId { get; set; }
 
-        [JsonProperty("emailId")]
-        public string EmailId { get; set; } = "";
+        [JsonPropertyName("mobileNo")]
+        public string? MobileNo { get; set; }
 
-        [JsonProperty("mobileNo")]
-        public string MobileNo { get; set; } = "";
+        [JsonPropertyName("patientType")]
+        public string? PatientType { get; set; }
 
-        [JsonProperty("facilityID")]
-        public string FacilityId { get; set; } = "";
-
-        [JsonProperty("icon")]
-        public string Icon { get; set; } = "";
-
-        [JsonProperty("isUnRegPat")]
+        [JsonPropertyName("isUnRegPat")]
         public bool IsUnRegPat { get; set; }
+
+        [JsonPropertyName("tcFacilityId")]
+        public string? TcFacilityId { get; set; }
     }
 }

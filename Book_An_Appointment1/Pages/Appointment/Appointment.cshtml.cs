@@ -316,6 +316,7 @@ namespace Book_An_Appointment1.Pages.Appointment
                               ?? new AppointmentSessionData();
             sessionData.PatientType = type;
             sessionData.SlotTime = selectedSlotStart;
+            HttpContext.Session.SetString("Booking.SlotEnd", selectedSlotEnd ?? ""); 
             sessionData.SlotDate = sessionData.SlotDate = DateTime.TryParse(selectedSlotStart, out var parsedSlot)
                        ? parsedSlot.ToString("yyyy-MM-dd")
                        : DateTime.Now.ToString("yyyy-MM-dd");

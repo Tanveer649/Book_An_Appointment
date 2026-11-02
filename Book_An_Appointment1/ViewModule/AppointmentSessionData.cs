@@ -1,4 +1,7 @@
-﻿namespace Book_An_Appointment1.ViewModule
+﻿using System.Text.Json.Serialization;
+using Book_An_Appointment1.Models.Patient;
+
+namespace Book_An_Appointment1.ViewModule
 {
     public class AppointmentSessionData
     {
@@ -54,17 +57,46 @@
         {
             public string Mobile { get; set; } = "";
             public bool IsMobileVerified { get; set; }
+
+            // Selected patient details for the next API
             public string? GuestPatientId { get; set; }
+            public int RegistrationId { get; set; }
             public string? RegistrationNo { get; set; }
+
+            public string? EncounterId { get; set; }
+            public string? EncounterNo { get; set; }
+            public string? HospitalLocationId { get; set; }
+            public int FacilityId { get; set; }
+
+            public string? PatientName { get; set; }
             public string? TitleName { get; set; }
             public int TitleId { get; set; }
             public string FirstName { get; set; } = "";
             public string? MiddleName { get; set; }
             public string LastName { get; set; } = "";
+
             public string Gender { get; set; } = "";
             public string DOB { get; set; } = "";
+            public string? Age { get; set; }
             public string? Email { get; set; }
-            public int FacilityId { get; set; }
+
+            public string? PatientType { get; set; }
+            public bool IsUnRegPat { get; set; }
+            public string? TcFacilityId { get; set; }
+
+            // Top-level OTP API response fields
+            public string? Otp { get; set; }
+            public bool IsUserExist { get; set; }
+            public int Id { get; set; }
+            public string? Name { get; set; }
+            public string? ApiResponseGender { get; set; }
+            public string? ApiResponseDob { get; set; }
+            public string? EmailId { get; set; }
+            public bool IsHisRegistered { get; set; }
+            public string? VerifyPatinetListCount { get; set; }
+
+            // RegisteredPatientInfo defined on modals/patientOTP/VerifyOtpResponseData
+            public List<RegisteredPatientInfo> PatientList { get; set; } = new();
         }
     }
 }

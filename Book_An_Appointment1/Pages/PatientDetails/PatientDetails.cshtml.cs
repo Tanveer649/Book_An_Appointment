@@ -196,6 +196,7 @@ namespace Book_An_Appointment1.Pages.Appointment
                 //}
 
                 //// Session mein verified mark karo
+                
                 //var sessionData = SessionHelper.GetAppointmentData(HttpContext.Session) ?? new AppointmentSessionData();
                 //sessionData.NewPatient.IsMobileVerified = true;
                 //sessionData.NewPatient.Mobile = request.MobileNo;
@@ -306,10 +307,10 @@ namespace Book_An_Appointment1.Pages.Appointment
                 //{
                 //    _logger.LogWarning("SendRegisteredOtp failed | Mobile={M}", request.MobileNo);
 
-                //    return new JsonResult(new 
-                //    { 
-                //        success = false, 
-                //        message = result?.Message ?? "Failed to send OTP" 
+                //    return new JsonResult(new
+                //    {
+                //        success = false,
+                //        message = result?.Message ?? "Failed to send OTP"
                 //    });
                 //}
 
@@ -326,122 +327,178 @@ namespace Book_An_Appointment1.Pages.Appointment
         // ── Registered Patient — Verify OTP + Fetch Details ──
         public async Task<JsonResult> OnPostVerifyRegisteredOtpAsync([FromBody] VerifyOtpRequestModel request)
         {
+
             _logger.LogInformation("OnPostVerifyRegisteredOtpAsync | Mobile={M}", request.MobileNo);
+
             try
             {
+                VerifyOtpResponseData? apiData;
+
+                // TESTING: hardcoded OTP response
                 if (request.OtpNo == "123456")
                 {
-                    var sessionData = SessionHelper.GetAppointmentData(HttpContext.Session)
-                                      ?? new AppointmentSessionData();
+                    apiData = new VerifyOtpResponseData
+                    {
+                        MobileNo = request.MobileNo,
+                        Otp = request.OtpNo,
+                        IsUserExist = true,
+                        Id = 2345434,
+                        Name = "Test1",
+                        Gender = "1",
+                        Dob = "1/31/1995 12:00:00 AM",
+                        EmailId = "wdvctwve",
+                        IsHisRegistered = true,
+                        VerifyPatinetListCount = "1",
 
-                    sessionData.RegisteredPatient.GuestPatientId = "1";
-                    sessionData.RegisteredPatient.RegistrationNo = "REG001";
-                    sessionData.RegisteredPatient.TitleId = 1;
-                    sessionData.RegisteredPatient.TitleName = "Mr.";
-                    sessionData.RegisteredPatient.FirstName = "Test";
-                    sessionData.RegisteredPatient.MiddleName = "";
-                    sessionData.RegisteredPatient.LastName = "Patient";
-                    sessionData.RegisteredPatient.Gender = "Male";
-                    sessionData.RegisteredPatient.DOB = "01/01/1990";
-                    sessionData.RegisteredPatient.Email = "test@test.com";
-                    sessionData.RegisteredPatient.Mobile = request.MobileNo;
-                    sessionData.RegisteredPatient.IsMobileVerified = true;
-                    sessionData.RegisteredPatient.FacilityId = 1;
+                        PatientList = new List<RegisteredPatientInfo>
+                        {
+                            new RegisteredPatientInfo
+                            {
+                                HospitalLocationId = "1",
+                                FacilityID = "1",
+                                RegistrationId = 30023044,
+                                RegistrationNo = "567826738",
+                                EncounterId = "0",
+                                EncounterNo = "0",
+                                PatientName = "Mr. Test1  Test1",
+                                Gender = "Female",
+                                Dob = "1/31/1995 12:00:00 AM",
+                                Age = "29 Yrs/Female",
+                                EmailId = "wdvctwve",
+                                MobileNo = request.MobileNo,
+                                PatientType = "",
+                                IsUnRegPat = false,
+                                TcFacilityId = null
+                            }
+                        }
+                    };
+                }
+                else
+                {
+                    // REAL OTP API
+                    var result = await _otpService.VerifyOtpAsync(request.MobileNo, request.OtpNo);
 
-                    SessionHelper.SetAppointmentData(HttpContext.Session, sessionData);
+                    if (result?.Status?.ToLower() != "success")
+                    {
+                        _logger.LogWarning("VerifyRegisteredOtp failed | Mobile={M}", request.MobileNo);
 
+                        return new JsonResult(new
+                        {
+                            success = false,
+                            message = result?.Message ?? "Invalid OTP"
+                        });
+                    }
+
+                    apiData = result.Data;
+                }
+
+                if (apiData == null)
+                {
                     return new JsonResult(new
                     {
-                        success = true,
-                        patient = new
-                        {
-                            patientName = "Mr. Test Patient",
-                            titleName = "Mr.",
-                            firstName = "Test",
-                            middleName = "",
-                            lastName = "Patient",
-                            gender = "Male",
-                            dob = "01/01/1990",
-                            age = "35",
-                            emailId = "test@test.com",
-                            mobileNo = request.MobileNo,
-                            icon = "",
-                            isUnRegPat = false
-                        }
+                        success = false,
+                        message = "Unable to verify OTP"
                     });
                 }
+
+                var sessionData = SessionHelper.GetAppointmentData(HttpContext.Session)
+                                  ?? new AppointmentSessionData();
+
+                var registeredPatient = sessionData.RegisteredPatient;
+
+                // Top-level API response details
+                registeredPatient.Mobile = apiData.MobileNo ?? request.MobileNo;
+                registeredPatient.IsMobileVerified = true;
+
+                registeredPatient.Otp = apiData.Otp;
+                registeredPatient.IsUserExist = apiData.IsUserExist;
+                registeredPatient.Id = apiData.Id;
+                registeredPatient.Name = apiData.Name;
+                registeredPatient.ApiResponseGender = apiData.Gender;
+                registeredPatient.ApiResponseDob = apiData.Dob;
+                registeredPatient.EmailId = apiData.EmailId;
+                registeredPatient.IsHisRegistered = apiData.IsHisRegistered;
+                registeredPatient.VerifyPatinetListCount =  apiData.VerifyPatinetListCount;
+
+                // Store ALL family members returned for this mobile number
+                registeredPatient.PatientList = apiData.PatientList ?? new List<RegisteredPatientInfo>();
+
+                // Select the first family member by default.
+                // The user can select another member from PatientList later.
+                var selectedPatient = registeredPatient.PatientList.FirstOrDefault();
+
+                if (selectedPatient != null)
+                {
+                    registeredPatient.GuestPatientId = apiData.Id.ToString();
+                    registeredPatient.RegistrationId = selectedPatient.RegistrationId;
+                    registeredPatient.RegistrationNo = selectedPatient.RegistrationNo;
+
+                    registeredPatient.EncounterId = selectedPatient.EncounterId;
+                    registeredPatient.EncounterNo = selectedPatient.EncounterNo;
+                    registeredPatient.HospitalLocationId = selectedPatient.HospitalLocationId;
+
+                    registeredPatient.FacilityId =
+                        int.TryParse(selectedPatient.FacilityID, out var facilityId)
+                            ? facilityId
+                            : 0;
+
+                    registeredPatient.PatientName = selectedPatient.PatientName;
+                    registeredPatient.Gender = selectedPatient.Gender ?? "";
+                    registeredPatient.DOB = selectedPatient.Dob ?? "";
+                    registeredPatient.Age = selectedPatient.Age;
+                    registeredPatient.Email = selectedPatient.EmailId;
+
+                    registeredPatient.PatientType = selectedPatient.PatientType;
+                    registeredPatient.IsUnRegPat = selectedPatient.IsUnRegPat;
+                    registeredPatient.TcFacilityId = selectedPatient.TcFacilityId;
+
+                    // The API does not return separate title/first/middle/last names.
+                    // Keep these empty or populate them using your existing name parsing.
+
+                    registeredPatient.TitleName = null;
+                    registeredPatient.TitleId = 0;
+                    registeredPatient.FirstName = selectedPatient.PatientName ?? "";
+                    registeredPatient.MiddleName = "";
+                    registeredPatient.LastName = "";
+                }
+
+                SessionHelper.SetAppointmentData(HttpContext.Session, sessionData);
+
+                return new JsonResult(new
+                {
+                    success = true,
+
+                    // Top-level API details
+                    mobileNo = apiData.MobileNo,
+                    otp = apiData.Otp,
+                    isUserExist = apiData.IsUserExist,
+                    id = apiData.Id,
+                    name = apiData.Name,
+                    gender = apiData.Gender,
+                    dob = apiData.Dob,
+                    emailId = apiData.EmailId,
+                    isHisRegistered = apiData.IsHisRegistered,
+                    verifyPatinetListCount = apiData.VerifyPatinetListCount,
+
+                    // Return all family members
+                    patientList = registeredPatient.PatientList,
+
+                    // Currently selected patient
+                    patient = selectedPatient
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "OnPostVerifyRegisteredOtpAsync failed | Mobile={M}",
+                    request.MobileNo);
 
                 return new JsonResult(new
                 {
                     success = false,
-                    message = "Invalid OTP"
+                    message = "An error occurred while verifying OTP"
                 });
-
-                //var result = await _otpService.VerifyOtpAsync(request.MobileNo, request.OtpNo);
-
-                //if (result?.Status?.ToLower() != "success")
-                //{
-                //    _logger.LogWarning("VerifyRegisteredOtp failed | Mobile={M}", request.MobileNo);
-                //    return new JsonResult(new { success = false, message = result?.Message ?? "Invalid OTP" });
-                //}
-
-                //var patient = result.Data?.PatientList?.FirstOrDefault();
-
-                //if (patient == null)
-                //{
-                //    _logger.LogWarning("No patient found | Mobile={M}", request.MobileNo);
-                //    return new JsonResult(new { success = false, message = "No registered patient found for this mobile number" });
-                //}
-
-                //// Session mein registered data save karo
-                //var sessionData = SessionHelper.GetAppointmentData(HttpContext.Session)
-                //                  ?? new AppointmentSessionData();
-
-                //sessionData.RegisteredPatient.Mobile = patient.MobileNo;
-                //sessionData.RegisteredPatient.IsMobileVerified = true;
-                //sessionData.RegisteredPatient.GuestPatientId = patient.GuestPatientId;
-                //sessionData.RegisteredPatient.RegistrationNo = patient.RegistrationNo;
-                //sessionData.RegisteredPatient.TitleId = int.TryParse(patient.TitleId, out var tid) ? tid : 0;
-                //sessionData.RegisteredPatient.TitleName = patient.TitleName?.Trim();
-                //sessionData.RegisteredPatient.FirstName = patient.FirstName?.Trim() ?? "";
-                //sessionData.RegisteredPatient.MiddleName = patient.MiddleName?.Trim();
-                //sessionData.RegisteredPatient.LastName = patient.LastName?.Trim() ?? "";
-                //sessionData.RegisteredPatient.Gender = patient.Gender;
-                //sessionData.RegisteredPatient.DOB = patient.Dob;
-                //sessionData.RegisteredPatient.Email = patient.EmailId?.Trim();
-                //sessionData.RegisteredPatient.FacilityId = int.TryParse(patient.FacilityId, out var fid) ? fid : 0;
-
-                //SessionHelper.SetAppointmentData(HttpContext.Session, sessionData);
-
-                //_logger.LogInformation("RegisteredOtp verified | Patient={Name}", patient.PatientName);
-
-                //return new JsonResult(new
-                //{
-                //    success = true,
-                //    patient = new
-                //    {
-                //        patientName = patient.PatientName?.Trim(),
-                //        titleName = patient.TitleName,
-                //        firstName = patient.FirstName?.Trim(),
-                //        middleName = patient.MiddleName?.Trim(),
-                //        lastName = patient.LastName?.Trim(),
-                //        gender = patient.Gender,
-                //        dob = patient.Dob,
-                //        age = patient.Age,
-                //        emailId = patient.EmailId?.Trim(),
-                //        mobileNo = patient.MobileNo,
-                //        registrationNo = patient.RegistrationNo,
-                //        guestPatientId = patient.GuestPatientId,
-                //        icon = patient.Icon,
-                //        isUnRegPat = patient.IsUnRegPat
-                //    }
-                //});
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex,
-                    "VerifyRegisteredOtp error | Mobile={M}", request.MobileNo);
-                return new JsonResult(new { success = false, message = "Something went wrong" });
             }
         }
         // Review & Confirm button
