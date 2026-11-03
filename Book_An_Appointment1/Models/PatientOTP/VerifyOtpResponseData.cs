@@ -35,6 +35,9 @@ namespace Book_An_Appointment1.Models.Patient
         [JsonPropertyName("verifyPatinetListCount")]
         public string? VerifyPatinetListCount { get; set; }
 
+        // API sends the key misspelled as "patinetList" (Newtonsoft reads it);
+        // our own JSON (session / page) keeps "patientList"
+        [JsonProperty("patinetList")]
         [JsonPropertyName("patientList")]
         public List<RegisteredPatientInfo> PatientList { get; set; } = new();
 
@@ -68,6 +71,27 @@ namespace Book_An_Appointment1.Models.Patient
 
         [JsonPropertyName("patientName")]
         public string? PatientName { get; set; }
+
+        [JsonPropertyName("titleId")]
+        public string? TitleId { get; set; }
+
+        [JsonPropertyName("titleName")]
+        public string? TitleName { get; set; }
+
+        [JsonPropertyName("firstName")]
+        public string? FirstName { get; set; }
+
+        [JsonPropertyName("middleName")]
+        public string? MiddleName { get; set; }
+
+        // API key is "lastname" — Newtonsoft matches it case-insensitively
+        [JsonPropertyName("lastName")]
+        public string? LastName { get; set; }
+
+        // API key is misspelled "GuestPateintId"
+        [JsonProperty("GuestPateintId")]
+        [JsonPropertyName("guestPatientId")]
+        public string? GuestPatientId { get; set; }
 
         [JsonPropertyName("gender")]
         public string? Gender { get; set; }

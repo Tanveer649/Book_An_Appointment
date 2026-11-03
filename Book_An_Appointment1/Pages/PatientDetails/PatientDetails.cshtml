@@ -1,7 +1,11 @@
 ﻿@page
 @model Book_An_Appointment1.Pages.Appointment.PatientDetailsModel
 @{
-    ViewData["Title"] = "Patient Details";
+    ViewData["Title"] = L["PatientDetails.PageTitle"];
+
+    // Links placed inside the translated consent sentence ({0} and {1})
+    var termsLink = $"<a href=\"/terms\" target=\"_blank\" rel=\"noopener\">{System.Net.WebUtility.HtmlEncode(L.Text("PatientDetails.TermsConditions"))}</a>";
+    var privacyLink = $"<a href=\"/privacy-policy\" target=\"_blank\" rel=\"noopener\">{System.Net.WebUtility.HtmlEncode(L.Text("PatientDetails.PrivacyPolicy"))}</a>";
 }
 @section Styles {
     <link rel="stylesheet" href="~/css/patient-details.css" asp-append-version="true" />
@@ -14,8 +18,8 @@
         <div class="error-modal-overlay" id="serverErrorModal" role="alertdialog" aria-modal="true" aria-labelledby="serverErrorTitle">
             <div class="error-modal">
                 <div class="error-modal-header">
-                    <div class="error-modal-title" id="serverErrorTitle">⚠ Please fix the following issues</div>
-                    <button type="button" class="error-modal-close" aria-label="Close" onclick="closeServerErrorModal()">✕</button>
+                    <div class="error-modal-title" id="serverErrorTitle">⚠ @L["PatientDetails.FixIssues"]</div>
+                    <button type="button" class="error-modal-close" aria-label="@L["Common.Close"]" onclick="closeServerErrorModal()">✕</button>
                 </div>
                 <div class="error-modal-body">
                     <ul class="error-list">
@@ -29,7 +33,7 @@
                     </ul>
                 </div>
                 <div class="error-modal-footer">
-                    <button type="button" class="error-modal-btn" onclick="closeServerErrorModal()">Got it, let me fix</button>
+                    <button type="button" class="error-modal-btn" onclick="closeServerErrorModal()">@L["PatientDetails.GotIt"]</button>
                 </div>
             </div>
         </div>
@@ -39,22 +43,22 @@
     <div class="progress-bar">
         <div class="step-item">
             <div class="step-circle done">✓</div>
-            <span class="step-label done">Select slot</span>
+            <span class="step-label done">@L["Steps.SelectSlot"]</span>
         </div>
         <div class="step-connector done"></div>
         <div class="step-item">
             <div class="step-circle active">2</div>
-            <span class="step-label active">Patient details</span>
+            <span class="step-label active">@L["Steps.PatientDetails"]</span>
         </div>
         <div class="step-connector"></div>
         <div class="step-item">
             <div class="step-circle pending">3</div>
-            <span class="step-label">Review &amp; confirm</span>
+            <span class="step-label">@L["Steps.ReviewConfirm"]</span>
         </div>
         <div class="step-connector"></div>
         <div class="step-item">
             <div class="step-circle pending">4</div>
-            <span class="step-label">Payment</span>
+            <span class="step-label">@L["Steps.Payment"]</span>
         </div>
     </div>
 
@@ -74,7 +78,7 @@
                     <div class="appt-detail-item">
                         <span class="detail-icon" aria-hidden="true">📅</span>
                         <div class="detail-text">
-                            <span class="detail-label">Appointment</span>
+                            <span class="detail-label">@L["PatientDetails.Appointment"]</span>
                             <span class="detail-value">@Model.Form.SlotDisplayText</span>
                         </div>
                     </div>
@@ -97,15 +101,15 @@
 
                 @* Patient Information Card *@
                 <div class="section-card">
-                    <div class="section-title"><span aria-hidden="true">👤</span> Patient information</div>
+                    <div class="section-title"><span aria-hidden="true">👤</span> @L["PatientDetails.PatientInformation"]</div>
 
                     @* Locked to the choice made on the previous page (see applyPatientTypeLock in patient-details.js) *@
-                    <div class="patient-toggle" id="patientToggle" role="group" aria-label="Patient type">
+                    <div class="patient-toggle" id="patientToggle" role="group" aria-label="@L["PatientDetails.PatientType"]">
                         <button type="button" class="toggle-btn active" onclick="switchMode('new')" id="btn-new" aria-pressed="true">
-                            New patient
+                            @L["Common.NewPatient"]
                         </button>
                         <button type="button" class="toggle-btn" onclick="switchMode('registered')" id="btn-existing" aria-pressed="false">
-                            Already registered
+                            @L["Common.AlreadyRegistered"]
                         </button>
                     </div>
 
@@ -132,51 +136,51 @@
 
                         <div class="form-row form-row-4">
                             <div class="form-group">
-                                <label for="Form_Title">Title <span class="required">*</span></label>
+                                <label for="Form_Title">@L["PatientDetails.Title"] <span class="required">*</span></label>
                                 <select id="Form_Title" name="Form.NewPatient.TitleName">
                                     <option value="">--</option>
                                 </select>
                                 <input type="hidden" id="Form_TitleId" name="Form.NewPatient.TitleId" />
                             </div>
                             <div class="form-group">
-                                <label for="Form_FirstName">First name <span class="required">*</span></label>
-                                <input asp-for="Form.NewPatient.FirstName" id="Form_FirstName" type="text" placeholder="First name" autocomplete="given-name" />
+                                <label for="Form_FirstName">@L["PatientDetails.FirstName"] <span class="required">*</span></label>
+                                <input asp-for="Form.NewPatient.FirstName" id="Form_FirstName" type="text" placeholder="@L["PatientDetails.FirstName"]" autocomplete="given-name" />
                             </div>
                             <div class="form-group">
-                                <label for="Form_MiddleName">Middle name</label>
-                                <input asp-for="Form.NewPatient.MiddleName" id="Form_MiddleName" type="text" placeholder="Middle name" autocomplete="additional-name" />
+                                <label for="Form_MiddleName">@L["PatientDetails.MiddleName"]</label>
+                                <input asp-for="Form.NewPatient.MiddleName" id="Form_MiddleName" type="text" placeholder="@L["PatientDetails.MiddleName"]" autocomplete="additional-name" />
                             </div>
                             <div class="form-group">
-                                <label for="Form_LastName">Last name <span class="required">*</span></label>
-                                <input asp-for="Form.NewPatient.LastName" id="Form_LastName" type="text" placeholder="Last name" autocomplete="family-name" />
+                                <label for="Form_LastName">@L["PatientDetails.LastName"] <span class="required">*</span></label>
+                                <input asp-for="Form.NewPatient.LastName" id="Form_LastName" type="text" placeholder="@L["PatientDetails.LastName"]" autocomplete="family-name" />
                             </div>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="Form_DOB">Date of birth <span class="required">*</span></label>
+                                <label for="Form_DOB">@L["PatientDetails.DateOfBirth"] <span class="required">*</span></label>
                                 <input asp-for="Form.NewPatient.DOB" id="Form_DOB" type="date" autocomplete="bday" />
                             </div>
                             <div class="form-group">
-                                <label>Gender <span class="required">*</span></label>
-                                <div class="gender-row" role="group" aria-label="Gender">
-                                    <button type="button" class="gender-btn" data-value="Male" onclick="selGender(this)">Male</button>
-                                    <button type="button" class="gender-btn" data-value="Female" onclick="selGender(this)">Female</button>
-                                    <button type="button" class="gender-btn" data-value="Other" onclick="selGender(this)">Other</button>
+                                <label>@L["PatientDetails.Gender"] <span class="required">*</span></label>
+                                <div class="gender-row" role="group" aria-label="@L["PatientDetails.Gender"]">
+                                    <button type="button" class="gender-btn" data-value="Male" onclick="selGender(this)">@L["Gender.Male"]</button>
+                                    <button type="button" class="gender-btn" data-value="Female" onclick="selGender(this)">@L["Gender.Female"]</button>
+                                    <button type="button" class="gender-btn" data-value="Other" onclick="selGender(this)">@L["Gender.Other"]</button>
                                 </div>
-                                <span id="gender-error" class="field-error" style="display:none">Please select gender</span>
+                                <span id="gender-error" class="field-error" style="display:none">@L["Validation.SelectGender"]</span>
                             </div>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="Form_Email">Email address</label>
+                                <label for="Form_Email">@L["PatientDetails.Email"]</label>
                                 <input asp-for="Form.NewPatient.Email" id="Form_Email" type="email" placeholder="patient@email.com" autocomplete="email" />
                             </div>
                             <div class="form-group">
-                                <label for="Form_BloodGroup">Blood group</label>
+                                <label for="Form_BloodGroup">@L["PatientDetails.BloodGroup"]</label>
                                 <select asp-for="Form.NewPatient.BloodGroup" id="Form_BloodGroup">
-                                    <option value="">Select blood group</option>
+                                    <option value="">@L["PatientDetails.SelectBloodGroup"]</option>
                                     <option>A+</option>
                                     <option>A−</option>
                                     <option>B+</option>
@@ -191,36 +195,36 @@
 
                         <div class="form-row form-row-single">
                             <div class="form-group">
-                                <label for="Form_Address">Address</label>
-                                <input asp-for="Form.NewPatient.Address" id="Form_Address" type="text" placeholder="Enter full address" autocomplete="street-address" />
+                                <label for="Form_Address">@L["PatientDetails.Address"]</label>
+                                <input asp-for="Form.NewPatient.Address" id="Form_Address" type="text" placeholder="@L["PatientDetails.AddressPlaceholder"]" autocomplete="street-address" />
                             </div>
                         </div>
 
                         <div class="form-row form-row-3">
                             <div class="form-group">
-                                <label for="Form_Country">Country</label>
+                                <label for="Form_Country">@L["PatientDetails.Country"]</label>
                                 <select id="Form_Country" name="Form.CountryName">
-                                    <option value="">Select country</option>
+                                    <option value="">@L["Js.SelectCountry"]</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="Form_State">State</label>
+                                <label for="Form_State">@L["PatientDetails.State"]</label>
                                 <select id="Form_State" disabled>
-                                    <option value="">Select state</option>
+                                    <option value="">@L["Js.SelectState"]</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="Form_City">City</label>
+                                <label for="Form_City">@L["PatientDetails.City"]</label>
                                 <select id="Form_City" disabled>
-                                    <option value="">Select city</option>
+                                    <option value="">@L["Js.SelectCity"]</option>
                                 </select>
                             </div>
                         </div>
 
                         <div class="form-row-pincode">
                             <div class="form-group">
-                                <label for="Form_Pincode">Pincode</label>
-                                <input asp-for="Form.NewPatient.Pincode" id="Form_Pincode" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit pincode" autocomplete="postal-code" />
+                                <label for="Form_Pincode">@L["PatientDetails.Pincode"]</label>
+                                <input asp-for="Form.NewPatient.Pincode" id="Form_Pincode" type="text" inputmode="numeric" maxlength="6" placeholder="@L["PatientDetails.PincodePlaceholder"]" autocomplete="postal-code" />
                             </div>
                             <div></div>
                         </div>
@@ -228,33 +232,33 @@
                         <div class="divider"></div>
 
                         <div class="section-title">
-                            <span aria-hidden="true">📱</span> Mobile verification
-                            <span class="verify-badge" id="verify-badge">✓ Verified</span>
+                            <span aria-hidden="true">📱</span> @L["PatientDetails.MobileVerification"]
+                            <span class="verify-badge" id="verify-badge">@L["Common.Verified"]</span>
                         </div>
 
                         <div class="phone-row">
                             <div class="form-group country-code">
-                                <label for="Form_CountryCode">Code</label>
+                                <label for="Form_CountryCode">@L["PatientDetails.Code"]</label>
                                 <input asp-for="Form.NewPatient.CountryCode" id="Form_CountryCode" type="text" value="+91" maxlength="4" />
                             </div>
                             <div class="form-group phone-number-group">
-                                <label for="phone-input">Mobile number <span class="required">*</span></label>
+                                <label for="phone-input">@L["PatientDetails.MobileNumber"] <span class="required">*</span></label>
                                 <input type="tel" id="phone-input" placeholder="98XXXXXXXX" maxlength="10" inputmode="numeric" autocomplete="tel-national"
                                        oninput="checkPhone()" value="@Model.Form.NewPatient.Mobile" />
                             </div>
                             <button type="button" class="send-otp-btn" id="send-otp-btn" onclick="sendOTP()" disabled>
-                                Send OTP
+                                @L["Js.SendOtp"]
                             </button>
                         </div>
 
                         <div class="otp-section" id="otp-section">
                             <div class="otp-hint">
-                                OTP sent to +91 <strong id="otp-phone-display"></strong>. Valid for 5 minutes.
+                                @L.Html("PatientDetails.OtpSentTo", "<strong id=\"otp-phone-display\"></strong>")
                             </div>
                             <div class="otp-inputs" id="new-otp-inputs"></div>
-                            <div class="otp-verified" id="otp-verified">✓ Mobile number verified</div>
+                            <div class="otp-verified" id="otp-verified">@L["PatientDetails.MobileVerified"]</div>
                             <div class="resend-row">
-                                <button type="button" class="resend-link" id="resend-btn" onclick="resendOTP()">Resend OTP</button>
+                                <button type="button" class="resend-link" id="resend-btn" onclick="resendOTP()">@L["PatientDetails.ResendOtp"]</button>
                                 <span class="timer" id="timer-display" aria-live="polite"></span>
                             </div>
                         </div>
@@ -277,34 +281,33 @@
                         <input type="hidden" asp-for="Form.RegisteredPatient.Email" id="Reg_Email" />
 
                         <p class="existing-note">
-                            Enter your registered mobile number.
-                            We'll send an OTP to verify and fetch your details.
+                            @L["PatientDetails.RegisteredNote"]
                         </p>
 
                         <div class="phone-row">
                             <div class="form-group country-code">
-                                <label for="reg-country-code">Code</label>
+                                <label for="reg-country-code">@L["PatientDetails.Code"]</label>
                                 <input type="text" id="reg-country-code" value="+91" maxlength="4" />
                             </div>
                             <div class="form-group phone-number-group">
-                                <label for="reg-phone-input">Registered mobile <span class="required">*</span></label>
+                                <label for="reg-phone-input">@L["PatientDetails.RegisteredMobile"] <span class="required">*</span></label>
                                 <input type="tel" id="reg-phone-input" name="Form.RegisteredPatient.Mobile"
                                        placeholder="98XXXXXXXX" maxlength="10" inputmode="numeric" autocomplete="tel-national"
                                        oninput="checkRegPhone()" value="@Model.Form.RegisteredPatient.Mobile" />
                             </div>
                             <button type="button" class="send-otp-btn" id="reg-send-otp-btn" onclick="sendRegisteredOTP()" disabled>
-                                Send OTP
+                                @L["Js.SendOtp"]
                             </button>
                         </div>
 
                         <div class="otp-section" id="reg-otp-section">
                             <div class="otp-hint">
-                                OTP sent to +91 <strong id="reg-otp-phone-display"></strong>. Valid for 5 minutes.
+                                @L.Html("PatientDetails.OtpSentTo", "<strong id=\"reg-otp-phone-display\"></strong>")
                             </div>
                             <div class="otp-inputs" id="reg-otp-inputs"></div>
-                            <div class="otp-verified" id="reg-otp-verified">✓ Mobile number verified</div>
+                            <div class="otp-verified" id="reg-otp-verified">@L["PatientDetails.MobileVerified"]</div>
                             <div class="resend-row">
-                                <button type="button" class="resend-link" id="reg-resend-btn" onclick="resendRegisteredOTP()">Resend OTP</button>
+                                <button type="button" class="resend-link" id="reg-resend-btn" onclick="resendRegisteredOTP()">@L["PatientDetails.ResendOtp"]</button>
                                 <span class="timer" id="reg-timer-display" aria-live="polite"></span>
                             </div>
                         </div>
@@ -313,12 +316,12 @@
                         <div id="patient-found-card" style="display:none">
                             <div class="pf-list-head">
                                 <div>
-                                    <div class="pf-list-title">Select patient</div>
+                                    <div class="pf-list-title">@L["PatientDetails.SelectPatient"]</div>
                                     <div class="pf-list-sub" id="pf-list-sub"></div>
                                 </div>
-                                <div class="pf-verified-badge">✓ Verified</div>
+                                <div class="pf-verified-badge">@L["Common.Verified"]</div>
                             </div>
-                            <div class="pf-list" id="pf-list" role="radiogroup" aria-label="Select patient"></div>
+                            <div class="pf-list" id="pf-list" role="radiogroup" aria-label="@L["PatientDetails.SelectPatient"]"></div>
                             <span id="reg-patient-error" class="field-error" role="alert" style="display:none"></span>
                         </div>
 
@@ -327,11 +330,11 @@
 
                 @* Common — Appointment Notes *@
                 <div class="section-card">
-                    <div class="section-title"><span aria-hidden="true">📋</span> Appointment notes</div>
+                    <div class="section-title"><span aria-hidden="true">📋</span> @L["PatientDetails.AppointmentNotes"]</div>
                     <div class="form-group">
-                        <label for="Form_AppointmentNotes">Describe your symptoms or reason for visit (optional)</label>
+                        <label for="Form_AppointmentNotes">@L["PatientDetails.NotesLabel"]</label>
                         <textarea asp-for="Form.AppointmentNotes" id="Form_AppointmentNotes" class="notes-textarea"
-                                  placeholder="e.g. Chest pain for 3 days..." maxlength="300"
+                                  placeholder="@L["PatientDetails.NotesPlaceholder"]" maxlength="300"
                                   oninput="countChars(this)"></textarea>
                         <div class="char-count"><span id="char-count">0</span> / 300</div>
                     </div>
@@ -339,28 +342,26 @@
 
                 @* Common — Consent *@
                 <div class="section-card">
-                    <div class="section-title"><span aria-hidden="true">🛡️</span> Consent &amp; terms</div>
+                    <div class="section-title"><span aria-hidden="true">🛡️</span> @L["PatientDetails.ConsentTitle"]</div>
                     <div class="consent-row">
                         <input asp-for="Form.ConsentTerms" id="Form_ConsentTerms" type="checkbox"
                                onchange="if(this.checked) document.getElementById('consent-error').style.display='none';" />
                         <label for="Form_ConsentTerms">
-                            I agree to the
-                            <a href="/terms" target="_blank" rel="noopener">Terms &amp; Conditions</a> and
-                            <a href="/privacy-policy" target="_blank" rel="noopener">Privacy Policy</a>
+                            @L.Html("PatientDetails.AgreeTerms", termsLink, privacyLink)
                             <span class="required">*</span>
                         </label>
                     </div>
-                    <span id="consent-error" class="field-error" style="display:none">Please accept terms and conditions</span>
+                    <span id="consent-error" class="field-error" style="display:none">@L["Validation.AcceptTerms"]</span>
                     <div class="consent-row mt-2">
                         <input asp-for="Form.ConsentMarketing" id="Form_ConsentMarketing" type="checkbox" />
-                        <label for="Form_ConsentMarketing">I agree to receive appointment reminders and health tips via SMS/Email</label>
+                        <label for="Form_ConsentMarketing">@L["PatientDetails.AgreeMarketing"]</label>
                     </div>
                 </div>
 
                 @* Footer *@
                 <div class="footer-actions">
-                    <a asp-page="/Appointment/Appointment" class="btn-back">← Back</a>
-                    <button type="submit" id="submitBtn" class="btn-continue">Review &amp; Confirm →</button>
+                    <a asp-page="/Appointment/Appointment" class="btn-back">@L["Common.Back"]</a>
+                    <button type="submit" id="submitBtn" class="btn-continue">@L["Js.ReviewConfirm"]</button>
                 </div>
 
             </form>

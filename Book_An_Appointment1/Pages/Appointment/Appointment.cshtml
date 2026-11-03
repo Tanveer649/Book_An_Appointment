@@ -1,7 +1,7 @@
 ﻿@page "/Appointment"
 @model Book_An_Appointment1.Pages.Appointment.AppointmentModel
 @{
-    ViewData["Title"] = "Book Appointment";
+    ViewData["Title"] = L["Appointment.PageTitle"];
 
     var doc = Model.Wizard.SelectedDoctor;
     bool hasDoctor = doc != null;
@@ -57,7 +57,7 @@
 
         @if (!string.IsNullOrEmpty(Model.ErrorMessage))
         {
-            <div class="alert alert-danger mb-4"><strong>Error:</strong> @Model.ErrorMessage</div>
+            <div class="alert alert-danger mb-4"><strong>@L["Common.Error"]</strong> @Model.ErrorMessage</div>
         }
 
         @if (!ViewData.ModelState.IsValid)
@@ -75,20 +75,20 @@
         <div id="clientValidationError"></div>
 
         <div class="progress-bar">
-            <div class="step-item"><div class="step-circle active">1</div><span class="step-label active">Appointment details</span></div>
+            <div class="step-item"><div class="step-circle active">1</div><span class="step-label active">@L["Steps.AppointmentDetails"]</span></div>
             <div class="step-connector"></div>
-            <div class="step-item"><div class="step-circle pending">2</div><span class="step-label">Patient details</span></div>
+            <div class="step-item"><div class="step-circle pending">2</div><span class="step-label">@L["Steps.PatientDetails"]</span></div>
             <div class="step-connector"></div>
-            <div class="step-item"><div class="step-circle pending">3</div><span class="step-label">Review &amp; confirm</span></div>
+            <div class="step-item"><div class="step-circle pending">3</div><span class="step-label">@L["Steps.ReviewConfirm"]</span></div>
             <div class="step-connector"></div>
-            <div class="step-item"><div class="step-circle pending">4</div><span class="step-label">Payment</span></div>
+            <div class="step-item"><div class="step-circle pending">4</div><span class="step-label">@L["Steps.Payment"]</span></div>
         </div>
 
         <div class="selector-bar">
             <div class="dropdown-group">
-                <label class="form-label fw-bold" for="facilityDropdown">Facility <span class="text-danger">*</span></label>
+                <label class="form-label fw-bold" for="facilityDropdown">@L["Appointment.Facility"] <span class="text-danger">*</span></label>
                 <select name="FacilityId" id="facilityDropdown" class="form-select select2">
-                    <option value="">Select Facility</option>
+                    <option value="">@L["Js.SelectFacility"]</option>
                     @foreach (var item in Model.Wizard.Facilities)
                     {
                         <option value="@item.FacilityId" selected="@(item.FacilityId == Model.FacilityId)">@(item.FacilityName ?? "N/A")</option>
@@ -97,10 +97,10 @@
             </div>
 
             <div class="dropdown-group">
-                <label class="form-label fw-bold" for="specialityDropdown">Speciality <span class="text-danger">*</span></label>
-                <span class="dropdown-lock-wrap" id="specialityLockWrap" data-tooltip="Please select a facility first">
+                <label class="form-label fw-bold" for="specialityDropdown">@L["Appointment.Speciality"] <span class="text-danger">*</span></label>
+                <span class="dropdown-lock-wrap" id="specialityLockWrap" data-tooltip="@L["Js.SelectFacilityFirst"]">
                     <select name="SpecialityId" id="specialityDropdown" class="form-select select2" disabled>
-                        <option value="">Search Speciality</option>
+                        <option value="">@L["Js.SearchSpeciality"]</option>
                         @foreach (var item in Model.Wizard.Specialities)
                         {
                             <option value="@item.Id" selected="@(item.Id == (Model.SpecialityId ?? 0).ToString())">@(item.SpecialisationName ?? "N/A")</option>
@@ -110,10 +110,10 @@
             </div>
 
             <div class="dropdown-group">
-                <label class="form-label fw-bold" for="doctorDropdown">Doctor <span class="text-danger">*</span></label>
-                <span class="dropdown-lock-wrap" id="doctorLockWrap" data-tooltip="Please select a facility first">
+                <label class="form-label fw-bold" for="doctorDropdown">@L["Appointment.Doctor"] <span class="text-danger">*</span></label>
+                <span class="dropdown-lock-wrap" id="doctorLockWrap" data-tooltip="@L["Js.SelectFacilityFirst"]">
                     <select name="DoctorId" id="doctorDropdown" class="form-select select2" disabled>
-                        <option value="">Search Doctor</option>
+                        <option value="">@L["Js.SearchDoctor"]</option>
                         @if (Model.Wizard.Doctors != null)
                         {
                             foreach (var item in Model.Wizard.Doctors)
@@ -130,14 +130,14 @@
         <div id="welcomeStage" class="welcome-stage" style="@(hasDoctor ? "display:none" : "")">
             <div id="emptyState" class="empty-hint">
                 <div>
-                    <h2 class="welcome-title">Find your doctor and book a slot</h2>
-                    <p class="welcome-text">Choose where you want to be seen, then pick a speciality and a doctor to view their profile and live availability.</p>
+                    <h2 class="welcome-title">@L["Appointment.WelcomeTitle"]</h2>
+                    <p class="welcome-text">@L["Appointment.WelcomeText"]</p>
                 </div>
                 <ol class="welcome-steps" id="welcomeSteps">
-                    <li class="current" data-step="facility"><span class="num">1</span>Select a facility</li>
-                    <li data-step="speciality"><span class="num">2</span>Select a speciality</li>
-                    <li data-step="doctor"><span class="num">3</span>Select a doctor</li>
-                    <li data-step="slot"><span class="num">4</span>Pick a date and time</li>
+                    <li class="current" data-step="facility"><span class="num">1</span>@L["Appointment.StepFacility"]</li>
+                    <li data-step="speciality"><span class="num">2</span>@L["Appointment.StepSpeciality"]</li>
+                    <li data-step="doctor"><span class="num">3</span>@L["Appointment.StepDoctor"]</li>
+                    <li data-step="slot"><span class="num">4</span>@L["Appointment.StepSlot"]</li>
                 </ol>
             </div>
             <div id="hospitalCarousel" class="carousel" style="display:none">
@@ -156,23 +156,23 @@
 
     <div id="patientTypeDialog" class="app-dialog" role="dialog" aria-modal="true" aria-labelledby="patientTypeTitle" hidden>
         <div class="app-dialog-card wide">
-            <button type="button" id="patientTypeClose" class="dialog-close" aria-label="Close">&times;</button>
-            <h4 id="patientTypeTitle">Have you visited us before?</h4>
-            <p>Choose how you would like to continue with your booking.</p>
+            <button type="button" id="patientTypeClose" class="dialog-close" aria-label="@L["Common.Close"]">&times;</button>
+            <h4 id="patientTypeTitle">@L["Appointment.VisitedBefore"]</h4>
+            <p>@L["Appointment.ChooseHowToContinue"]</p>
             <div class="choice-grid">
                 <button type="button" class="choice-card" data-type="new">
                     <span class="choice-icon" aria-hidden="true">
                         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M19 8v6M22 11h-6" /></svg>
                     </span>
-                    <span class="choice-title">New patient</span>
-                    <span class="choice-desc">This is my first visit</span>
+                    <span class="choice-title">@L["Common.NewPatient"]</span>
+                    <span class="choice-desc">@L["Appointment.NewPatientDesc"]</span>
                 </button>
                 <button type="button" class="choice-card" data-type="registered">
                     <span class="choice-icon" aria-hidden="true">
                         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="m16 11 2 2 4-4" /></svg>
                     </span>
-                    <span class="choice-title">Already registered</span>
-                    <span class="choice-desc">I have visited this hospital before</span>
+                    <span class="choice-title">@L["Common.AlreadyRegistered"]</span>
+                    <span class="choice-desc">@L["Appointment.RegisteredDesc"]</span>
                 </button>
             </div>
         </div>
@@ -180,9 +180,9 @@
 
     <div id="limitDialog" class="app-dialog" role="alertdialog" aria-modal="true" aria-labelledby="limitDialogTitle" hidden>
         <div class="app-dialog-card">
-            <h4 id="limitDialogTitle">That date is too far ahead</h4>
+            <h4 id="limitDialogTitle">@L["Appointment.DateTooFar"]</h4>
             <p id="limitDialogText"></p>
-            <button type="button" id="limitDialogClose" class="btn-continue">Choose another date</button>
+            <button type="button" id="limitDialogClose" class="btn-continue">@L["Appointment.ChooseAnotherDate"]</button>
         </div>
     </div>
 </form>

@@ -52,7 +52,7 @@ namespace Book_An_Appointment1.Models.DoctorItem
         public string Description => !string.IsNullOrWhiteSpace(AboutUS) ? AboutUS : "N/A";
         public string ImageUrl => !string.IsNullOrWhiteSpace(Icon) ?  Icon.Replace("http://", "https://")  // ← force https
                                     : "/Image/default-doctor.png"; 
-        public string Timing => !string.IsNullOrWhiteSpace(Availability)? DateTime.TryParse(Availability, out var dt) ? dt.ToString("hh:mm tt") : Availability: "N/A";
+        public string Timing => !string.IsNullOrWhiteSpace(Availability)? DateTime.TryParse(Availability, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var dt) ? dt.ToString("hh:mm tt") : Availability: "N/A";
         public bool IsTeleconsult => IsTeleconsultation == "1";
     }
 

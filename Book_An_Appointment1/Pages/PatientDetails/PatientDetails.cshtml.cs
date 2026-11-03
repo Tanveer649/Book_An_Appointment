@@ -1,4 +1,5 @@
 using Book_An_Appointment1.Helpers;
+using Book_An_Appointment1.Localization;
 using Book_An_Appointment1.Models;
 using Book_An_Appointment1.Models.Patient;
 using Book_An_Appointment1.Services.Interfaces;
@@ -6,6 +7,7 @@ using Book_An_Appointment1.ViewModule;
 using Book_An_Appointment1.ViewModule.PatientDetails;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace Book_An_Appointment1.Pages.Appointment
@@ -17,6 +19,7 @@ namespace Book_An_Appointment1.Pages.Appointment
         private readonly IConfiguration _configuration;
         private readonly ILocationService _locationService;
         private readonly ITitleService _titleService;
+        private readonly JsonStringLocalizer _localizer;
 
         [BindProperty]
         public PatientDetailsViewModel Form { get; set; } = new();
@@ -32,8 +35,10 @@ namespace Book_An_Appointment1.Pages.Appointment
              ILogger<PatientDetailsModel> logger,
              IConfiguration configuration,
              ILocationService locationService,
-             ITitleService titleService)
+             ITitleService titleService,
+             JsonStringLocalizer localizer)
         {
+            _localizer = localizer;
             _otpService = otpService;
             _logger = logger;
             _configuration = configuration;
@@ -58,7 +63,7 @@ namespace Book_An_Appointment1.Pages.Appointment
             Form.DoctorInitials = SessionData.DoctorInitials;
             Form.Specialisation = SessionData.Specialisation;
             Form.Hospital = SessionData.Hospital;
-            Form.SlotDisplayText = SessionData.SlotDisplayText;
+            Form.SlotDisplayText = AppointmentModel.FormatSlotDisplay(SessionData.SlotTime);
             Form.ConsultationFee = SessionData.ConsultationFee;
             Form.RegistrationFee = SessionData.RegistrationFee;
 
@@ -152,7 +157,7 @@ namespace Book_An_Appointment1.Pages.Appointment
                 return new JsonResult(new
                 {
                     success = false,
-                    message = "Something went wrong"
+                    message = _localizer.Text("Errors.SomethingWrong")
                 });
             }
         }
@@ -169,7 +174,7 @@ namespace Book_An_Appointment1.Pages.Appointment
                     return new JsonResult(new
                     {
                         success = false,
-                        message = "Invalid OTP"
+                        message = _localizer.Text("Errors.InvalidOtp")
                     });
                 }
 
@@ -198,7 +203,7 @@ namespace Book_An_Appointment1.Pages.Appointment
                 //    return new JsonResult(new
                 //    {
                 //        success = false,
-                //        message = result?.Message ?? "Invalid OTP"
+                //        message = result?.Message ?? _localizer.Text("Errors.InvalidOtp")
                 //    });
                 //}
 
@@ -224,7 +229,7 @@ namespace Book_An_Appointment1.Pages.Appointment
                 return new JsonResult(new
                 {
                     success = false,
-                    message = "Something went wrong"
+                    message = _localizer.Text("Errors.SomethingWrong")
                 });
             }
         }
@@ -327,7 +332,7 @@ namespace Book_An_Appointment1.Pages.Appointment
             {
                 _logger.LogError(ex,
                     "SendRegisteredOtp error | Mobile={M}", request.MobileNo);
-                return new JsonResult(new { success = false, message = "Something went wrong" });
+                return new JsonResult(new { success = false, message = _localizer.Text("Errors.SomethingWrong") });
             }
         }
 
@@ -447,7 +452,7 @@ namespace Book_An_Appointment1.Pages.Appointment
                         return new JsonResult(new
                         {
                             success = false,
-                            message = result?.Message ?? "Invalid OTP"
+                            message = result?.Message ?? _localizer.Text("Errors.InvalidOtp")
                         });
                     }
 
@@ -459,7 +464,7 @@ namespace Book_An_Appointment1.Pages.Appointment
                     return new JsonResult(new
                     {
                         success = false,
-                        message = "Unable to verify OTP"
+                        message = _localizer.Text("Errors.UnableToVerifyOtp")
                     });
                 }
 
@@ -532,7 +537,7 @@ namespace Book_An_Appointment1.Pages.Appointment
                 return new JsonResult(new
                 {
                     success = false,
-                    message = "An error occurred while verifying OTP"
+                    message = _localizer.Text("Errors.OtpVerifyError")
                 });
             }
         }
@@ -545,7 +550,7 @@ namespace Book_An_Appointment1.Pages.Appointment
             var registeredPatient = sessionData?.RegisteredPatient;
 
             if (registeredPatient == null || !registeredPatient.IsMobileVerified)
-                return new JsonResult(new { success = false, message = "Please verify your mobile number via OTP" });
+                return new JsonResult(new { success = false, message = _localizer.Text("Validation.VerifyMobile") });
 
             // Only a member returned for this verified mobile can be selected
             var patient = registeredPatient.PatientList.FirstOrDefault(x =>
@@ -554,7 +559,7 @@ namespace Book_An_Appointment1.Pages.Appointment
             if (patient == null)
             {
                 _logger.LogWarning("SelectRegisteredPatient — not in patient list | RegistrationNo={R}", request?.RegistrationNo);
-                return new JsonResult(new { success = false, message = "Selected patient not found. Please verify OTP again." });
+                return new JsonResult(new { success = false, message = _localizer.Text("Errors.PatientNotFound") });
             }
 
             ApplySelectedPatient(registeredPatient, patient);
@@ -565,7 +570,10 @@ namespace Book_An_Appointment1.Pages.Appointment
 
         private static void ApplySelectedPatient(AppointmentSessionData.RegisteredPatientData registeredPatient, RegisteredPatientInfo selectedPatient)
         {
-            registeredPatient.GuestPatientId = registeredPatient.Id.ToString();
+            // Per-patient value from the API ("0" for HIS-registered patients)
+            registeredPatient.GuestPatientId = string.IsNullOrWhiteSpace(selectedPatient.GuestPatientId)
+                ? "0"
+                : selectedPatient.GuestPatientId.Trim();
             registeredPatient.RegistrationId = selectedPatient.RegistrationId;
             registeredPatient.RegistrationNo = selectedPatient.RegistrationNo;
 
@@ -588,14 +596,23 @@ namespace Book_An_Appointment1.Pages.Appointment
             registeredPatient.IsUnRegPat = selectedPatient.IsUnRegPat;
             registeredPatient.TcFacilityId = selectedPatient.TcFacilityId;
 
-            // The API does not return separate title/first/middle/last names.
-            // Keep these empty or populate them using your existing name parsing.
-
-            registeredPatient.TitleName = null;
-            registeredPatient.TitleId = 0;
-            registeredPatient.FirstName = selectedPatient.PatientName ?? "";
-            registeredPatient.MiddleName = "";
-            registeredPatient.LastName = "";
+            // Name parts from the API; older responses only had patientName → keep it whole in FirstName
+            if (!string.IsNullOrWhiteSpace(selectedPatient.FirstName))
+            {
+                registeredPatient.TitleName = selectedPatient.TitleName?.Trim();
+                registeredPatient.TitleId = int.TryParse(selectedPatient.TitleId, out var titleId) ? titleId : 0;
+                registeredPatient.FirstName = selectedPatient.FirstName.Trim();
+                registeredPatient.MiddleName = selectedPatient.MiddleName?.Trim() ?? "";
+                registeredPatient.LastName = selectedPatient.LastName?.Trim() ?? "";
+            }
+            else
+            {
+                registeredPatient.TitleName = null;
+                registeredPatient.TitleId = 0;
+                registeredPatient.FirstName = selectedPatient.PatientName ?? "";
+                registeredPatient.MiddleName = "";
+                registeredPatient.LastName = "";
+            }
         }
 
         private static void ClearSelectedPatient(AppointmentSessionData.RegisteredPatientData registeredPatient)
@@ -660,7 +677,7 @@ namespace Book_An_Appointment1.Pages.Appointment
 
             // ── Common Validation ──────────────────────────
             if (!Form.ConsentTerms)
-                ModelState.AddModelError("Form.ConsentTerms", "Please accept terms and conditions");
+                ModelState.AddModelError("Form.ConsentTerms", _localizer.Text("Validation.AcceptTerms"));
 
             // ── Validation Failed ──────────────────────────
             if (!ModelState.IsValid)
@@ -732,45 +749,45 @@ namespace Book_An_Appointment1.Pages.Appointment
             var p = Form.NewPatient;
 
             if (string.IsNullOrWhiteSpace(p.TitleName))
-                ModelState.AddModelError("Form.NewPatient.TitleName", "Please select a title");
+                ModelState.AddModelError("Form.NewPatient.TitleName", _localizer.Text("Validation.SelectTitle"));
 
             if (string.IsNullOrWhiteSpace(p.FirstName))
-                ModelState.AddModelError("Form.NewPatient.FirstName", "First name is required");
+                ModelState.AddModelError("Form.NewPatient.FirstName", _localizer.Text("Validation.FirstNameRequired"));
             else if (!Regex.IsMatch(p.FirstName.Trim(), @"^[a-zA-Z\s'\-]+$"))
-                ModelState.AddModelError("Form.NewPatient.FirstName", "First name should contain letters only");
+                ModelState.AddModelError("Form.NewPatient.FirstName", _localizer.Text("Validation.FirstNameLetters"));
 
             if (!string.IsNullOrWhiteSpace(p.MiddleName) &&
                 !Regex.IsMatch(p.MiddleName.Trim(), @"^[a-zA-Z\s'\-]+$"))
-                ModelState.AddModelError("Form.NewPatient.MiddleName", "Middle name should contain letters only");
+                ModelState.AddModelError("Form.NewPatient.MiddleName", _localizer.Text("Validation.MiddleNameLetters"));
 
             if (string.IsNullOrWhiteSpace(p.LastName))
-                ModelState.AddModelError("Form.NewPatient.LastName", "Last name is required");
+                ModelState.AddModelError("Form.NewPatient.LastName", _localizer.Text("Validation.LastNameRequired"));
             else if (!Regex.IsMatch(p.LastName.Trim(), @"^[a-zA-Z\s'\-]+$"))
-                ModelState.AddModelError("Form.NewPatient.LastName", "Last name should contain letters only");
+                ModelState.AddModelError("Form.NewPatient.LastName", _localizer.Text("Validation.LastNameLetters"));
 
             if (string.IsNullOrWhiteSpace(p.DOB))
-                ModelState.AddModelError("Form.NewPatient.DOB", "Date of birth is required");
-            else if (DateTime.TryParse(p.DOB, out var dob) && dob >= DateTime.Today)
-                ModelState.AddModelError("Form.NewPatient.DOB", "Date of birth cannot be today or a future date");
+                ModelState.AddModelError("Form.NewPatient.DOB", _localizer.Text("Validation.DobRequired"));
+            else if (DateTime.TryParse(p.DOB, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dob) && dob >= DateTime.Today)
+                ModelState.AddModelError("Form.NewPatient.DOB", _localizer.Text("Validation.DobPast"));
 
             if (string.IsNullOrWhiteSpace(p.Gender))
-                ModelState.AddModelError("Form.NewPatient.Gender", "Please select gender");
+                ModelState.AddModelError("Form.NewPatient.Gender", _localizer.Text("Validation.SelectGender"));
 
             if (!string.IsNullOrWhiteSpace(p.Email) &&
                 !Regex.IsMatch(p.Email.Trim(), @"^[^\s@]+@[^\s@]+\.[^\s@]+$"))
-                ModelState.AddModelError("Form.NewPatient.Email", "Please enter a valid email address");
+                ModelState.AddModelError("Form.NewPatient.Email", _localizer.Text("Validation.EmailInvalid"));
 
             if (string.IsNullOrWhiteSpace(p.Mobile))
-                ModelState.AddModelError("Form.NewPatient.Mobile", "Mobile number is required");
+                ModelState.AddModelError("Form.NewPatient.Mobile", _localizer.Text("Validation.MobileRequired"));
             else if (!Regex.IsMatch(p.Mobile.Trim(), @"^\d{10}$"))
-                ModelState.AddModelError("Form.NewPatient.Mobile", "Please enter a valid 10-digit mobile number");
+                ModelState.AddModelError("Form.NewPatient.Mobile", _localizer.Text("Validation.MobileInvalid"));
 
             if (!p.IsMobileVerified)
-                ModelState.AddModelError("Form.NewPatient.IsMobileVerified", "Please verify your mobile number via OTP");
+                ModelState.AddModelError("Form.NewPatient.IsMobileVerified", _localizer.Text("Validation.VerifyMobile"));
 
             if (!string.IsNullOrWhiteSpace(p.Pincode) &&
                 !Regex.IsMatch(p.Pincode.Trim(), @"^\d{6}$"))
-                ModelState.AddModelError("Form.NewPatient.Pincode", "Pincode must be exactly 6 digits");
+                ModelState.AddModelError("Form.NewPatient.Pincode", _localizer.Text("Validation.PincodeInvalid"));
         }
 
         private void ValidateRegisteredPatient(AppointmentSessionData sessionData)
@@ -779,15 +796,15 @@ namespace Book_An_Appointment1.Pages.Appointment
             var saved = sessionData.RegisteredPatient;   // OTP + selection are trusted from session, not hidden inputs
 
             if (string.IsNullOrWhiteSpace(p.Mobile))
-                ModelState.AddModelError("Form.RegisteredPatient.Mobile", "Mobile number is required");
+                ModelState.AddModelError("Form.RegisteredPatient.Mobile", _localizer.Text("Validation.MobileRequired"));
             else if (!Regex.IsMatch(p.Mobile.Trim(), @"^\d{10}$"))
-                ModelState.AddModelError("Form.RegisteredPatient.Mobile", "Please enter a valid 10-digit mobile number");
+                ModelState.AddModelError("Form.RegisteredPatient.Mobile", _localizer.Text("Validation.MobileInvalid"));
 
             if (!p.IsMobileVerified || !saved.IsMobileVerified || saved.Mobile != p.Mobile?.Trim())
-                ModelState.AddModelError("Form.RegisteredPatient.IsMobileVerified", "Please verify your mobile number via OTP");
+                ModelState.AddModelError("Form.RegisteredPatient.IsMobileVerified", _localizer.Text("Validation.VerifyMobile"));
             else if (string.IsNullOrWhiteSpace(saved.RegistrationNo) ||
                      !saved.PatientList.Any(x => x.RegistrationNo == saved.RegistrationNo))
-                ModelState.AddModelError("Form.RegisteredPatient.RegistrationNo", "Please select the patient for whom you want to book the appointment");
+                ModelState.AddModelError("Form.RegisteredPatient.RegistrationNo", _localizer.Text("Validation.SelectPatient"));
         }
 
         private void RestoreFormForValidationFailure(AppointmentSessionData sessionData)
@@ -797,7 +814,7 @@ namespace Book_An_Appointment1.Pages.Appointment
             Form.DoctorInitials = sessionData.DoctorInitials;
             Form.Specialisation = sessionData.Specialisation;
             Form.Hospital = sessionData.Hospital;
-            Form.SlotDisplayText = sessionData.SlotDisplayText;
+            Form.SlotDisplayText = AppointmentModel.FormatSlotDisplay(sessionData.SlotTime);
             Form.ConsultationFee = sessionData.ConsultationFee;
             Form.RegistrationFee = sessionData.RegistrationFee;
 

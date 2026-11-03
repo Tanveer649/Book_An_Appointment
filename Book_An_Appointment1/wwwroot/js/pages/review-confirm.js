@@ -59,13 +59,13 @@
         // ── Client Side Validation (server validates again) ──
         function validateBooking(type) {
             if (type !== 'arrival' && type !== 'now')
-                return 'Please choose a payment option.';
+                return t('Js.ChoosePaymentOption');
 
             // page may have been open for a while — slot time must still be in the future
             var slot = new Date(String(modal.getAttribute('data-slot-start') || '').replace(' ', 'T'));
             // unknown format → leave it to the server check instead of blocking the booking
             if (!isNaN(slot.getTime()) && slot <= new Date())
-                return 'The selected slot time has already passed. Please select another slot.';
+                return t('Errors.SlotPassed');
 
             return '';
         }
@@ -98,14 +98,14 @@
                         return;
                     }
                     setBusy(false);
-                    showError(res.message || 'Unable to book your appointment. Please try again.');
+                    showError(res.message || t('Errors.BookingFailed'));
                     if (res.redirectUrl) {                               // session expired → back to page 1
                         setTimeout(function () { window.location.href = res.redirectUrl; }, 2000);
                     }
                 })
                 .catch(function () {
                     setBusy(false);
-                    showError('Something went wrong. Please try again.');
+                    showError(t('Js.SomethingWrong'));
                 });
         }
 

@@ -1,15 +1,15 @@
 ﻿/* ── Validation ───────────────────────────────────────── */
 var AppointmentValidation = {
     rules: {
-        facility: { selector: '#facilityDropdown', message: 'Please select a facility.' },
-        speciality: { selector: '#specialityDropdown', message: 'Please select a speciality.' },
-        doctor: { selector: '#doctorDropdown', message: 'Please select a doctor.' },
-        slot: { selector: '#hdnSelectedSlotStart', message: 'Please select a time slot.' }
+        facility: { selector: '#facilityDropdown', message: 'Validation.SelectFacility' },
+        speciality: { selector: '#specialityDropdown', message: 'Validation.SelectSpeciality' },
+        doctor: { selector: '#doctorDropdown', message: 'Validation.SelectDoctor' },
+        slot: { selector: '#hdnSelectedSlotStart', message: 'Validation.SelectSlot' }
     },
     validate: function () {
         var errors = [];
         $.each(this.rules, function (key, rule) {
-            if (!$(rule.selector).val()) errors.push(rule.message);
+            if (!$(rule.selector).val()) errors.push(t(rule.message));
         });
         return errors;
     },
@@ -27,9 +27,11 @@ var AppointmentValidation = {
 /* ── Pure helpers (no DOM reads) ──────────────────────── */
 
 var AppointmentUI = (function () {
-    var DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    var BUCKETS = ['Morning', 'Afternoon', 'Evening', 'Slots'];
+    // Names in the selected portal language (i18n.js)
+    var DAYS = AppI18n.days('short');
+    var MONTHS = AppI18n.months('short');
+    var AMPM = AppI18n.dayPeriods();
+    var BUCKETS = ['Morning', 'Afternoon', 'Evening', 'Slots'];   // keys — label via t('Js.Morning') ...
 
     function esc(s) {
         return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -43,7 +45,7 @@ var AppointmentUI = (function () {
     }
     function formatTime(d) {
         var h = d.getHours();
-        return pad(h % 12 || 12) + ':' + pad(d.getMinutes()) + ' ' + (h < 12 ? 'AM' : 'PM');
+        return pad(h % 12 || 12) + ':' + pad(d.getMinutes()) + ' ' + (h < 12 ? AMPM[0] : AMPM[1]);
     }
     function formatDay(d) { return DAYS[d.getDay()] + ', ' + d.getDate() + ' ' + MONTHS[d.getMonth()]; }
     function toDateStr(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
@@ -80,14 +82,14 @@ var AppointmentUI = (function () {
 
     function renderSlots(slots, selectedStart, emptyMsg) {
         var groups = groupSlots(slots);
-        if (!groups.length) return '<div class="text-muted">' + esc(emptyMsg || 'No slots available for this date.') + '</div>';
+        if (!groups.length) return '<div class="text-muted">' + esc(emptyMsg || t('Js.NoSlotsForDate')) + '</div>';
         return groups.map(function (g) {
             var btns = g.items.map(function (it) {
                 var on = selectedStart && it.slot.startTime === selectedStart;
                 return '<button type="button" class="slot-btn' + (on ? ' is-selected' : '') + '" aria-pressed="' + (on ? 'true' : 'false') +
                     '" data-start="' + esc(it.slot.startTime) + '" data-end="' + esc(it.slot.endTime) + '">' + esc(it.label) + '</button>';
             }).join('');
-            return '<div class="slot-group"><div class="slot-group-label">' + g.name +
+            return '<div class="slot-group"><div class="slot-group-label">' + esc(t('Js.' + g.name)) +
                 ' <span class="slot-group-count">' + g.items.length + '</span></div><div class="slot-group-grid">' + btns + '</div></div>';
         }).join('');
     }
@@ -95,36 +97,36 @@ var AppointmentUI = (function () {
     function renderDoctorCard(doc) {
         var src = photoSrc(doc);
         var rows = [];
-        if (list(doc.education)) rows.push(['Education', list(doc.education)]);
-        if (clean(doc.experience)) rows.push(['Experience', clean(doc.experience)]);
-        rows.push(['Next available', clean(doc.timing) || 'Not specified']);
-        if (list(doc.treatment)) rows.push(['Treatments', list(doc.treatment)]);
-        if (clean(doc.hospitalName)) rows.push(['Hospital', doc.hospitalName + (clean(doc.hospitalCity) ? ', ' + doc.hospitalCity : '')]);
+        if (list(doc.education)) rows.push([t('Js.Education'), list(doc.education)]);
+        if (clean(doc.experience)) rows.push([t('Js.Experience'), clean(doc.experience)]);
+        rows.push([t('Js.NextAvailable'), clean(doc.timing) || t('Js.NotSpecified')]);
+        if (list(doc.treatment)) rows.push([t('Js.Treatments'), list(doc.treatment)]);
+        if (clean(doc.hospitalName)) rows.push([t('Js.Hospital'), doc.hospitalName + (clean(doc.hospitalCity) ? ', ' + doc.hospitalCity : '')]);
 
         return '<div class="doctor-head"><div class="doctor-avatar-col">' +
             '<div class="doctor-avatar-wrap' + (src ? '' : ' no-photo') + '" data-initials="' + esc(initials(doc.name)) + '">' +
             (src ? '<img class="doctor-avatar" src="' + esc(src) + '" alt="" onerror="this.onerror=null; this.parentNode.classList.add(\'no-photo\'); this.remove();" />' : '') + '</div>' +
-            '<div class="doctor-rating"><span class="rating-badge">★ ' + esc(clean(doc.rating) || 'N/A') + '</span>' +
-            '<span class="review-count">' + esc(clean(doc.review) || '0') + ' reviews</span></div></div>' +
+            '<div class="doctor-rating"><span class="rating-badge">★ ' + esc(clean(doc.rating) || t('Js.NA')) + '</span>' +
+            '<span class="review-count">' + esc(t('Js.Reviews', clean(doc.review) || '0')) + '</span></div></div>' +
             '<div class="doctor-info"><h3 class="doctor-name">' + esc(doc.name) + '</h3>' +
             '<p class="doctor-speciality">' + esc(clean(doc.specialisation)) + '</p>' +
-            (doc.isTeleconsult ? '<span class="teleconsult-badge">Teleconsultation available</span>' : '') + '</div></div>' +
-            '<div class="fee-block"><span class="fee-label">Consultation fee</span><span class="fee-value">₹ ' + esc(doc.fee) + '</span></div>' +
+            (doc.isTeleconsult ? '<span class="teleconsult-badge">' + esc(t('Js.Teleconsultation')) + '</span>' : '') + '</div></div>' +
+            '<div class="fee-block"><span class="fee-label">' + esc(t('Js.ConsultationFee')) + '</span><span class="fee-value">₹ ' + esc(doc.fee) + '</span></div>' +
             '<dl class="doctor-details">' + rows.map(function (r) {
-                return '<div class="detail"><dt>' + r[0] + '</dt><dd>' + esc(r[1]) + '</dd></div>';
+                return '<div class="detail"><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>';
             }).join('') + '</dl>';
     }
 
     function renderBooking(slotsHtml, noteText) {
-        return '<div id="selectionSummary" class="selection-banner" aria-live="polite"><span class="selection-label">Your slot</span>' +
-            '<span id="selectionValue" class="selection-value">Select a date and time</span></div>' +
+        return '<div id="selectionSummary" class="selection-banner" aria-live="polite"><span class="selection-label">' + esc(t('Js.YourSlot')) + '</span>' +
+            '<span id="selectionValue" class="selection-value">' + esc(t('Js.SelectDateTime')) + '</span></div>' +
             '<div class="booking-grid">' +
-            '<div class="calendar-panel"><h5 class="panel-title">Select date</h5>' +
-            '<input type="text" id="slotCalendar" class="form-control" placeholder="Select date" readonly style="display:none;" />' +
+            '<div class="calendar-panel"><h5 class="panel-title">' + esc(t('Js.SelectDate')) + '</h5>' +
+            '<input type="text" id="slotCalendar" class="form-control" placeholder="' + esc(t('Js.SelectDate')) + '" readonly style="display:none;" />' +
             '<p class="calendar-note">' + esc(noteText || '') + '</p></div>' +
-            '<div class="slots-panel"><div class="slots-head"><h5 class="panel-title">Available slots</h5><span id="slotDateLabel"></span></div>' +
+            '<div class="slots-panel"><div class="slots-head"><h5 class="panel-title">' + esc(t('Js.AvailableSlots')) + '</h5><span id="slotDateLabel"></span></div>' +
             '<div id="slotsContainer" class="slots-container">' + slotsHtml + '</div></div></div>' +
-            '<div class="booking-actions"><button type="button" id="continueBtn" class="btn-continue">Continue →</button></div>';
+            '<div class="booking-actions"><button type="button" id="continueBtn" class="btn-continue">' + esc(t('Js.Continue')) + '</button></div>';
     }
 
     return {
@@ -141,9 +143,10 @@ $(document).ready(function () {
     var maxDays = cfg.maxAdvanceDays || 90;
     var currentDate = '';
 
-    $('#facilityDropdown').select2({ width: '100%', placeholder: 'Select Facility' });
-    $('#specialityDropdown').select2({ width: '100%', placeholder: 'Search Speciality' });
-    $('#doctorDropdown').select2({ width: '100%', placeholder: 'Search Doctor' });
+    var select2Lang = AppI18n.select2Language();
+    $('#facilityDropdown').select2({ width: '100%', placeholder: t('Js.SelectFacility'), language: select2Lang });
+    $('#specialityDropdown').select2({ width: '100%', placeholder: t('Js.SearchSpeciality'), language: select2Lang });
+    $('#doctorDropdown').select2({ width: '100%', placeholder: t('Js.SearchDoctor'), language: select2Lang });
 
     refreshLockState();
 
@@ -171,11 +174,11 @@ $(document).ready(function () {
         var doctorId = $('#doctorDropdown').val();
 
         if (!facilityId) {
-            lockDropdown('#specialityDropdown', '#specialityLockWrap', 'Please select a facility first');
-            lockDropdown('#doctorDropdown', '#doctorLockWrap', 'Please select a facility first');
+            lockDropdown('#specialityDropdown', '#specialityLockWrap', t('Js.SelectFacilityFirst'));
+            lockDropdown('#doctorDropdown', '#doctorLockWrap', t('Js.SelectFacilityFirst'));
         } else if (!specialityId) {
             unlockDropdown('#specialityDropdown', '#specialityLockWrap');
-            lockDropdown('#doctorDropdown', '#doctorLockWrap', 'Please select a speciality first');
+            lockDropdown('#doctorDropdown', '#doctorLockWrap', t('Js.SelectSpecialityFirst'));
         } else {
             unlockDropdown('#specialityDropdown', '#specialityLockWrap');
             unlockDropdown('#doctorDropdown', '#doctorLockWrap');
@@ -217,11 +220,11 @@ $(document).ready(function () {
 
             var $track = $('#carouselTrack').empty(), $dots = $('#carouselDots').empty();
             ok.forEach(function (img, i) {
-                var $slide = $('<div class="carousel-slide"></div>').append($('<img>').attr({ src: img.src, alt: img.caption || 'Hospital photo' }));
+                var $slide = $('<div class="carousel-slide"></div>').append($('<img>').attr({ src: img.src, alt: img.caption || t('Js.HospitalPhoto') }));
                 if (img.caption) $slide.append($('<div class="carousel-caption"></div>').text(img.caption));
                 $track.append($slide);
                 $dots.append($('<button type="button" class="carousel-dot"></button>')
-                    .toggleClass('active', i === 0).attr('aria-label', 'Slide ' + (i + 1))
+                    .toggleClass('active', i === 0).attr('aria-label', t('Js.Slide', i + 1))
                     .on('click', function () { goToSlide(i); startCarousel(); }));
             });
             window._carouselIndex = 0;
@@ -268,8 +271,8 @@ $(document).ready(function () {
     /* ── Dropdown cascade ─────────────────────────────── */
     $('#facilityDropdown').on('change', function () {
         var facilityId = parseInt($(this).val());
-        resetDropdown('#specialityDropdown', 'Search Speciality');
-        resetDropdown('#doctorDropdown', 'Search Doctor');
+        resetDropdown('#specialityDropdown', t('Js.SearchSpeciality'));
+        resetDropdown('#doctorDropdown', t('Js.SearchDoctor'));
         showWelcome();
         AppointmentValidation.clearErrors();
         refreshLockState();
@@ -280,7 +283,7 @@ $(document).ready(function () {
             headers: { 'RequestVerificationToken': token }, data: JSON.stringify(facilityId),
             success: function (res) {
                 if (!res.success || parseInt($('#facilityDropdown').val()) !== facilityId) return;
-                populateDropdown('#specialityDropdown', res.data, 'id', 'specialisationName', 'Search Speciality');
+                populateDropdown('#specialityDropdown', res.data, 'id', 'specialisationName', t('Js.SearchSpeciality'));
                 refreshLockState();
             }
         });
@@ -289,7 +292,7 @@ $(document).ready(function () {
     $('#specialityDropdown').on('change', function () {
         var facilityId = parseInt($('#facilityDropdown').val());
         var specialityId = parseInt($(this).val());
-        resetDropdown('#doctorDropdown', 'Search Doctor');
+        resetDropdown('#doctorDropdown', t('Js.SearchDoctor'));
         showWelcome();
         AppointmentValidation.clearErrors();
         refreshLockState();
@@ -301,7 +304,7 @@ $(document).ready(function () {
             data: JSON.stringify({ facilityId: facilityId, specialityId: specialityId }),
             success: function (res) {
                 if (!res.success || parseInt($('#specialityDropdown').val()) !== specialityId) return;
-                populateDropdown('#doctorDropdown', res.data, 'id', 'fullName', 'Search Doctor');
+                populateDropdown('#doctorDropdown', res.data, 'id', 'fullName', t('Js.SearchDoctor'));
                 refreshLockState();
             }
         });
@@ -320,7 +323,7 @@ $(document).ready(function () {
         showBookingStage();
         $('#hdnSelectedSlotStart').val('');
         $('#hdnSelectedSlotEnd').val('');
-        $('#doctorIdentityCard').html('<div class="loading-note">Loading doctor details…</div>');
+        $('#doctorIdentityCard').html('<div class="loading-note">' + UI.esc(t('Js.LoadingDoctor')) + '</div>');
         $('#bookingPanel').empty();
 
         $.ajax({
@@ -329,12 +332,12 @@ $(document).ready(function () {
             data: JSON.stringify({ facilityId: facilityId, specialityId: specialityId, doctorId: doctorId }),
             success: function (res) {
                 if (reqId !== doctorRequestId) return;
-                if (!res.success) { $('#doctorIdentityCard').html('<div class="text-danger">Failed to load doctor details.</div>'); return; }
+                if (!res.success) { $('#doctorIdentityCard').html('<div class="text-danger">' + UI.esc(t('Js.DoctorLoadFailed')) + '</div>'); return; }
                 mountDoctor(res.data, facilityId, doctorId, '', '');
             },
             error: function () {
                 if (reqId !== doctorRequestId) return;
-                $('#doctorIdentityCard').html('<div class="text-danger">Something went wrong. Please try again.</div>');
+                $('#doctorIdentityCard').html('<div class="text-danger">' + UI.esc(t('Js.SomethingWrong')) + '</div>');
             }
         });
     });
@@ -346,7 +349,7 @@ $(document).ready(function () {
         var date = savedDate || (firstSlot ? UI.toDateStr(firstSlot) : UI.toDateStr(new Date()));
 
         $('#doctorIdentityCard').html(UI.renderDoctorCard(doc));
-        $('#bookingPanel').html(UI.renderBooking(UI.renderSlots(slots, savedStart, 'No slots available for this date.'), noteText()));
+        $('#bookingPanel').html(UI.renderBooking(UI.renderSlots(slots, savedStart, t('Js.NoSlotsForDate')), noteText()));
         showBookingStage();
         setDateLabel(date);
 
@@ -365,7 +368,7 @@ $(document).ready(function () {
         var start = $('#hdnSelectedSlotStart').val();
         var d = start ? UI.parseSlot(start) : null;
         $('#selectionSummary').toggleClass('has-slot', !!d);
-        $('#selectionValue').text(d ? UI.formatDay(d) + ' · ' + UI.formatTime(d) : 'Select a date and time');
+        $('#selectionValue').text(d ? UI.formatDay(d) + ' · ' + UI.formatTime(d) : t('Js.SelectDateTime'));
     }
 
     /* ── Slot select & continue ───────────────────────── */
@@ -414,13 +417,12 @@ $(document).ready(function () {
     /* ── Calendar & slots by date ─────────────────────── */
     function startOfToday() { var d = new Date(); d.setHours(0, 0, 0, 0); return d; }
     function lastBookable() { var d = startOfToday(); d.setDate(d.getDate() + maxDays); return d; }
-    function windowText() { return maxDays === 90 ? '3 months' : maxDays + ' days'; }
-    function noteText() { return 'Appointments can be booked up to ' + windowText() + ' in advance.'; }
+    function windowText() { return maxDays === 90 ? t('Js.ThreeMonths') : t('Js.Days', maxDays); }
+    function noteText() { return t('Js.BookingWindowNote', windowText()); }
 
     function showLimitDialog() {
         var last = lastBookable();
-        $('#limitDialogText').text("Appointments can't be booked beyond " + windowText() + " from today. Please choose a date on or before " +
-            UI.formatDay(last) + ' ' + last.getFullYear() + '.');
+        $('#limitDialogText').text(t('Js.BookingWindowLimit', windowText(), UI.formatDay(last) + ' ' + last.getFullYear()));
         $('#limitDialog').prop('hidden', false);
         $('#limitDialogClose').trigger('focus');
     }
@@ -437,10 +439,11 @@ $(document).ready(function () {
         // No minDate: that would trim the month dropdown. Past days are disabled instead.
         window._flatpickrInstance = flatpickr('#slotCalendar', {
             inline: true, dateFormat: 'Y-m-d', defaultDate: date,
+            locale: AppI18n.flatpickrLocale(),
             disable: [function (d) { return d < today; }],
             onReady: function (sel, str, fp) {
                 var first = Math.min(today.getFullYear(), fp.currentYear);
-                $year = $('<select class="fp-year" aria-label="Year"></select>');
+                $year = $('<select class="fp-year"></select>').attr('aria-label', t('Js.Year'));
                 for (var y = first; y <= today.getFullYear() + 5; y++) $year.append($('<option></option>').val(y).text(y));
                 $year.val(fp.currentYear).on('change', function () { fp.changeYear(parseInt(this.value)); });
                 $(fp.currentYearElement).closest('.flatpickr-current-month').append($year);
@@ -466,16 +469,16 @@ $(document).ready(function () {
         $('#hdnSelectedSlotStart').val('');
         $('#hdnSelectedSlotEnd').val('');
         updateSummary();
-        $('#slotsContainer').html('<div class="text-muted">Loading slots…</div>');
+        $('#slotsContainer').html('<div class="text-muted">' + UI.esc(t('Js.LoadingSlots')) + '</div>');
 
         $.get('?handler=SlotsByDate', {
             facilityId: facilityId, doctorId: doctorId, hospitalLocationId: hospitalLocationId, date: date
         }).done(function (data) {
             if (reqId !== slotRequestId) return;
-            $('#slotsContainer').html(UI.renderSlots(data, '', 'No slots available for this date.'));
+            $('#slotsContainer').html(UI.renderSlots(data, '', t('Js.NoSlotsForDate')));
         }).fail(function () {
             if (reqId !== slotRequestId) return;
-            $('#slotsContainer').html('<div class="text-danger">Could not load slots. Please pick the date again.</div>');
+            $('#slotsContainer').html('<div class="text-danger">' + UI.esc(t('Js.SlotsLoadFailed')) + '</div>');
         });
     }
 
@@ -487,7 +490,7 @@ $(document).ready(function () {
         var $el = $(selector);
         $el.empty().append($('<option>', { value: '', text: placeholder }));
         $.each(data || [], function (i, item) {
-            $el.append($('<option>', { value: item[valField], text: item[textField] || item.name || 'N/A' }));
+            $el.append($('<option>', { value: item[valField], text: item[textField] || item.name || t('Js.NA') }));
         });
         $el.trigger('change.select2');
     }

@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "book-appointment",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "Book_An_Appointment1/Book _An_Appointment.csproj", "--launch-profile", "http", "--no-build"],
+      "port": 5105
+    }
+  ]
+}

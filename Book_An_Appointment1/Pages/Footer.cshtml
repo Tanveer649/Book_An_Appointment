@@ -126,14 +126,13 @@
 <footer class="custom-footer">
     <div class="footer-inner">
         <div class="footer-disclaimer">
-            <strong>Disclaimer:</strong>
+            <strong>@L["Footer.Disclaimer"]</strong>
             <span>
-                @Configuration["HospitalSettings:DisclaimerText"]
-                For Panel (Any Government Panel cash/Credit) Patients, please call
-                Sector 14: @Configuration["HospitalSettings:FooterPhone1"],
-                Sector 56: @Configuration["HospitalSettings:FooterPhone2"],
-                Sector 82: @Configuration["HospitalSettings:FooterPhone3"]
-                to take appointment.
+                @L.ConfigText("Footer.DisclaimerText", Configuration["HospitalSettings:DisclaimerText"])
+                @L["Footer.PanelPatients",
+                    Configuration["HospitalSettings:FooterPhone1"] ?? "",
+                    Configuration["HospitalSettings:FooterPhone2"] ?? "",
+                    Configuration["HospitalSettings:FooterPhone3"] ?? ""]
             </span>
         </div>
 
@@ -141,10 +140,10 @@
 
         <div class="footer-bottom">
             <div class="footer-links">
-                <a href="@Configuration["HospitalSettings:AboutUsUrl"]">About us</a>
-                <a href="@Configuration["HospitalSettings:TermsUrl"]">Terms of Use</a>
-                <a href="@Configuration["HospitalSettings:RefundPolicyUrl"]">Refund &amp; Cancellations Policy</a>
-                <a href="@Configuration["HospitalSettings:PrivacyPolicyUrl"]">Privacy policy</a>
+                <a href="@Configuration["HospitalSettings:AboutUsUrl"]">@L["Footer.AboutUs"]</a>
+                <a href="@Configuration["HospitalSettings:TermsUrl"]">@L["Footer.TermsOfUse"]</a>
+                <a href="@Configuration["HospitalSettings:RefundPolicyUrl"]">@L["Footer.RefundPolicy"]</a>
+                <a href="@Configuration["HospitalSettings:PrivacyPolicyUrl"]">@L["Footer.PrivacyPolicy"]</a>
             </div>
 
             <div class="footer-security">
@@ -152,7 +151,7 @@
                     <rect x="3" y="11" width="18" height="11" rx="2"></rect>
                     <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                 </svg>
-                Secure patient portal
+                @L["Footer.SecurePortal"]
             </div>
         </div>
     </div>

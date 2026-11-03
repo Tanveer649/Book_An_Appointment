@@ -1,18 +1,45 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+@{
+    var currentLanguage = Languages.Current;
+    var currentCulture = Languages.CultureOf(currentLanguage);
+    var scriptFont = currentLanguage.Font?.Trim();
+}
+<html lang="@currentLanguage.Code" dir="@(currentCulture.TextInfo.IsRightToLeft ? "rtl" : "ltr")">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#0b5cab" />
 
-    <title>@ViewData["Title"] - Book Appointment</title>
+    <title>@ViewData["Title"] - @L["Layout.TitleSuffix"]</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
- 
+
     @await RenderSectionAsync("Styles", required: false)
+
+    @* Non-Latin script (LanguageSettings Font): load the font and put it in every font stack.
+       letter-spacing is reset because it breaks joined scripts like Devanagari / Bengali. *@
+    @if (!string.IsNullOrWhiteSpace(scriptFont))
+    {
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=@(scriptFont.Replace(' ', '+')):wght@@400;500;600;700&display=swap" />
+        <style>
+            html:root {
+                --font-body: 'Inter', '@scriptFont', 'Segoe UI', sans-serif;
+                --font-display: 'Fraunces', '@scriptFont', Georgia, serif;
+                --bs-body-font-family: var(--font-body);
+            }
+
+            html:root body, html:root button, html:root input, html:root select, html:root textarea {
+                font-family: var(--font-body);
+            }
+
+            html:root * {
+                letter-spacing: normal !important;
+            }
+        </style>
+    }
 </head>
 <body>
     @* Header *@
@@ -32,6 +59,13 @@
 
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+    @* Translations for page scripts — use t('Section.Key') (wwwroot/js/i18n.js) *@
+    <script>
+        window.APP_LANG = '@currentLanguage.Code';
+        window.I18N = @Html.Raw(Json.Serialize(L.ForScript("Js", "Validation", "Errors", "Gender")));
+    </script>
+    <script src="~/js/i18n.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 
 </body>

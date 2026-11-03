@@ -1,10 +1,12 @@
 ﻿using Book_An_Appointment1.Helpers;
+using Book_An_Appointment1.Localization;
 using Book_An_Appointment1.Models.Slot;
 using Book_An_Appointment1.Services.Interfaces;
 using Book_An_Appointment1.ViewModels.Appointment;
 using Book_An_Appointment1.ViewModule;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Globalization;
 
 namespace Book_An_Appointment1.Pages.Appointment
 {
@@ -17,6 +19,7 @@ namespace Book_An_Appointment1.Pages.Appointment
         private readonly ISlotService _slotService;
         private readonly ILogger<AppointmentModel> _logger;
         private readonly IConfiguration _configuration;
+        private readonly JsonStringLocalizer _localizer;
 
         private static readonly HttpClient _imageClient = new() { Timeout = TimeSpan.FromSeconds(10) };
         private const string ImageSessionKey = "AllowedDoctorImages";
@@ -40,8 +43,10 @@ namespace Book_An_Appointment1.Pages.Appointment
             IConsultationService consultationService,
             ISlotService slotService,
             ILogger<AppointmentModel> logger,
-            IConfiguration configuration    )
+            IConfiguration configuration,
+            JsonStringLocalizer localizer)
         {
+            _localizer = localizer;
             _facilityService = facilityService;
             _specialityService = specialityService;
             _doctorService = doctorService;
@@ -79,7 +84,7 @@ namespace Book_An_Appointment1.Pages.Appointment
                     {
                         await LoadDoctorDetails();
 
-                        var dateToLoad = !string.IsNullOrEmpty(sessionData.SlotDate) ? sessionData.SlotDate : DateTime.Now.ToString("yyyy-MM-dd");
+                        var dateToLoad = !string.IsNullOrEmpty(sessionData.SlotDate) ? sessionData.SlotDate : DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
                         var slotResponse = await _slotService.GetSlotsAsync(FacilityId, DoctorId ?? 0, sessionData.HospitalLocationId, dateToLoad, dateToLoad);
 
@@ -274,16 +279,16 @@ namespace Book_An_Appointment1.Pages.Appointment
 
             // ── Server Side Validation ─────────────────────
             if (facilityId <= 0)
-                ModelState.AddModelError("Facility", "Please select a facility.");
+                ModelState.AddModelError("Facility", _localizer.Text("Validation.SelectFacility"));
 
             if (!specialityId.HasValue || specialityId <= 0)
-                ModelState.AddModelError("Speciality", "Please select a speciality.");
+                ModelState.AddModelError("Speciality", _localizer.Text("Validation.SelectSpeciality"));
 
             if (!doctorId.HasValue || doctorId <= 0)
-                ModelState.AddModelError("Doctor", "Please select a doctor.");
+                ModelState.AddModelError("Doctor", _localizer.Text("Validation.SelectDoctor"));
 
             if (string.IsNullOrEmpty(selectedSlotStart))
-                ModelState.AddModelError("Slot", "Please select a time slot.");
+                ModelState.AddModelError("Slot", _localizer.Text("Validation.SelectSlot"));
 
             if (!ModelState.IsValid)
             {
@@ -317,9 +322,10 @@ namespace Book_An_Appointment1.Pages.Appointment
             sessionData.PatientType = type;
             sessionData.SlotTime = selectedSlotStart;
             HttpContext.Session.SetString("Booking.SlotEnd", selectedSlotEnd ?? ""); 
-            sessionData.SlotDate = sessionData.SlotDate = DateTime.TryParse(selectedSlotStart, out var parsedSlot)
-                       ? parsedSlot.ToString("yyyy-MM-dd")
-                       : DateTime.Now.ToString("yyyy-MM-dd");
+            // Machine format — invariant so the chosen portal language never changes it
+            sessionData.SlotDate = DateTime.TryParse(selectedSlotStart, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedSlot)
+                       ? parsedSlot.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+                       : DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             sessionData.SlotDisplayText = FormatSlotDisplay(selectedSlotStart);
 
             SessionHelper.SetAppointmentData(HttpContext.Session, sessionData);
@@ -388,7 +394,7 @@ namespace Book_An_Appointment1.Pages.Appointment
 
                 RegisterDoctorImages(Wizard.SelectedDoctor.Icon, Wizard.SelectedDoctor.ImageUrl);
 
-                var today = DateTime.Now.ToString("yyyy-MM-dd");
+                var today = DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
                 var consultationTask = _consultationService.GetConsultationFeeAsync(FacilityId, (DoctorId ?? 0));
 
@@ -450,12 +456,14 @@ namespace Book_An_Appointment1.Pages.Appointment
             string.Concat(name.Split(' ', StringSplitOptions.RemoveEmptyEntries)
                 .Take(2).Select(x => char.ToUpper(x[0])));
 
-        private static string FormatSlotDisplay(string slotTime)
+        // Display text in the current portal language (also used by PatientDetails, so a language
+        // switch after choosing the slot still shows the slot in the new language)
+        public static string FormatSlotDisplay(string slotTime)
         {
-            if (DateTime.TryParse(slotTime, out var dt))
+            if (DateTime.TryParse(slotTime, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
                 return dt.ToString("ddd, d MMM · hh:mm tt");
 
-            if (TimeSpan.TryParse(slotTime, out var time))
+            if (TimeSpan.TryParse(slotTime, CultureInfo.InvariantCulture, out var time))
             {
                 var date = DateTime.Now.ToString("ddd, d MMM");
                 var timeStr = DateTime.Today.Add(time).ToString("hh:mm tt");

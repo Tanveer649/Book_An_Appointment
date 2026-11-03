@@ -57,7 +57,7 @@ function initPatientDetailsPage() {
         const other = document.getElementById(type === 'new' ? 'btn-existing' : 'btn-new');
         other.disabled = true;
         other.setAttribute('aria-disabled', 'true');
-        other.title = 'Go back to change the patient type';
+        other.title = t('Js.ChangePatientTypeHint');
         document.getElementById('patientToggle').classList.add('is-locked');
 
         //document.getElementById('toggleNoteType').textContent = type === 'new' ? 'a new patient' : 'an already registered patient';
@@ -68,7 +68,7 @@ function initPatientDetailsPage() {
         const btn = document.getElementById('submitBtn');
         if (!btn) return;
         btn.disabled = on;
-        btn.textContent = on ? 'Please wait…' : 'Review & Confirm →';
+        btn.textContent = on ? t('Js.PleaseWait') : t('Js.ReviewConfirm');
     }
 
     function limitDobToPast() {
@@ -86,7 +86,7 @@ function initPatientDetailsPage() {
 
         if (verified === 'true') {
             document.getElementById('verify-badge').classList.add('show');
-            btn.textContent = 'OTP Sent ✓';
+            btn.textContent = t('Js.OtpSent');
             btn.classList.add('otp-sent');
             btn.disabled = true;
         } else if (mobile && mobile.length === 10) {
@@ -96,7 +96,7 @@ function initPatientDetailsPage() {
         const regVerified = document.getElementById('Reg_IsMobileVerified').value;
         if (regVerified === 'true') {
             const regBtn = document.getElementById('reg-send-otp-btn');
-            regBtn.textContent = 'OTP Sent ✓';
+            regBtn.textContent = t('Js.OtpSent');
             regBtn.classList.add('otp-sent');
             regBtn.disabled = true;
             document.getElementById('reg-otp-verified').classList.add('show');
@@ -159,7 +159,7 @@ function initPatientDetailsPage() {
                     select.appendChild(opt);
                 });
 
-                $('#Form_Title').select2({ width: '100%', placeholder: '--', minimumResultsForSearch: Infinity });
+                $('#Form_Title').select2({ width: '100%', placeholder: '--', minimumResultsForSearch: Infinity, language: AppI18n.select2Language() });
 
                 if (SavedTitleName) {
                     $('#Form_Title').val(SavedTitleName).trigger('change.select2');
@@ -197,7 +197,7 @@ function initPatientDetailsPage() {
                     select.appendChild(opt);
                 });
 
-                $('#Form_Country').select2({ width: '100%', placeholder: 'Select country' });
+                $('#Form_Country').select2({ width: '100%', placeholder: t('Js.SelectCountry'), language: AppI18n.select2Language() });
 
                 if (SavedCountryName) {
                     const opt = Array.from(select.options).find(o => o.text === SavedCountryName);
@@ -218,8 +218,8 @@ function initPatientDetailsPage() {
                     document.getElementById('Form_CountryId').value = countryId;
                     document.getElementById('Form_CountryName').value = this.options[this.selectedIndex]?.text || '';
 
-                    resetLocationDropdown('Form_State', 'Select state');
-                    resetLocationDropdown('Form_City', 'Select city');
+                    resetLocationDropdown('Form_State', t('Js.SelectState'));
+                    resetLocationDropdown('Form_City', t('Js.SelectCity'));
                     document.getElementById('Form_StateId').value = '';
                     document.getElementById('Form_StateName').value = '';
                     document.getElementById('Form_CityId').value = '';
@@ -253,7 +253,7 @@ function initPatientDetailsPage() {
                 });
 
                 stateSelect.disabled = false;
-                $('#Form_State').select2({ width: '100%', placeholder: 'Select state' });
+                $('#Form_State').select2({ width: '100%', placeholder: t('Js.SelectState'), language: AppI18n.select2Language() });
 
                 if (SavedStateId && SavedStateId !== '0') {
                     $('#Form_State').val(SavedStateId).trigger('change.select2');
@@ -266,7 +266,7 @@ function initPatientDetailsPage() {
                     document.getElementById('Form_StateId').value = this.value;
                     document.getElementById('Form_StateName').value = this.options[this.selectedIndex]?.text || '';
 
-                    resetLocationDropdown('Form_City', 'Select city');
+                    resetLocationDropdown('Form_City', t('Js.SelectCity'));
                     document.getElementById('Form_CityId').value = '';
                     document.getElementById('Form_CityName').value = '';
 
@@ -301,7 +301,7 @@ function initPatientDetailsPage() {
                 });
 
                 citySelect.disabled = false;
-                $('#Form_City').select2({ width: '100%', placeholder: 'Select city' });
+                $('#Form_City').select2({ width: '100%', placeholder: t('Js.SelectCity'), language: AppI18n.select2Language() });
 
                 if (SavedCityId && SavedCityId !== '0') {
                     $('#Form_City').val(SavedCityId).trigger('change.select2');
@@ -323,7 +323,8 @@ function initPatientDetailsPage() {
     function resetLocationDropdown(id, placeholder) {
         if ($.fn.select2 && $('#' + id).data('select2')) $('#' + id).select2('destroy');
         const el = document.getElementById(id);
-        el.innerHTML = `<option value="">${placeholder}</option>`;
+        el.innerHTML = '';
+        el.appendChild(new Option(placeholder, ''));
         el.disabled = true;
     }
 
@@ -349,7 +350,7 @@ function initPatientDetailsPage() {
             input.maxLength = 1;
             input.id = type + 'o' + i;
             input.inputMode = 'numeric';
-            input.setAttribute('aria-label', `OTP digit ${i}`);
+            input.setAttribute('aria-label', t('Js.OtpDigit', i));
             if (i === 1) input.autocomplete = 'one-time-code';
 
             const nextId = i < OTP_LENGTH ? type + 'o' + (i + 1) : null;
@@ -395,11 +396,11 @@ function initPatientDetailsPage() {
         const display = document.getElementById(displayId);
         const resendBtn = document.getElementById(resendBtnId);
         resendBtn.disabled = true;
-        display.textContent = `Resend in 0:${String(seconds).padStart(2, '0')}`;
+        display.textContent = t('Js.ResendIn', '0:' + String(seconds).padStart(2, '0'));
 
         timers[displayId] = setInterval(() => {
             seconds--;
-            display.textContent = seconds > 0 ? `Resend in 0:${String(seconds).padStart(2, '0')}` : '';
+            display.textContent = seconds > 0 ? t('Js.ResendIn', '0:' + String(seconds).padStart(2, '0')) : '';
             if (seconds <= 0) {
                 clearInterval(timers[displayId]);
                 resendBtn.disabled = false;
@@ -415,7 +416,7 @@ function initPatientDetailsPage() {
 
         if (btn.classList.contains('otp-sent')) {
             btn.classList.remove('otp-sent');
-            btn.textContent = 'Send OTP';
+            btn.textContent = t('Js.SendOtp');
             document.getElementById('otp-section').classList.remove('visible');
             document.getElementById('otp-verified').classList.remove('show');
             document.getElementById('verify-badge').classList.remove('show');
@@ -434,17 +435,17 @@ function initPatientDetailsPage() {
         const btn = document.getElementById('send-otp-btn');
 
         if (!mobile || mobile.length !== 10) {
-            showError('phone-input', 'Please enter a valid 10-digit mobile number');
+            showError('phone-input', t('Validation.MobileInvalid'));
             return;
         }
 
         btn.disabled = true;
-        btn.textContent = 'Sending...';
+        btn.textContent = t('Js.Sending');
 
         postJson('SendOtp', { mobileNo: mobile })
             .then(data => {
                 if (data.success) {
-                    btn.textContent = 'OTP Sent ✓';
+                    btn.textContent = t('Js.OtpSent');
                     btn.classList.add('otp-sent');
                     document.getElementById('otp-phone-display').textContent = mobile;
                     document.getElementById('otp-section').classList.add('visible');
@@ -452,15 +453,15 @@ function initPatientDetailsPage() {
                     startTimer('timer-display', 'resend-btn');
                     clearError('phone-input');
                 } else {
-                    showError('phone-input', data.message || 'Failed to send OTP');
+                    showError('phone-input', data.message || t('Errors.OtpSendFailed'));
                     btn.disabled = false;
-                    btn.textContent = 'Send OTP';
+                    btn.textContent = t('Js.SendOtp');
                 }
             })
             .catch(() => {
-                showError('phone-input', 'Something went wrong. Please try again.');
+                showError('phone-input', t('Js.SomethingWrong'));
                 btn.disabled = false;
-                btn.textContent = 'Send OTP';
+                btn.textContent = t('Js.SendOtp');
             });
     };
 
@@ -479,10 +480,10 @@ function initPatientDetailsPage() {
                 } else {
                     document.querySelectorAll('#new-otp-inputs .otp-input').forEach(i => { i.value = ''; i.disabled = false; });
                     document.getElementById('newo1')?.focus();
-                    showOtpError('new-otp-inputs', data.message || 'Invalid OTP. Please try again.');
+                    showOtpError('new-otp-inputs', data.message || t('Errors.InvalidOtpRetry'));
                 }
             })
-            .catch(() => showOtpError('new-otp-inputs', 'Something went wrong. Please try again.'));
+            .catch(() => showOtpError('new-otp-inputs', t('Js.SomethingWrong')));
     }
 
     window.resendOTP = function () {
@@ -493,7 +494,7 @@ function initPatientDetailsPage() {
 
         const btn = document.getElementById('send-otp-btn');
         btn.disabled = false;
-        btn.textContent = 'Send OTP';
+        btn.textContent = t('Js.SendOtp');
         btn.classList.remove('otp-sent');
         sendOTP();
     };
@@ -506,7 +507,7 @@ function initPatientDetailsPage() {
 
         if (btn.classList.contains('otp-sent')) {
             btn.classList.remove('otp-sent');
-            btn.textContent = 'Send OTP';
+            btn.textContent = t('Js.SendOtp');
             document.getElementById('reg-otp-section').classList.remove('visible');
             document.getElementById('reg-otp-verified').classList.remove('show');
             document.getElementById('reg-otp-inputs').innerHTML = '';
@@ -525,17 +526,17 @@ function initPatientDetailsPage() {
         const btn = document.getElementById('reg-send-otp-btn');
 
         if (!mobile || mobile.length !== 10) {
-            showError('reg-phone-input', 'Please enter a valid 10-digit mobile number');
+            showError('reg-phone-input', t('Validation.MobileInvalid'));
             return;
         }
 
         btn.disabled = true;
-        btn.textContent = 'Sending...';
+        btn.textContent = t('Js.Sending');
 
         postJson('SendRegisteredOtp', { mobileNo: mobile })
             .then(data => {
                 if (data.success) {
-                    btn.textContent = 'OTP Sent ✓';
+                    btn.textContent = t('Js.OtpSent');
                     btn.classList.add('otp-sent');
                     document.getElementById('reg-otp-phone-display').textContent = mobile;
                     document.getElementById('reg-otp-section').classList.add('visible');
@@ -543,15 +544,15 @@ function initPatientDetailsPage() {
                     startTimer('reg-timer-display', 'reg-resend-btn');
                     clearError('reg-phone-input');
                 } else {
-                    showError('reg-phone-input', data.message || 'Failed to send OTP');
+                    showError('reg-phone-input', data.message || t('Errors.OtpSendFailed'));
                     btn.disabled = false;
-                    btn.textContent = 'Send OTP';
+                    btn.textContent = t('Js.SendOtp');
                 }
             })
             .catch(() => {
-                showError('reg-phone-input', 'Something went wrong. Please try again.');
+                showError('reg-phone-input', t('Js.SomethingWrong'));
                 btn.disabled = false;
-                btn.textContent = 'Send OTP';
+                btn.textContent = t('Js.SendOtp');
             });
     };
 
@@ -571,10 +572,10 @@ function initPatientDetailsPage() {
                 } else {
                     document.querySelectorAll('#reg-otp-inputs .otp-input').forEach(i => { i.value = ''; i.disabled = false; });
                     document.getElementById('rego1')?.focus();
-                    showOtpError('reg-otp-inputs', data.message || 'Invalid OTP. Please try again.');
+                    showOtpError('reg-otp-inputs', data.message || t('Errors.InvalidOtpRetry'));
                 }
             })
-            .catch(() => showOtpError('reg-otp-inputs', 'Something went wrong. Please try again.'));
+            .catch(() => showOtpError('reg-otp-inputs', t('Js.SomethingWrong')));
     }
 
     function fillRegisteredHiddenFields(patient) {
@@ -600,8 +601,8 @@ function initPatientDetailsPage() {
         wrap.style.display = 'block';
 
         document.getElementById('pf-list-sub').textContent = patients.length === 1
-            ? '1 patient registered with this mobile number'
-            : `${patients.length} patients registered with this mobile number — choose whose appointment to book`;
+            ? t('Js.OnePatientFound')
+            : t('Js.PatientsFound', patients.length);
 
         patients.forEach(p => list.appendChild(buildPatientCard(p, p.registrationNo === selectedRegNo)));
     }
@@ -623,12 +624,12 @@ function initPatientDetailsPage() {
         body.appendChild(el('span', 'pf-card-name', name));
 
         const tags = el('span', 'pf-card-tags');
-        if (p.gender) tags.appendChild(el('span', 'pf-tag', p.gender));
+        if (p.gender) tags.appendChild(el('span', 'pf-tag', genderText(p.gender)));
         if (p.dob) tags.appendChild(el('span', 'pf-tag', formatDob(p.dob)));
         body.appendChild(tags);
 
         const uhid = el('span', 'pf-card-uhid');
-        uhid.appendChild(el('span', 'pf-uhid-label', 'UHID'));
+        uhid.appendChild(el('span', 'pf-uhid-label', t('Js.Uhid')));
         uhid.appendChild(el('span', 'pf-uhid-value', p.registrationNo || '—'));
         body.appendChild(uhid);
         card.appendChild(body);
@@ -637,8 +638,8 @@ function initPatientDetailsPage() {
 
         // Full details — visible only on hover / keyboard focus (and for the selected card on touch screens)
         const more = el('span', 'pf-card-more');
-        [['Full name', name], ['Gender', p.gender], ['Date of birth', formatDob(p.dob)], ['Age', age],
-            ['UHID', p.registrationNo], ['Email', p.emailId]]
+        [[t('Js.FullName'), name], [t('Js.Gender'), genderText(p.gender)], [t('Js.DateOfBirth'), formatDob(p.dob)], [t('Js.Age'), age],
+            [t('Js.Uhid'), p.registrationNo], [t('Js.Email'), p.emailId]]
             .filter(r => r[1])
             .forEach(r => {
                 const row = el('span', 'pf-more-row');
@@ -658,7 +659,7 @@ function initPatientDetailsPage() {
         list.setAttribute('aria-busy', 'true');
         postJson('SelectRegisteredPatient', { registrationNo: card.dataset.reg })
             .then(data => {
-                if (!data.success) { showPatientError(data.message || 'Unable to select patient'); return; }
+                if (!data.success) { showPatientError(data.message || t('Errors.PatientSelectFailed')); return; }
                 list.querySelectorAll('.pf-card').forEach(c => {
                     c.classList.toggle('selected', c === card);
                     c.setAttribute('aria-checked', c === card ? 'true' : 'false');
@@ -666,7 +667,7 @@ function initPatientDetailsPage() {
                 fillRegisteredHiddenFields(data.selected);
                 hidePatientError();
             })
-            .catch(() => showPatientError('Something went wrong. Please try again.'))
+            .catch(() => showPatientError(t('Js.SomethingWrong')))
             .finally(() => list.removeAttribute('aria-busy'));
     }
 
@@ -697,10 +698,16 @@ function initPatientDetailsPage() {
         return (words[0][0] + (words.length > 1 ? words[words.length - 1][0] : '')).toUpperCase();
     }
 
+    // Date in the selected portal language (i18n.js)
     function formatDob(dob) {
-        if (!dob) return '';
-        const d = new Date(dob);
-        return isNaN(d.getTime()) ? dob : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        return AppI18n.formatDate(dob);
+    }
+
+    // API sends "Male" / "Female" — show it in the portal language, unknown values as-is
+    function genderText(gender) {
+        const key = 'Gender.' + String(gender || '').trim();
+        const text = t(key);
+        return text === key ? gender : text;
     }
 
     window.resendRegisteredOTP = function () {
@@ -712,7 +719,7 @@ function initPatientDetailsPage() {
 
         const btn = document.getElementById('reg-send-otp-btn');
         btn.disabled = false;
-        btn.textContent = 'Send OTP';
+        btn.textContent = t('Js.SendOtp');
         btn.classList.remove('otp-sent');
         sendRegisteredOTP();
     };
@@ -792,10 +799,10 @@ function initPatientDetailsPage() {
 
         if (patientType === 'new' || !patientType) {
             const checks = [
-                ['Form_Title', document.getElementById('Form_Title').value, 'Please select a title'],
-                ['Form_FirstName', document.getElementById('Form_FirstName').value.trim(), 'First name is required'],
-                ['Form_LastName', document.getElementById('Form_LastName').value.trim(), 'Last name is required'],
-                ['Form_DOB', document.getElementById('Form_DOB').value, 'Date of birth is required']
+                ['Form_Title', document.getElementById('Form_Title').value, t('Validation.SelectTitle')],
+                ['Form_FirstName', document.getElementById('Form_FirstName').value.trim(), t('Validation.FirstNameRequired')],
+                ['Form_LastName', document.getElementById('Form_LastName').value.trim(), t('Validation.LastNameRequired')],
+                ['Form_DOB', document.getElementById('Form_DOB').value, t('Validation.DobRequired')]
             ];
 
             checks.forEach(([id, val, msg]) => {
@@ -808,21 +815,21 @@ function initPatientDetailsPage() {
 
             const firstName = document.getElementById('Form_FirstName').value.trim();
             if (firstName && !nameRegex.test(firstName)) {
-                showError('Form_FirstName', 'First name should contain letters only');
+                showError('Form_FirstName', t('Validation.FirstNameLetters'));
                 if (!firstErrEl) firstErrEl = document.getElementById('Form_FirstName');
                 isValid = false;
             }
 
             const lastName = document.getElementById('Form_LastName').value.trim();
             if (lastName && !nameRegex.test(lastName)) {
-                showError('Form_LastName', 'Last name should contain letters only');
+                showError('Form_LastName', t('Validation.LastNameLetters'));
                 if (!firstErrEl) firstErrEl = document.getElementById('Form_LastName');
                 isValid = false;
             }
 
             const middleName = document.getElementById('Form_MiddleName').value.trim();
             if (middleName && !nameRegex.test(middleName)) {
-                showError('Form_MiddleName', 'Middle name should contain letters only');
+                showError('Form_MiddleName', t('Validation.MiddleNameLetters'));
                 if (!firstErrEl) firstErrEl = document.getElementById('Form_MiddleName');
                 isValid = false;
             }
@@ -832,7 +839,7 @@ function initPatientDetailsPage() {
                 const dobDate = new Date(dob);
                 const today = new Date(); today.setHours(0, 0, 0, 0);
                 if (dobDate >= today) {
-                    showError('Form_DOB', 'Date of birth cannot be today or a future date');
+                    showError('Form_DOB', t('Validation.DobPast'));
                     if (!firstErrEl) firstErrEl = document.getElementById('Form_DOB');
                     isValid = false;
                 }
@@ -848,14 +855,14 @@ function initPatientDetailsPage() {
 
             const email = document.getElementById('Form_Email')?.value?.trim();
             if (email && !emailRegex.test(email)) {
-                showError('Form_Email', 'Please enter a valid email address');
+                showError('Form_Email', t('Validation.EmailInvalid'));
                 if (!firstErrEl) firstErrEl = document.getElementById('Form_Email');
                 isValid = false;
             }
 
             const pincode = document.getElementById('Form_Pincode')?.value?.trim();
             if (pincode && !/^\d{6}$/.test(pincode)) {
-                showError('Form_Pincode', 'Pincode must be exactly 6 digits');
+                showError('Form_Pincode', t('Validation.PincodeInvalid'));
                 if (!firstErrEl) firstErrEl = document.getElementById('Form_Pincode');
                 isValid = false;
             }
@@ -863,15 +870,15 @@ function initPatientDetailsPage() {
             const mobile = document.getElementById('phone-input').value.trim();
             const verified = document.getElementById('Form_IsMobileVerified').value;
             if (!mobile) {
-                showError('phone-input', 'Mobile number is required');
+                showError('phone-input', t('Validation.MobileRequired'));
                 if (!firstErrEl) firstErrEl = document.getElementById('phone-input');
                 isValid = false;
             } else if (!/^\d{10}$/.test(mobile)) {
-                showError('phone-input', 'Please enter a valid 10-digit mobile number');
+                showError('phone-input', t('Validation.MobileInvalid'));
                 if (!firstErrEl) firstErrEl = document.getElementById('phone-input');
                 isValid = false;
             } else if (verified !== 'true') {
-                showError('phone-input', 'Please verify your mobile number via OTP');
+                showError('phone-input', t('Validation.VerifyMobile'));
                 if (!firstErrEl) firstErrEl = document.getElementById('phone-input');
                 isValid = false;
             }
@@ -880,21 +887,21 @@ function initPatientDetailsPage() {
             const verified = document.getElementById('Reg_IsMobileVerified').value;
 
             if (!mobile) {
-                showError('reg-phone-input', 'Mobile number is required');
+                showError('reg-phone-input', t('Validation.MobileRequired'));
                 if (!firstErrEl) firstErrEl = document.getElementById('reg-phone-input');
                 isValid = false;
             } else if (!/^\d{10}$/.test(mobile)) {
-                showError('reg-phone-input', 'Please enter a valid 10-digit mobile number');
+                showError('reg-phone-input', t('Validation.MobileInvalid'));
                 if (!firstErrEl) firstErrEl = document.getElementById('reg-phone-input');
                 isValid = false;
             } else if (verified !== 'true') {
-                showError('reg-phone-input', 'Please verify your mobile number via OTP');
+                showError('reg-phone-input', t('Validation.VerifyMobile'));
                 if (!firstErrEl) firstErrEl = document.getElementById('reg-phone-input');
                 isValid = false;
             } else {
                 const regNo = document.getElementById('Reg_RegistrationNo').value;
                 if (!regNo || regNo === '0') {
-                    showPatientError('Please select the patient for whom you want to book the appointment');
+                    showPatientError(t('Validation.SelectPatient'));
                     if (!firstErrEl) firstErrEl = document.getElementById('pf-list');
                     isValid = false;
                 }

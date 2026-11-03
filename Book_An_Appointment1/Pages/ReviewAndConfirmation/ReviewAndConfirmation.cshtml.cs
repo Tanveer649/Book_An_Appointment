@@ -1,4 +1,5 @@
 using Book_An_Appointment1.Helpers;
+using Book_An_Appointment1.Localization;
 using Book_An_Appointment1.Models.Appointment;
 using Book_An_Appointment1.Services.Interfaces;
 using Book_An_Appointment1.ViewModule;
@@ -16,12 +17,14 @@ namespace Book_An_Appointment1.Pages.ReviewAndConfimation
         private readonly ILogger<ReviewAndConfirmationModel> _logger;
         private readonly IConfiguration _configuration;
         private readonly IAppointmentBookingService _bookingService;
+        private readonly JsonStringLocalizer _localizer;
         public ReviewAndConfirmationViewModel Summary { get; set; } = new();
         public record CreateAppointmentPostRequest(string? PaymentType);
 
         public ReviewAndConfirmationModel(ILogger<ReviewAndConfirmationModel> logger, IConfiguration configuration,
-            IAppointmentBookingService bookingService)
+            IAppointmentBookingService bookingService, JsonStringLocalizer localizer)
         {
+            _localizer = localizer;
             _logger = logger;
             _configuration = configuration;
             _bookingService = bookingService;
@@ -56,11 +59,12 @@ namespace Book_An_Appointment1.Pages.ReviewAndConfimation
             {
 
                 Summary.FirstName = sessionData.RegisteredPatient.FirstName;
+                Summary.MiddleName = sessionData.RegisteredPatient.MiddleName;
                 Summary.LastName = sessionData.RegisteredPatient.LastName;
                 Summary.Mobile = sessionData.RegisteredPatient.Mobile;
                 Summary.Gender = sessionData.RegisteredPatient.Gender;
                 Summary.DOB = sessionData.RegisteredPatient.DOB;
-                Summary.Title = sessionData.RegisteredPatient.TitleName;
+                Summary.Title = sessionData.RegisteredPatient.TitleName ?? "";
                 Summary.TitleId= sessionData.RegisteredPatient.TitleId;
                 Summary.RegistrationNo = sessionData.RegisteredPatient.RegistrationNo;
             }
@@ -117,7 +121,7 @@ namespace Book_An_Appointment1.Pages.ReviewAndConfimation
                 return new JsonResult(new
                 {
                     success = false,
-                    message = "Your session has expired. Please select the slot again.",
+                    message = _localizer.Text("Errors.SessionExpired"),
                     redirectUrl = Url.Page("/Appointment/Appointment")
                 });
             }
@@ -131,7 +135,7 @@ namespace Book_An_Appointment1.Pages.ReviewAndConfimation
                 (isPayOnArrival && !_configuration.GetValue<bool>("PaymentSettings:EnablePayOnArrival", true)))
             {
                 _logger.LogWarning("CreateAppointment — payment option not allowed | PaymentType={P}", paymentType);
-                return new JsonResult(new { success = false, message = "Selected payment option is not available." });
+                return new JsonResult(new { success = false, message = _localizer.Text("Errors.PaymentOptionUnavailable") });
             }
 
             // Check gateway url before booking, otherwise appointment is created but user cannot pay
@@ -139,7 +143,7 @@ namespace Book_An_Appointment1.Pages.ReviewAndConfimation
             if (isPayNow && !Uri.IsWellFormedUriString(gatewayUrl, UriKind.Absolute))
             {
                 _logger.LogError("CreateAppointment — PaymentSettings:PaymentGatewayUrl missing or invalid");
-                return new JsonResult(new { success = false, message = "Online payment is currently unavailable. Please choose Pay on arrival." });
+                return new JsonResult(new { success = false, message = _localizer.Text("Errors.OnlinePaymentUnavailable") });
             }
 
             try
@@ -166,7 +170,7 @@ namespace Book_An_Appointment1.Pages.ReviewAndConfimation
                     return new JsonResult(new
                     {
                         success = false,
-                        message = !string.IsNullOrWhiteSpace(result?.Message) ? result.Message : "Unable to book your appointment. Please try again."
+                        message = !string.IsNullOrWhiteSpace(result?.Message) ? result.Message : _localizer.Text("Errors.BookingFailed")
                     });
                 }
 
@@ -193,7 +197,7 @@ namespace Book_An_Appointment1.Pages.ReviewAndConfimation
             catch (Exception ex)
             {
                 _logger.LogError(ex, "OnPostCreateAppointmentAsync failed | PaymentType={P}", paymentType);
-                return new JsonResult(new { success = false, message = "Unable to book your appointment. Please try again." });
+                return new JsonResult(new { success = false, message = _localizer.Text("Errors.BookingFailed") });
             }
         }
 
@@ -262,58 +266,58 @@ namespace Book_An_Appointment1.Pages.ReviewAndConfimation
             if (string.IsNullOrWhiteSpace(r.Source) || string.IsNullOrWhiteSpace(r.AppointmentType))
             {
                 _logger.LogError("AppointmentApi:Source / AppointmentType missing in appsettings");
-                errors.Add("Booking is currently unavailable. Please try again later.");
+                errors.Add(_localizer.Text("Errors.BookingUnavailable"));
                 return errors;
             }
 
             // Appointment
             if (s.FacilityId <= 0 || s.DoctorId <= 0)
-                errors.Add("Please select hospital and doctor again.");
+                errors.Add(_localizer.Text("Errors.SelectDoctorAgain"));
 
             var from = ParseDate(r.AppFromDateTime);
             var to = ParseDate(r.AppToDateTime);
             if (from == null || to == null || to <= from)
-                errors.Add("Invalid appointment slot. Please select the slot again.");
+                errors.Add(_localizer.Text("Errors.InvalidSlot"));
             else if (from <= DateTime.Now)
-                errors.Add("The selected slot time has already passed. Please select another slot.");
+                errors.Add(_localizer.Text("Errors.SlotPassed"));
 
             // Patient
             if (isRegistered ? !s.RegisteredPatient.IsMobileVerified : !s.NewPatient.IsMobileVerified)
-                errors.Add("Please verify your mobile number via OTP.");
+                errors.Add(_localizer.Text("Validation.VerifyMobile"));
 
             if (!Regex.IsMatch(r.MobileNo, @"^\d{10}$"))
-                errors.Add("Please enter a valid 10-digit mobile number.");
+                errors.Add(_localizer.Text("Validation.MobileInvalid"));
 
             if (isRegistered && r.RegistrationNo <= 0)
-                errors.Add("Registered patient details not found. Please verify your mobile number again.");
+                errors.Add(_localizer.Text("Errors.RegisteredNotFound"));
 
             if (!isRegistered)
             {
                 if (r.TitleId == "0" || string.IsNullOrWhiteSpace(r.TitleId))
-                    errors.Add("Please select a title.");
+                    errors.Add(_localizer.Text("Validation.SelectTitle"));
                 if (string.IsNullOrWhiteSpace(r.LastName))
-                    errors.Add("Last name is required.");
+                    errors.Add(_localizer.Text("Validation.LastNameRequired"));
             }
 
             if (string.IsNullOrWhiteSpace(r.FirstName))
-                errors.Add("First name is required.");
+                errors.Add(_localizer.Text("Validation.FirstNameRequired"));
 
             var dob = ParseDate(r.Dob);
             if (dob == null)
-                errors.Add("Date of birth is required.");
+                errors.Add(_localizer.Text("Validation.DobRequired"));
             else if (dob >= DateTime.Today)
-                errors.Add("Date of birth cannot be today or a future date.");
+                errors.Add(_localizer.Text("Validation.DobPast"));
 
             if (string.IsNullOrWhiteSpace(r.Gender))
-                errors.Add("Please select gender.");
+                errors.Add(_localizer.Text("Validation.SelectGender"));
 
             if (!s.ConsentAccepted)
-                errors.Add("Please accept terms and conditions.");
+                errors.Add(_localizer.Text("Validation.AcceptTerms"));
 
             return errors;
         }
 
-        private static BookedAppointmentViewModel BuildBookedDetailsFromSession(AppointmentSessionData s, string appointmentId)
+        private BookedAppointmentViewModel BuildBookedDetailsFromSession(AppointmentSessionData s, string appointmentId)
         {
             var isRegistered = s.PatientType == "registered";
             var slot = ParseDate(s.SlotTime);
@@ -333,7 +337,8 @@ namespace Book_An_Appointment1.Pages.ReviewAndConfimation
                 AppointmentDate = slot?.ToString("dd MMM yyyy") ?? s.SlotDate,
                 AppointmentDay = slot?.ToString("dddd") ?? "",
                 AppointmentTime = slot?.ToString("hh:mm tt") ?? s.SlotTime,
-                AmountPayable = "₹ " + Money(total)
+                AmountPayable = "₹ " + Money(total),
+                PaymentMode = _localizer.Text("Review.PayAtHospital")
             };
         }
 

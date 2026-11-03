@@ -55,7 +55,8 @@
         {
             get
             {
-                if (DateTime.TryParse(DOB, out var d))
+                // API / <input type=date> values are culture-neutral; display follows the portal language
+                if (DateTime.TryParse(DOB, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var d))
                     return d.ToString("dd MMM yyyy");
                 return DOB;
             }
