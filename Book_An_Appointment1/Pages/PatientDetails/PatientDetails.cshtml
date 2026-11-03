@@ -309,15 +309,17 @@
                             </div>
                         </div>
 
+                        @* Family members on this mobile — cards built by patient-details.js (renderPatientCards) *@
                         <div id="patient-found-card" style="display:none">
-                            <div class="patient-found-inner">
-                                <div class="patient-found-avatar" id="pf-avatar"></div>
-                                <div class="patient-found-info">
-                                    <div class="pf-name" id="pf-name"></div>
-                                    <div class="pf-details" id="pf-details"></div>
+                            <div class="pf-list-head">
+                                <div>
+                                    <div class="pf-list-title">Select patient</div>
+                                    <div class="pf-list-sub" id="pf-list-sub"></div>
                                 </div>
                                 <div class="pf-verified-badge">✓ Verified</div>
                             </div>
+                            <div class="pf-list" id="pf-list" role="radiogroup" aria-label="Select patient"></div>
+                            <span id="reg-patient-error" class="field-error" role="alert" style="display:none"></span>
                         </div>
 
                     </div>
@@ -380,6 +382,7 @@
         var SavedCityName = '@Model.Form.NewPatient.CityName';
         var SavedCityId = '@Model.Form.NewPatient.CityId';
         var SavedPatientType = '@Model.Form.PatientType';
+        var SavedRegisteredPatients = @Html.Raw(Json.Serialize(Model.RegisteredPatients));
 
         initPatientDetailsPage();
     </script>

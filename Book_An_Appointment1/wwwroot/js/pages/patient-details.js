@@ -101,15 +101,8 @@ function initPatientDetailsPage() {
             regBtn.disabled = true;
             document.getElementById('reg-otp-verified').classList.add('show');
 
-            showPatientCard({
-                patientName: `${document.getElementById('Reg_TitleName').value} ${document.getElementById('Reg_FirstName').value} ${document.getElementById('Reg_LastName').value}`.trim(),
-                gender: document.getElementById('Reg_Gender').value,
-                dob: document.getElementById('Reg_DOB').value,
-                mobileNo: document.getElementById('reg-phone-input').value,
-                registrationNo: document.getElementById('Reg_RegistrationNo').value,
-                firstName: document.getElementById('Reg_FirstName').value,
-                lastName: document.getElementById('Reg_LastName').value
-            });
+            // Back / validation failure — rebuild the family cards from session, keep the selection
+            renderPatientCards(window.SavedRegisteredPatients || [], document.getElementById('Reg_RegistrationNo').value);
         } else {
             const regMobile = document.getElementById('reg-phone-input').value;
             if (regMobile && regMobile.length === 10) document.getElementById('reg-send-otp-btn').disabled = false;
@@ -572,8 +565,9 @@ function initPatientDetailsPage() {
                     document.querySelectorAll('#reg-otp-inputs .otp-input').forEach(i => i.disabled = true);
                     document.getElementById('Reg_IsMobileVerified').value = 'true';
                     clearOtpError('reg');
-                    showPatientCard(data.patient);
-                    fillRegisteredHiddenFields(data.patient);
+                    // single member comes pre-selected by the server; otherwise the user picks a card
+                    fillRegisteredHiddenFields(data.selected || {});
+                    renderPatientCards(data.patientList || [], data.selected ? data.selected.registrationNo : '');
                 } else {
                     document.querySelectorAll('#reg-otp-inputs .otp-input').forEach(i => { i.value = ''; i.disabled = false; });
                     document.getElementById('rego1')?.focus();
@@ -595,17 +589,112 @@ function initPatientDetailsPage() {
         document.getElementById('Reg_Email').value = patient.emailId || '';
     }
 
-    function showPatientCard(patient) {
-        const card = document.getElementById('patient-found-card');
-        card.style.display = 'block';
+    // ── Registered patient — family member cards ─────────
+    function renderPatientCards(patients, selectedRegNo) {
+        const wrap = document.getElementById('patient-found-card');
+        const list = document.getElementById('pf-list');
+        list.innerHTML = '';
+        hidePatientError();
 
-        const initials = (patient.firstName?.[0] || '') + (patient.lastName?.[0] || '');
-        document.getElementById('pf-avatar').textContent = initials || 'P';
-        document.getElementById('pf-name').textContent = patient.patientName || `${patient.firstName} ${patient.lastName}`.trim();
+        if (!patients.length) { wrap.style.display = 'none'; return; }
+        wrap.style.display = 'block';
 
-        const uhid = (patient.registrationNo && patient.registrationNo !== '0') ? `UHID: ${patient.registrationNo}` : 'UHID: 0';
-        document.getElementById('pf-details').textContent =
-            `${patient.gender} · ${formatDob(patient.dob)} · ${patient.mobileNo} · ${uhid}`;
+        document.getElementById('pf-list-sub').textContent = patients.length === 1
+            ? '1 patient registered with this mobile number'
+            : `${patients.length} patients registered with this mobile number — choose whose appointment to book`;
+
+        patients.forEach(p => list.appendChild(buildPatientCard(p, p.registrationNo === selectedRegNo)));
+    }
+
+    function buildPatientCard(p, selected) {
+        const name = cleanName(p.patientName);
+        const age = (p.age || '').split('/')[0].trim();          // "31 Yrs/Male" → "31 Yrs"
+
+        const card = el('button', 'pf-card' + (selected ? ' selected' : ''));
+        card.type = 'button';
+        card.setAttribute('role', 'radio');
+        card.setAttribute('aria-checked', selected ? 'true' : 'false');
+        card.dataset.reg = p.registrationNo || '';
+        card.addEventListener('click', () => selectRegisteredPatient(card));
+
+        card.appendChild(el('span', 'pf-card-avatar', initialsOf(name)));
+
+        const body = el('span', 'pf-card-body');
+        body.appendChild(el('span', 'pf-card-name', name));
+
+        const tags = el('span', 'pf-card-tags');
+        if (p.gender) tags.appendChild(el('span', 'pf-tag', p.gender));
+        if (p.dob) tags.appendChild(el('span', 'pf-tag', formatDob(p.dob)));
+        body.appendChild(tags);
+
+        const uhid = el('span', 'pf-card-uhid');
+        uhid.appendChild(el('span', 'pf-uhid-label', 'UHID'));
+        uhid.appendChild(el('span', 'pf-uhid-value', p.registrationNo || '—'));
+        body.appendChild(uhid);
+        card.appendChild(body);
+
+        card.appendChild(el('span', 'pf-card-check', '✓'));
+
+        // Full details — visible only on hover / keyboard focus (and for the selected card on touch screens)
+        const more = el('span', 'pf-card-more');
+        [['Full name', name], ['Gender', p.gender], ['Date of birth', formatDob(p.dob)], ['Age', age],
+            ['UHID', p.registrationNo], ['Email', p.emailId]]
+            .filter(r => r[1])
+            .forEach(r => {
+                const row = el('span', 'pf-more-row');
+                row.appendChild(el('span', 'pf-more-label', r[0]));
+                row.appendChild(el('span', 'pf-more-value', r[1]));
+                more.appendChild(row);
+            });
+        card.appendChild(more);
+
+        return card;
+    }
+
+    function selectRegisteredPatient(card) {
+        const list = document.getElementById('pf-list');
+        if (list.getAttribute('aria-busy') === 'true' || card.classList.contains('selected')) return;
+
+        list.setAttribute('aria-busy', 'true');
+        postJson('SelectRegisteredPatient', { registrationNo: card.dataset.reg })
+            .then(data => {
+                if (!data.success) { showPatientError(data.message || 'Unable to select patient'); return; }
+                list.querySelectorAll('.pf-card').forEach(c => {
+                    c.classList.toggle('selected', c === card);
+                    c.setAttribute('aria-checked', c === card ? 'true' : 'false');
+                });
+                fillRegisteredHiddenFields(data.selected);
+                hidePatientError();
+            })
+            .catch(() => showPatientError('Something went wrong. Please try again.'))
+            .finally(() => list.removeAttribute('aria-busy'));
+    }
+
+    function showPatientError(msg) {
+        const err = document.getElementById('reg-patient-error');
+        err.textContent = msg;
+        err.style.display = 'block';
+    }
+
+    function hidePatientError() {
+        document.getElementById('reg-patient-error').style.display = 'none';
+    }
+
+    function el(tag, cls, text) {
+        const e = document.createElement(tag);
+        if (cls) e.className = cls;
+        if (text != null) e.textContent = text;
+        return e;
+    }
+
+    function cleanName(name) {
+        return String(name || '').replace(/\s+/g, ' ').trim();
+    }
+
+    function initialsOf(name) {
+        const words = name.split(' ').filter(w => !/^(mr|mrs|ms|miss|dr|master|baby)\.?$/i.test(w));
+        if (!words.length) return 'P';
+        return (words[0][0] + (words.length > 1 ? words[words.length - 1][0] : '')).toUpperCase();
     }
 
     function formatDob(dob) {
@@ -691,6 +780,7 @@ function initPatientDetailsPage() {
         document.querySelectorAll('.input-error').forEach(e => e.classList.remove('input-error'));
         document.getElementById('gender-error').style.display = 'none';
         document.getElementById('consent-error').style.display = 'none';
+        hidePatientError();
     }
 
     window.validateForm = function () {
@@ -801,6 +891,13 @@ function initPatientDetailsPage() {
                 showError('reg-phone-input', 'Please verify your mobile number via OTP');
                 if (!firstErrEl) firstErrEl = document.getElementById('reg-phone-input');
                 isValid = false;
+            } else {
+                const regNo = document.getElementById('Reg_RegistrationNo').value;
+                if (!regNo || regNo === '0') {
+                    showPatientError('Please select the patient for whom you want to book the appointment');
+                    if (!firstErrEl) firstErrEl = document.getElementById('pf-list');
+                    isValid = false;
+                }
             }
         }
 

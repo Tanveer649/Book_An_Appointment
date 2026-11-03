@@ -726,48 +726,264 @@ body {
     border-left: 3px solid var(--primary);
 }
 
-.patient-found-inner {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 16px 20px;
-    background: var(--success-tint);
-    border: 1px solid #bde5d3;
-    border-radius: var(--radius-md);
+/* ── Registered patient — family member cards ─────────── */
+#patient-found-card {
     margin-top: 16px;
 }
 
-.patient-found-avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: #bde5d3;
-    color: #15803d;
+.pf-list-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.pf-list-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.pf-list-sub {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--ink-faint);
+}
+
+.pf-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+}
+
+    .pf-list[aria-busy="true"] .pf-card {
+        cursor: progress;
+    }
+
+.pf-card {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    width: 100%;
+    padding: 18px 18px 16px;
+    text-align: left;
+    background: var(--surface);
+    border: 1px solid #E6EDF4;
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(18, 40, 61, .04);
+    font-family: var(--font-body);
+    color: var(--ink);
+    cursor: pointer;
+    transition: transform .18s ease, box-shadow .18s ease, border-color .15s, background .15s;
+}
+
+    .pf-card.selected {
+        border-color: #9ED9BF;
+        background: #F3FBF7;
+    }
+
+/* Soft, different avatar tint per family member */
+.pf-card-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: #EAF2FB;
+    color: #3A6E9E;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: .02em;
     flex-shrink: 0;
 }
 
-.patient-found-info {
+.pf-card:nth-child(4n+2) .pf-card-avatar {
+    background: #FBEFF3;
+    color: #A4506E;
+}
+
+.pf-card:nth-child(4n+3) .pf-card-avatar {
+    background: #FDF3E6;
+    color: #A26A22;
+}
+
+.pf-card:nth-child(4n+4) .pf-card-avatar {
+    background: #EFEDFB;
+    color: #5B52A3;
+}
+
+.pf-card.selected .pf-card-avatar {
+    background: #D7F0E4;
+    color: #15803d;
+}
+
+.pf-card-body {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
-.pf-name {
+.pf-card-name {
     font-size: 15px;
+    font-weight: 600;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pf-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.pf-tag {
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: var(--paper);
+    color: var(--ink-soft);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.6;
+}
+
+.pf-card.selected .pf-tag {
+    background: #E3F4EC;
+}
+
+.pf-card-uhid {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding-top: 8px;
+    border-top: 1px dashed #E6EDF4;
+}
+
+.pf-uhid-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    color: var(--ink-faint);
+}
+
+.pf-uhid-value {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: .02em;
+}
+
+.pf-card-check {
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+    border-radius: 50%;
+    border: 1.5px solid #D3DEE8;
+    color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
     font-weight: 700;
-    margin-bottom: 4px;
+    flex-shrink: 0;
+    transition: background .15s, border-color .15s;
+}
+
+.pf-card.selected .pf-card-check {
+    background: var(--success);
+    border-color: var(--success);
+    color: #fff;
+}
+
+/* Full details panel — hidden until hover / focus */
+.pf-card-more {
+    display: none;
+    position: absolute;
+    left: -1.5px;
+    right: -1.5px;
+    top: calc(100% - 10px);
+    z-index: 6;
+    padding: 14px 14px 12px;
+    background: inherit;
+    border: inherit;
+    border-top: none;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    box-shadow: 0 18px 28px -18px rgba(18, 40, 61, .45);
+    flex-direction: column;
+    gap: 5px;
+}
+
+.pf-more-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 12.5px;
+}
+
+.pf-more-label {
+    color: var(--ink-faint);
+    flex-shrink: 0;
+}
+
+.pf-more-value {
+    font-weight: 600;
+    text-align: right;
     overflow-wrap: anywhere;
 }
 
-.pf-details {
-    font-size: 13px;
-    color: var(--ink-soft);
-    line-height: 1.5;
-    overflow-wrap: anywhere;
+/* Mouse: card lifts a little and opens its details */
+@media (hover: hover) {
+    .pf-card:hover, .pf-card:focus-visible {
+        z-index: 5;
+        transform: translateY(-3px);
+        border-color: var(--primary);
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        box-shadow: 0 14px 26px -16px rgba(18, 40, 61, .45);
+    }
+
+        .pf-card.selected:hover, .pf-card.selected:focus-visible {
+            border-color: var(--success);
+        }
+
+        .pf-card:hover .pf-card-more, .pf-card:focus-visible .pf-card-more {
+            display: flex;
+        }
+}
+
+/* Touch screens have no hover — show details under the selected card instead */
+@media (hover: none) {
+    .pf-card {
+        flex-wrap: wrap;
+    }
+
+        .pf-card.selected .pf-card-more {
+            display: flex;
+            position: static;
+            flex-basis: 100%;
+            padding: 10px 0 0;
+            border: none;
+            border-top: 1px dashed #bde5d3;
+            box-shadow: none;
+            border-radius: 0;
+        }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pf-card {
+        transition: none;
+    }
+
+        .pf-card:hover, .pf-card:focus-visible {
+            transform: none;
+        }
 }
 
 .pf-verified-badge {
@@ -1087,14 +1303,8 @@ body {
         margin-top: 0;
     }
 
-    .patient-found-inner {
-        flex-wrap: wrap;
-        gap: 12px;
-        padding: 14px;
-    }
-
-    .patient-found-info {
-        flex-basis: calc(100% - 64px);
+    .pf-list {
+        grid-template-columns: minmax(0, 1fr);
     }
 
     .footer-actions {

@@ -23,6 +23,10 @@ namespace Book_An_Appointment1.Pages.Appointment
 
         public AppointmentSessionData? SessionData { get; set; }
 
+        // Family members linked to the verified mobile — rendered as cards (restored on Back / validation failure)
+        public List<RegisteredPatientInfo> RegisteredPatients { get; set; } = new();
+        public record SelectRegisteredPatientRequest(string? RegistrationNo);
+
         public PatientDetailsModel(
              IOtpService otpService,
              ILogger<PatientDetailsModel> logger,
@@ -79,6 +83,9 @@ namespace Book_An_Appointment1.Pages.Appointment
                 Form.RegisteredPatient.Gender = SessionData.RegisteredPatient.Gender;
                 Form.RegisteredPatient.DOB = SessionData.RegisteredPatient.DOB;
                 Form.RegisteredPatient.Email = SessionData.RegisteredPatient.Email;
+
+                if (SessionData.RegisteredPatient.IsMobileVerified)
+                    RegisteredPatients = SessionData.RegisteredPatient.PatientList;
 
             }
             else
@@ -348,8 +355,9 @@ namespace Book_An_Appointment1.Pages.Appointment
                         Dob = "1/31/1995 12:00:00 AM",
                         EmailId = "wdvctwve",
                         IsHisRegistered = true,
-                        VerifyPatinetListCount = "1",
+                        VerifyPatinetListCount = "4",
 
+                        // One mobile — whole family registered (self, wife, daughter, son)
                         PatientList = new List<RegisteredPatientInfo>
                         {
                             new RegisteredPatientInfo
@@ -361,10 +369,64 @@ namespace Book_An_Appointment1.Pages.Appointment
                                 EncounterId = "0",
                                 EncounterNo = "0",
                                 PatientName = "Mr. Test1  Test1",
-                                Gender = "Female",
+                                Gender = "Male",
                                 Dob = "1/31/1995 12:00:00 AM",
-                                Age = "29 Yrs/Female",
+                                Age = "31 Yrs/Male",
                                 EmailId = "wdvctwve",
+                                MobileNo = request.MobileNo,
+                                PatientType = "",
+                                IsUnRegPat = false,
+                                TcFacilityId = null
+                            },
+                            new RegisteredPatientInfo
+                            {
+                                HospitalLocationId = "1",
+                                FacilityID = "1",
+                                RegistrationId = 30023045,
+                                RegistrationNo = "567826739",
+                                EncounterId = "0",
+                                EncounterNo = "0",
+                                PatientName = "Mrs. Sunita  Sharma",
+                                Gender = "Female",
+                                Dob = "8/14/1997 12:00:00 AM",
+                                Age = "29 Yrs/Female",
+                                EmailId = "sunita.sharma@example.com",
+                                MobileNo = request.MobileNo,
+                                PatientType = "",
+                                IsUnRegPat = false,
+                                TcFacilityId = null
+                            },
+                            new RegisteredPatientInfo
+                            {
+                                HospitalLocationId = "1",
+                                FacilityID = "1",
+                                RegistrationId = 30023046,
+                                RegistrationNo = "567826740",
+                                EncounterId = "0",
+                                EncounterNo = "0",
+                                PatientName = "Ms. Priya  Sharma",
+                                Gender = "Female",
+                                Dob = "3/5/2019 12:00:00 AM",
+                                Age = "7 Yrs/Female",
+                                EmailId = "",
+                                MobileNo = request.MobileNo,
+                                PatientType = "",
+                                IsUnRegPat = false,
+                                TcFacilityId = null
+                            },
+                            new RegisteredPatientInfo
+                            {
+                                HospitalLocationId = "1",
+                                FacilityID = "1",
+                                RegistrationId = 30023047,
+                                RegistrationNo = "567826741",
+                                EncounterId = "0",
+                                EncounterNo = "0",
+                                PatientName = "Master Aarav  Sharma",
+                                Gender = "Male",
+                                Dob = "11/22/2022 12:00:00 AM",
+                                Age = "3 Yrs/Male",
+                                EmailId = "",
                                 MobileNo = request.MobileNo,
                                 PatientType = "",
                                 IsUnRegPat = false,
@@ -423,44 +485,16 @@ namespace Book_An_Appointment1.Pages.Appointment
                 // Store ALL family members returned for this mobile number
                 registeredPatient.PatientList = apiData.PatientList ?? new List<RegisteredPatientInfo>();
 
-                // Select the first family member by default.
-                // The user can select another member from PatientList later.
-                var selectedPatient = registeredPatient.PatientList.FirstOrDefault();
+                // Only one member → select automatically; more than one → user picks a card
+                // (OnPostSelectRegisteredPatientAsync). Previous selection never carries over to a new OTP.
+                var selectedPatient = registeredPatient.PatientList.Count == 1
+                    ? registeredPatient.PatientList[0]
+                    : null;
 
                 if (selectedPatient != null)
-                {
-                    registeredPatient.GuestPatientId = apiData.Id.ToString();
-                    registeredPatient.RegistrationId = selectedPatient.RegistrationId;
-                    registeredPatient.RegistrationNo = selectedPatient.RegistrationNo;
-
-                    registeredPatient.EncounterId = selectedPatient.EncounterId;
-                    registeredPatient.EncounterNo = selectedPatient.EncounterNo;
-                    registeredPatient.HospitalLocationId = selectedPatient.HospitalLocationId;
-
-                    registeredPatient.FacilityId =
-                        int.TryParse(selectedPatient.FacilityID, out var facilityId)
-                            ? facilityId
-                            : 0;
-
-                    registeredPatient.PatientName = selectedPatient.PatientName;
-                    registeredPatient.Gender = selectedPatient.Gender ?? "";
-                    registeredPatient.DOB = selectedPatient.Dob ?? "";
-                    registeredPatient.Age = selectedPatient.Age;
-                    registeredPatient.Email = selectedPatient.EmailId;
-
-                    registeredPatient.PatientType = selectedPatient.PatientType;
-                    registeredPatient.IsUnRegPat = selectedPatient.IsUnRegPat;
-                    registeredPatient.TcFacilityId = selectedPatient.TcFacilityId;
-
-                    // The API does not return separate title/first/middle/last names.
-                    // Keep these empty or populate them using your existing name parsing.
-
-                    registeredPatient.TitleName = null;
-                    registeredPatient.TitleId = 0;
-                    registeredPatient.FirstName = selectedPatient.PatientName ?? "";
-                    registeredPatient.MiddleName = "";
-                    registeredPatient.LastName = "";
-                }
+                    ApplySelectedPatient(registeredPatient, selectedPatient);
+                else
+                    ClearSelectedPatient(registeredPatient);
 
                 SessionHelper.SetAppointmentData(HttpContext.Session, sessionData);
 
@@ -483,8 +517,9 @@ namespace Book_An_Appointment1.Pages.Appointment
                     // Return all family members
                     patientList = registeredPatient.PatientList,
 
-                    // Currently selected patient
-                    patient = selectedPatient
+                    // Currently selected patient (null when user has to choose)
+                    patient = selectedPatient,
+                    selected = selectedPatient != null ? SelectedPatientFields(registeredPatient) : null
                 });
             }
             catch (Exception ex)
@@ -501,6 +536,107 @@ namespace Book_An_Appointment1.Pages.Appointment
                 });
             }
         }
+        // ── Registered Patient — Select family member card ──
+        public JsonResult OnPostSelectRegisteredPatient([FromBody] SelectRegisteredPatientRequest request)
+        {
+            _logger.LogInformation("OnPostSelectRegisteredPatient | RegistrationNo={R}", request?.RegistrationNo);
+
+            var sessionData = SessionHelper.GetAppointmentData(HttpContext.Session);
+            var registeredPatient = sessionData?.RegisteredPatient;
+
+            if (registeredPatient == null || !registeredPatient.IsMobileVerified)
+                return new JsonResult(new { success = false, message = "Please verify your mobile number via OTP" });
+
+            // Only a member returned for this verified mobile can be selected
+            var patient = registeredPatient.PatientList.FirstOrDefault(x =>
+                !string.IsNullOrWhiteSpace(x.RegistrationNo) && x.RegistrationNo == request?.RegistrationNo?.Trim());
+
+            if (patient == null)
+            {
+                _logger.LogWarning("SelectRegisteredPatient — not in patient list | RegistrationNo={R}", request?.RegistrationNo);
+                return new JsonResult(new { success = false, message = "Selected patient not found. Please verify OTP again." });
+            }
+
+            ApplySelectedPatient(registeredPatient, patient);
+            SessionHelper.SetAppointmentData(HttpContext.Session, sessionData!);
+
+            return new JsonResult(new { success = true, selected = SelectedPatientFields(registeredPatient) });
+        }
+
+        private static void ApplySelectedPatient(AppointmentSessionData.RegisteredPatientData registeredPatient, RegisteredPatientInfo selectedPatient)
+        {
+            registeredPatient.GuestPatientId = registeredPatient.Id.ToString();
+            registeredPatient.RegistrationId = selectedPatient.RegistrationId;
+            registeredPatient.RegistrationNo = selectedPatient.RegistrationNo;
+
+            registeredPatient.EncounterId = selectedPatient.EncounterId;
+            registeredPatient.EncounterNo = selectedPatient.EncounterNo;
+            registeredPatient.HospitalLocationId = selectedPatient.HospitalLocationId;
+
+            registeredPatient.FacilityId =
+                int.TryParse(selectedPatient.FacilityID, out var facilityId)
+                    ? facilityId
+                    : 0;
+
+            registeredPatient.PatientName = selectedPatient.PatientName;
+            registeredPatient.Gender = selectedPatient.Gender ?? "";
+            registeredPatient.DOB = selectedPatient.Dob ?? "";
+            registeredPatient.Age = selectedPatient.Age;
+            registeredPatient.Email = selectedPatient.EmailId;
+
+            registeredPatient.PatientType = selectedPatient.PatientType;
+            registeredPatient.IsUnRegPat = selectedPatient.IsUnRegPat;
+            registeredPatient.TcFacilityId = selectedPatient.TcFacilityId;
+
+            // The API does not return separate title/first/middle/last names.
+            // Keep these empty or populate them using your existing name parsing.
+
+            registeredPatient.TitleName = null;
+            registeredPatient.TitleId = 0;
+            registeredPatient.FirstName = selectedPatient.PatientName ?? "";
+            registeredPatient.MiddleName = "";
+            registeredPatient.LastName = "";
+        }
+
+        private static void ClearSelectedPatient(AppointmentSessionData.RegisteredPatientData registeredPatient)
+        {
+            registeredPatient.GuestPatientId = null;
+            registeredPatient.RegistrationId = 0;
+            registeredPatient.RegistrationNo = null;
+            registeredPatient.EncounterId = null;
+            registeredPatient.EncounterNo = null;
+            registeredPatient.HospitalLocationId = null;
+            registeredPatient.FacilityId = 0;
+            registeredPatient.PatientName = null;
+            registeredPatient.Gender = "";
+            registeredPatient.DOB = "";
+            registeredPatient.Age = null;
+            registeredPatient.Email = null;
+            registeredPatient.PatientType = null;
+            registeredPatient.IsUnRegPat = false;
+            registeredPatient.TcFacilityId = null;
+            registeredPatient.TitleName = null;
+            registeredPatient.TitleId = 0;
+            registeredPatient.FirstName = "";
+            registeredPatient.MiddleName = "";
+            registeredPatient.LastName = "";
+        }
+
+        // Values for the registered hidden inputs (Reg_*)
+        private static object SelectedPatientFields(AppointmentSessionData.RegisteredPatientData p) => new
+        {
+            guestPatientId = p.GuestPatientId,
+            registrationNo = p.RegistrationNo,
+            titleName = p.TitleName,
+            titleId = p.TitleId,
+            firstName = p.FirstName,
+            middleName = p.MiddleName,
+            lastName = p.LastName,
+            gender = p.Gender,
+            dob = p.DOB,
+            emailId = p.Email
+        };
+
         // Review & Confirm button
         public IActionResult OnPost()
         {
@@ -519,7 +655,7 @@ namespace Book_An_Appointment1.Pages.Appointment
             }
             else if (Form.PatientType == "registered")
             {
-                ValidateRegisteredPatient();
+                ValidateRegisteredPatient(sessionData);
             }
 
             // ── Common Validation ──────────────────────────
@@ -637,17 +773,21 @@ namespace Book_An_Appointment1.Pages.Appointment
                 ModelState.AddModelError("Form.NewPatient.Pincode", "Pincode must be exactly 6 digits");
         }
 
-        private void ValidateRegisteredPatient()
+        private void ValidateRegisteredPatient(AppointmentSessionData sessionData)
         {
             var p = Form.RegisteredPatient;
+            var saved = sessionData.RegisteredPatient;   // OTP + selection are trusted from session, not hidden inputs
 
             if (string.IsNullOrWhiteSpace(p.Mobile))
                 ModelState.AddModelError("Form.RegisteredPatient.Mobile", "Mobile number is required");
             else if (!Regex.IsMatch(p.Mobile.Trim(), @"^\d{10}$"))
                 ModelState.AddModelError("Form.RegisteredPatient.Mobile", "Please enter a valid 10-digit mobile number");
 
-            if (!p.IsMobileVerified)
+            if (!p.IsMobileVerified || !saved.IsMobileVerified || saved.Mobile != p.Mobile?.Trim())
                 ModelState.AddModelError("Form.RegisteredPatient.IsMobileVerified", "Please verify your mobile number via OTP");
+            else if (string.IsNullOrWhiteSpace(saved.RegistrationNo) ||
+                     !saved.PatientList.Any(x => x.RegistrationNo == saved.RegistrationNo))
+                ModelState.AddModelError("Form.RegisteredPatient.RegistrationNo", "Please select the patient for whom you want to book the appointment");
         }
 
         private void RestoreFormForValidationFailure(AppointmentSessionData sessionData)
@@ -672,6 +812,13 @@ namespace Book_An_Appointment1.Pages.Appointment
             // Note: Form.NewPatient aur Form.RegisteredPatient already POST data se bhare hain
             // [BindProperty] ne automatically bind kar diya hai — kuch restore karne ki zaroorat nahi
             // Bas State/City names POST mein nahi aate (sirf IDs), agar zaroorat ho to yahan restore karo:
+            // Family member cards must re-render after a failed post
+            if (sessionData.RegisteredPatient.IsMobileVerified)
+            {
+                RegisteredPatients = sessionData.RegisteredPatient.PatientList;
+                Form.RegisteredPatient.RegistrationNo = sessionData.RegisteredPatient.RegistrationNo;
+            }
+
             if (string.IsNullOrEmpty(Form.NewPatient.StateName))
                 Form.NewPatient.StateName = sessionData.NewPatient.StateName;
             if (string.IsNullOrEmpty(Form.NewPatient.CityName))
