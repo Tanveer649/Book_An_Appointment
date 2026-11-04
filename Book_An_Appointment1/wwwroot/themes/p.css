@@ -1,0 +1,12 @@
+/* ══ Theme P — Bronze ════════════════════════════════════════════════════════════════
+   Ready-made palette for a new client. To use it:
+     1. rename / copy this file to {client}.css (lowercase: letters, numbers, -)
+     2. appsettings.json → "ThemeSettings": { "Theme": "{client}" }
+   Every lighter / darker shade is calculated from these 4 colours (wwwroot/css/theme.css). */
+
+:root {
+    --primary: #92400E;      /* buttons, links, selected slot, header title */
+    --success: #15803D;      /* verified, completed steps, booked */
+    --accent: #0F766E;       /* consultation-fee highlight */
+    --footer-bg: #231004;    /* footer background — keep it dark */
+}

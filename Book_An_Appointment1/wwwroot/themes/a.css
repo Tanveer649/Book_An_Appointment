@@ -1,0 +1,12 @@
+/* ══ Theme A — Ocean Blue ════════════════════════════════════════════════════════════
+   Ready-made palette for a new client. To use it:
+     1. rename / copy this file to {client}.css (lowercase: letters, numbers, -)
+     2. appsettings.json → "ThemeSettings": { "Theme": "{client}" }
+   Every lighter / darker shade is calculated from these 4 colours (wwwroot/css/theme.css). */
+
+:root {
+    --primary: #1D4ED8;      /* buttons, links, selected slot, header title */
+    --success: #16A34A;      /* verified, completed steps, booked */
+    --accent: #EA580C;       /* consultation-fee highlight */
+    --footer-bg: #0B1533;    /* footer background — keep it dark */
+}

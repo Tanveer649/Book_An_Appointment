@@ -2,18 +2,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-    --paper: #F3F7FB;
-    --surface: #fff;
-    --surface-alt: #EAF1F8;
-    --ink: #12283D;
-    --ink-soft: #56728A;
-    --ink-faint: #8DA2B5;
-    --line: #DCE6EF;
-    --primary: #0F5C93;
-    --primary-dark: #0A3F66;
-    --primary-tint: #E4EFF8;
-    --success: #1C9A6C;
-    --success-tint: #E4F5EE;
     --radius-lg: 22px;
     --radius-md: 14px;
     --radius-sm: 10px;
@@ -236,15 +224,26 @@ body {
     }
 
     .rc-edit-btn:hover {
-        background: #d3e5f3;
+        background: var(--primary-soft);
     }
+
+/* Edit / Back are buttons (server-side step change) — same look as the former links */
+button.rc-edit-btn {
+    border: none;
+    font-family: var(--font-body);
+    cursor: pointer;
+}
+
+button.rc-btn-back {
+    cursor: pointer;
+}
 
 .rc-verified-badge {
     display: inline-flex;
     align-items: center;
     font-size: 11.5px;
     font-weight: 600;
-    color: #15803d;
+    color: var(--success-dark);
     background: var(--success-tint);
     padding: 4px 10px;
     border-radius: 999px;
@@ -258,7 +257,7 @@ body {
     align-items: start;
     gap: 12px;
     padding: 12px 0;
-    border-bottom: 1px solid #EEF3F8;
+    border-bottom: 1px solid var(--surface-soft);
     font-size: 14px;
 }
 
@@ -357,7 +356,7 @@ body {
     font-size: 14px;
     color: var(--ink-soft);
     padding: 12px 0;
-    border-bottom: 1px solid #EEF3F8;
+    border-bottom: 1px solid var(--surface-soft);
 }
 
 .rc-fee-val {
@@ -457,7 +456,7 @@ body {
     font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
-    box-shadow: 0 14px 24px -12px rgba(15, 92, 147, .55);
+    box-shadow: 0 14px 24px -12px color-mix(in srgb, var(--primary) 55%, transparent);
     transition: background .15s, transform .1s;
 }
 
@@ -629,6 +628,117 @@ body {
     cursor: not-allowed;
 }
 
+/* ── Payment popup — hospital theme colours ───────────────
+   Only theme variables are used here, so each wwwroot/themes/{hospital}.css gives the
+   popup its own look: a brand header band, "Pay on arrival" in the success colour,
+   "Pay now" in the primary colour. */
+.rc-modal--pay {
+    overflow: hidden;
+    border-top: 4px solid var(--accent);
+}
+
+    .rc-modal--pay .rc-modal-header {
+        align-items: center;
+        border-bottom: none;
+        color: #fff;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    }
+
+    .rc-modal--pay .rc-modal-title {
+        color: #fff;
+    }
+
+    .rc-modal--pay .rc-modal-sub {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 6px;
+        color: rgba(255, 255, 255, .85);
+    }
+
+    .rc-modal--pay .rc-pay-total {
+        padding: 2px 10px;
+        border-radius: 999px;
+        font-weight: 700;
+        color: var(--accent-dark);
+        background: var(--accent-tint);
+    }
+
+    .rc-modal--pay .rc-modal-close {
+        color: #fff;
+        background: rgba(255, 255, 255, .18);
+    }
+
+        .rc-modal--pay .rc-modal-close:hover {
+            background: rgba(255, 255, 255, .3);
+        }
+
+    .rc-modal--pay .rc-modal-body {
+        background: var(--paper);
+    }
+
+    /* each option carries its own theme colour */
+    .rc-modal--pay .rc-payment-option {
+        --opt: var(--primary);
+        --opt-dark: var(--primary-dark);
+        --opt-tint: var(--primary-tint);
+        --opt-border: var(--primary-border);
+        border: 1.5px solid var(--opt-border);
+        border-left: 5px solid var(--opt);
+        transition: border-color .15s, background .15s, box-shadow .15s, transform .15s;
+    }
+
+        .rc-modal--pay .rc-payment-option[data-payment="arrival"] {
+            --opt: var(--success);
+            --opt-dark: var(--success-dark);
+            --opt-tint: var(--success-tint);
+            --opt-border: var(--success-border);
+        }
+
+        .rc-modal--pay .rc-payment-option:hover:not(:disabled),
+        .rc-modal--pay .rc-payment-option:focus-visible {
+            border-color: var(--opt);
+            background: var(--opt-tint);
+            transform: translateY(-1px);
+        }
+
+    .rc-modal--pay .rc-pay-icon {
+        background: var(--opt-tint);
+        box-shadow: inset 0 0 0 1.5px var(--opt-border);
+    }
+
+    .rc-modal--pay .rc-pay-title {
+        color: var(--opt-dark);
+    }
+
+    .rc-modal--pay .rc-pay-arrow {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        border-radius: 50%;
+        font-size: 16px;
+        color: var(--opt-dark);
+        background: var(--opt-tint);
+        transition: background .15s, color .15s, transform .15s;
+    }
+
+    .rc-modal--pay .rc-payment-option:hover:not(:disabled) .rc-pay-arrow,
+    .rc-modal--pay .rc-payment-option:focus-visible .rc-pay-arrow {
+        color: #fff;
+        background: var(--opt);
+        transform: translateX(3px);
+    }
+
+@media (prefers-reduced-motion: reduce) {
+    .rc-modal--pay .rc-payment-option, .rc-modal--pay .rc-pay-arrow {
+        transition: none;
+        transform: none !important;
+    }
+}
+
 /* ── Create appointment: progress + error ─────────────── */
 .rc-pay-status {
     display: flex;
@@ -699,7 +809,7 @@ body {
     font-size: 22px;
     font-weight: 700;
     flex-shrink: 0;
-    box-shadow: 0 0 0 6px rgba(28, 154, 108, .15);
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--success) 15%, transparent);
 }
 
 .rc-booked-heading {
@@ -712,7 +822,7 @@ body {
     border-radius: 999px;
     background: #fff;
     color: var(--success);
-    border: 1px solid rgba(28, 154, 108, .35);
+    border: 1px solid color-mix(in srgb, var(--success) 35%, transparent);
     font-size: 12px;
     font-weight: 700;
     letter-spacing: .03em;
@@ -727,7 +837,7 @@ body {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     margin: 1rem 1.5rem 0;
     background: var(--primary-tint);
-    border: 1px solid rgba(15, 92, 147, .14);
+    border: 1px solid color-mix(in srgb, var(--primary) 14%, transparent);
     border-radius: var(--radius-sm);
 }
 
@@ -737,7 +847,7 @@ body {
 }
 
     .rc-hero-tile + .rc-hero-tile {
-        border-left: 1px solid rgba(15, 92, 147, .14);
+        border-left: 1px solid color-mix(in srgb, var(--primary) 14%, transparent);
     }
 
 .rc-hero-label {
@@ -833,7 +943,7 @@ body {
 
         .rc-booked-hero .rc-hero-tile:first-child {
             grid-column: 1 / -1;          /* ID gets the full row on phones */
-            border-bottom: 1px solid rgba(15, 92, 147, .14);
+            border-bottom: 1px solid color-mix(in srgb, var(--primary) 14%, transparent);
         }
 
         .rc-booked-hero .rc-hero-tile:nth-child(2) {
@@ -1013,25 +1123,6 @@ a.rc-btn-confirm {
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* ── Page ── */
 /*.rc-page {
     max-width: 900px;
@@ -1041,93 +1132,8 @@ a.rc-btn-confirm {
 }*/
 
 /* ── Progress Bar ── */
-/*.progress-bar {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 0;
-    margin-bottom: 2rem;
-    width: 100%;
-}
-
-.step-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-.step-circle {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 500;
-    flex-shrink: 0;
-}
-
-    .step-circle.done {
-        background: #1D9E75;
-        color: #fff;
-    }
-
-    .step-circle.active {
-        background: #185FA5;
-        color: #fff;
-    }
-
-    .step-circle.pending {
-        background: #f1f5f9;
-        color: #94a3b8;
-        border: 1px solid #e2e8f0;
-    }
-
-.step-label {
-    font-size: 12px;
-    color: #94a3b8;
-}
-
-    .step-label.active {
-        color: #185FA5;
-        font-weight: 500;
-    }
-
-    .step-label.done {
-        color: #1D9E75;
-    }
-
-.step-connector {
-    flex: 1;
-    height: 1px;
-    background: #e2e8f0;
-    margin: 0 8px;
-    min-width: 16px;
-}
-
-    .step-connector.done {
-        background: #1D9E75;
-    }*/
 
 /* ── Page Header ── */
-/*.rc-header {
-    margin-bottom: 1.25rem;
-}
-
-.rc-title {
-    font-size: 20px;
-    font-weight: 600;
-    color: #0f172a;
-    margin-bottom: 4px;
-}
-
-.rc-sub {
-    font-size: 13px;
-    color: #64748b;
-}*/
 
 /* ── Grid ── */
 /*.rc-grid {
@@ -1138,458 +1144,21 @@ a.rc-btn-confirm {
 }*/
 
 /* ── Card ── */
-/*.rc-card {
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 14px;
-    padding: 1.1rem 1.25rem;
-}
-
-.rc-card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.rc-card-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: #0f172a;
-    display: flex;
-    align-items: center;
-    gap: 7px;
-}
-
-.rc-icon {
-    font-size: 15px;
-}
-
-.rc-card-header-right {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.rc-edit-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-    color: #185FA5;
-    background: #eff6ff;
-    border: none;
-    padding: 4px 10px;
-    border-radius: 6px;
-    cursor: pointer;
-    text-decoration: none;
-    transition: background .12s;
-}
-
-    .rc-edit-btn:hover {
-        background: #dbeafe;
-    }
-
-.rc-verified-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 11px;
-    color: #15803d;
-    background: #dcfce7;
-    padding: 3px 9px;
-    border-radius: 20px;
-    font-weight: 600;
-}*/
 
 /* ── Appointment Detail Rows ── */
-/*.rc-detail-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 8px 0;
-    border-bottom: 1px solid #f1f5f9;
-    font-size: 13px;
-}
-
-    .rc-detail-row:last-child {
-        border-bottom: none;
-    }
-
-.rc-detail-icon {
-    font-size: 14px;
-    flex-shrink: 0;
-    width: 18px;
-    margin-top: 1px;
-}
-
-.rc-detail-label {
-    color: #64748b;
-    min-width: 130px;
-    flex-shrink: 0;
-}
-
-.rc-detail-value {
-    color: #0f172a;
-    font-weight: 400;
-    flex: 1;
-}
-
-    .rc-detail-value.rc-fee {
-        color: #185FA5;
-        font-weight: 600;
-        font-size: 15px;
-    }*/
 
 /* ── Patient Grid ── */
-/*.rc-patient-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0;
-}
-
-.rc-patient-item {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    padding: 8px 0;
-    border-bottom: 1px solid #f1f5f9;
-}
-
-    .rc-patient-item:nth-last-child(-n+2):not(.rc-full-width) {
-        border-bottom: none;
-    }
-
-    .rc-patient-item:nth-child(odd) {
-        padding-right: 14px;
-    }
-
-    .rc-patient-item:nth-child(even) {
-        padding-left: 14px;
-        border-left: 1px solid #f1f5f9;
-    }
-
-.rc-full-width {
-    grid-column: 1 / -1 !important;
-    border-left: none !important;
-    padding-left: 0 !important;
-}
-
-.rc-patient-label {
-    font-size: 11px;
-    color: #94a3b8;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: .4px;
-}
-
-.rc-patient-value {
-    font-size: 13px;
-    color: #0f172a;
-}*/
 
 /* ── Notes ── */
-/*.rc-notes-label {
-    font-size: 11px;
-    color: #94a3b8;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: .4px;
-    margin-bottom: 6px;
-}
-
-.rc-notes-text {
-    font-size: 13px;
-    color: #475569;
-    line-height: 1.6;
-}
-
-.rc-notes-empty {
-    font-size: 13px;
-    color: #94a3b8;
-    font-style: italic;
-}*/
 
 /* ── Consent ── */
-/*.rc-consent-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    font-size: 13px;
-    color: #475569;
-    padding: 7px 0;
-    border-bottom: 1px solid #f1f5f9;
-    line-height: 1.5;
-}
-
-    .rc-consent-item:last-child {
-        border-bottom: none;
-    }
-
-    .rc-consent-item a {
-        color: #185FA5;
-        text-decoration: none;
-    }
-
-.rc-consent-icon {
-    color: #15803d;
-    font-weight: 700;
-    font-size: 14px;
-    flex-shrink: 0;
-    margin-top: 1px;
-}*/
 
 /* ── Fee Card ── */
-/*.rc-fee-card {
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 14px;
-    padding: 1.1rem 1.25rem;
-    margin-bottom: 14px;
-}
-
-.rc-fee-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: #0f172a;
-    margin-bottom: 12px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.rc-fee-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 13px;
-    color: #64748b;
-    padding: 7px 0;
-    border-bottom: 1px solid #f1f5f9;
-}
-
-    .rc-fee-row:last-child {
-        border-bottom: none;
-    }
-
-.rc-fee-val {
-    color: #0f172a;
-    font-weight: 500;
-}
-
-.rc-fee-total {
-    font-size: 15px;
-    font-weight: 600;
-    color: #0f172a;
-    border-top: 1px solid #e2e8f0 !important;
-    margin-top: 4px;
-    padding-top: 12px !important;
-}
-
-    .rc-fee-total .rc-fee-val {
-        color: #185FA5;
-        font-size: 16px;
-    }*/
 
 /* ── Info Box ── */
-/*.rc-info-box {
-    display: flex;
-    gap: 12px;
-    padding: 12px 16px;
-    background: #eff6ff;
-    border-left: 3px solid #185FA5;
-    border-radius: 0 10px 10px 0;
-    margin-bottom: 20px;
-}
-
-.rc-info-icon {
-    font-size: 18px;
-    color: #185FA5;
-    flex-shrink: 0;
-}
-
-.rc-info-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: #185FA5;
-    margin-bottom: 2px;
-}
-
-.rc-info-sub {
-    font-size: 12px;
-    color: #3b82f6;
-}*/
 
 /* ── Footer ── */
-/*.rc-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.rc-btn-back {
-    height: 44px;
-    padding: 0 22px;
-    background: #fff;
-    color: #374151;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    text-decoration: none;
-    transition: background .12s;
-}
-
-    .rc-btn-back:hover {
-        background: #f8fafc;
-    }
-
-.rc-btn-confirm {
-    height: 44px;
-    padding: 0 28px;
-    background: #185FA5;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: background .15s;
-}
-
-    .rc-btn-confirm:hover {
-        background: #0c447c;
-    }*/
 
 /* ── Payment Modal ── */
-/*.rc-modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,.45);
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.rc-modal {
-    background: #fff;
-    border-radius: 16px;
-    width: 100%;
-    max-width: 420px;
-    padding: 0;
-    overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0,0,0,.2);
-}
-
-.rc-modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.rc-modal-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: #0f172a;
-}
-
-.rc-modal-close {
-    width: 28px;
-    height: 28px;
-    border: none;
-    background: #f1f5f9;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 13px;
-    color: #64748b;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.rc-modal-body {
-    padding: 1.25rem 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.rc-payment-option {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 14px 16px;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all .15s;
-}
-
-    .rc-payment-option:hover {
-        border-color: #185FA5;
-        background: #eff6ff;
-    }
-
-.rc-pay-icon {
-    font-size: 28px;
-    flex-shrink: 0;
-}
-
-.rc-pay-info {
-    flex: 1;
-}
-
-.rc-pay-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: #0f172a;
-}
-
-.rc-pay-sub {
-    font-size: 12px;
-    color: #64748b;
-    margin-top: 2px;
-}
-
-.rc-pay-arrow {
-    font-size: 18px;
-    color: #185FA5;
-}*/
 
 /* ── Responsive ── */
-/*@media (max-width: 700px) {
-    .rc-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .rc-patient-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .rc-patient-item:nth-child(even) {
-        padding-left: 0;
-        border-left: none;
-    }
-
-    .rc-footer {
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .rc-btn-back,
-    .rc-btn-confirm {
-        width: 100%;
-        justify-content: center;
-    }
-}*/

@@ -1,0 +1,12 @@
+/* ══ Theme H — Magenta ═══════════════════════════════════════════════════════════════
+   Ready-made palette for a new client. To use it:
+     1. rename / copy this file to {client}.css (lowercase: letters, numbers, -)
+     2. appsettings.json → "ThemeSettings": { "Theme": "{client}" }
+   Every lighter / darker shade is calculated from these 4 colours (wwwroot/css/theme.css). */
+
+:root {
+    --primary: #A21CAF;      /* buttons, links, selected slot, header title */
+    --success: #16A34A;      /* verified, completed steps, booked */
+    --accent: #0891B2;       /* consultation-fee highlight */
+    --footer-bg: #2A0A2E;    /* footer background — keep it dark */
+}

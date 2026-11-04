@@ -1,4 +1,4 @@
-﻿@page
+﻿@page "/review-confirm"
 @model Book_An_Appointment1.Pages.ReviewAndConfimation.ReviewAndConfirmationModel
 @functions {
     // Whole rupees show without decimals (₹ 900); a fractional fee shows exactly (₹ 1.50) so the summary never misstates what is charged.
@@ -54,7 +54,7 @@
             <section class="rc-card">
                 <div class="rc-card-header">
                     <h2 class="rc-card-title"><span class="rc-icon" aria-hidden="true">📋</span>@L["Review.AppointmentDetails"]</h2>
-                    <a asp-page="/Appointment/Appointment" class="rc-edit-btn">@Html.Raw(editIcon) @L["Review.Edit"]</a>
+                    <button type="submit" form="flowNav" name="to" value="appointment" class="rc-edit-btn">@Html.Raw(editIcon) @L["Review.Edit"]</button>
                 </div>
 
                 <div class="rc-detail-row">
@@ -99,7 +99,7 @@
                     <h2 class="rc-card-title"><span class="rc-icon" aria-hidden="true">👤</span>@L["Review.PatientInformation"]</h2>
                     <div class="rc-card-header-right">
                         <span class="rc-verified-badge">@L["Common.Verified"]</span>
-                        <a asp-page="/PatientDetails/PatientDetails" class="rc-edit-btn">@Html.Raw(editIcon) @L["Review.Edit"]</a>
+                        <button type="submit" form="flowNav" name="to" value="patientdetails" class="rc-edit-btn">@Html.Raw(editIcon) @L["Review.Edit"]</button>
                     </div>
                 </div>
 
@@ -145,6 +145,7 @@
                             <span class="rc-patient-value">@Model.Summary.Address</span>
                         </div>
                     }
+                    @* Registered patients always show their UHID — "0" means the account exists but no appointment was booked yet *@
                     @if (!string.IsNullOrWhiteSpace(Model.Summary.RegistrationNo))
                     {
                         <div class="rc-patient-item rc-full-width">
@@ -159,7 +160,7 @@
             <section class="rc-card">
                 <div class="rc-card-header">
                     <h2 class="rc-card-title"><span class="rc-icon" aria-hidden="true">📝</span>@L["Review.AppointmentNotes"]</h2>
-                    <a asp-page="/PatientDetails/PatientDetails" class="rc-edit-btn">@Html.Raw(editIcon) @L["Review.Edit"]</a>
+                    <button type="submit" form="flowNav" name="to" value="patientdetails" class="rc-edit-btn">@Html.Raw(editIcon) @L["Review.Edit"]</button>
                 </div>
                 <div class="rc-notes-label">@L["Review.SymptomsReason"]</div>
                 @if (!string.IsNullOrWhiteSpace(Model.Summary.AppointmentNotes))
@@ -200,7 +201,7 @@
 
                 @* Primary action lives here so it is always in view next to the total (card is sticky on desktop) *@
                 <button type="button" class="rc-btn-confirm rc-btn-block rc-cta-desktop" data-confirm>@L["Review.ConfirmProceedPayment"]</button>
-                <a asp-page="/PatientDetails/PatientDetails" class="rc-btn-back rc-btn-block rc-cta-desktop">@L["Review.BackToPatientDetails"]</a>
+                <button type="submit" form="flowNav" name="to" value="patientdetails" class="rc-btn-back rc-btn-block rc-cta-desktop">@L["Review.BackToPatientDetails"]</button>
             </section>
 
         </aside>
@@ -208,7 +209,7 @@
 
     @* Tablet / phone: Back sits at the end of the content ... *@
     <div class="rc-footer">
-        <a asp-page="/PatientDetails/PatientDetails" class="rc-btn-back">@L["Review.BackToPatientDetails"]</a>
+        <button type="submit" form="flowNav" name="to" value="patientdetails" class="rc-btn-back">@L["Review.BackToPatientDetails"]</button>
     </div>
 
     @* ... and the Confirm button stays fixed at the bottom of the screen, together with the total *@
@@ -222,17 +223,18 @@
 
 </div>
 
-@* Token for the CreateAppointment AJAX call (review-confirm.js) *@
-@Html.AntiForgeryToken()
+@* Edit / Back buttons submit this form (OnPostBack) — steps change only through buttons, never via the URL.
+   Its token is also used by the CreateAppointment AJAX call (review-confirm.js). *@
+<form id="flowNav" method="post" action="?handler=Back" hidden>@Html.AntiForgeryToken()</form>
 
 @* ── Payment modal (options come from PaymentSettings; choosing one calls ?handler=CreateAppointment) ── *@
 <div class="rc-modal-overlay" id="paymentModal" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle"
      data-slot-start="@Model.Summary.SlotTime" hidden>
-    <div class="rc-modal">
+    <div class="rc-modal rc-modal--pay">
         <div class="rc-modal-header">
             <div>
                 <div class="rc-modal-title" id="paymentModalTitle">@L["Review.ChoosePayment"]</div>
-                <div class="rc-modal-sub">@L["Review.TotalPayable"] ₹ @Money(total)</div>
+                <div class="rc-modal-sub">@L["Review.TotalPayable"] <span class="rc-pay-total">₹ @Money(total)</span></div>
             </div>
             <button type="button" class="rc-modal-close" id="paymentModalClose" aria-label="@L["Common.Close"]">✕</button>
         </div>
@@ -321,7 +323,7 @@
         @* Footer — note + action side by side *@
         <div class="rc-booked-foot">
             <p class="rc-booked-note"><span aria-hidden="true">ℹ</span> @L["Review.ArrivalNote"]</p>
-            <a asp-page="/Appointment/Appointment" class="rc-btn-confirm" id="bookedDone">@L["Review.BookAnother"]</a>
+            <a href="~/book" class="rc-btn-confirm" id="bookedDone">@L["Review.BookAnother"]</a>
         </div>
     </div>
 </div>

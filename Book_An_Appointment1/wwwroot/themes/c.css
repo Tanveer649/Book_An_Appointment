@@ -1,0 +1,12 @@
+/* ══ Theme C — Royal Purple ══════════════════════════════════════════════════════════
+   Ready-made palette for a new client. To use it:
+     1. rename / copy this file to {client}.css (lowercase: letters, numbers, -)
+     2. appsettings.json → "ThemeSettings": { "Theme": "{client}" }
+   Every lighter / darker shade is calculated from these 4 colours (wwwroot/css/theme.css). */
+
+:root {
+    --primary: #6D28D9;      /* buttons, links, selected slot, header title */
+    --success: #16A34A;      /* verified, completed steps, booked */
+    --accent: #DB2777;       /* consultation-fee highlight */
+    --footer-bg: #1A0F33;    /* footer background — keep it dark */
+}

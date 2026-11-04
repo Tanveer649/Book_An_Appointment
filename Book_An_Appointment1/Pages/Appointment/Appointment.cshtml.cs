@@ -1,5 +1,6 @@
 ﻿using Book_An_Appointment1.Helpers;
 using Book_An_Appointment1.Localization;
+using Book_An_Appointment1.Security;
 using Book_An_Appointment1.Models.Slot;
 using Book_An_Appointment1.Services.Interfaces;
 using Book_An_Appointment1.ViewModels.Appointment;
@@ -20,13 +21,14 @@ namespace Book_An_Appointment1.Pages.Appointment
         private readonly ILogger<AppointmentModel> _logger;
         private readonly IConfiguration _configuration;
         private readonly JsonStringLocalizer _localizer;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        private static readonly HttpClient _imageClient = new() { Timeout = TimeSpan.FromSeconds(10) };
         private const string ImageSessionKey = "AllowedDoctorImages";
 
         public AppointmentViewModel Wizard { get; set; } = new();
         public record GetDoctorsRequest(int FacilityId, int SpecialityId);
         public record GetDoctorDetailsRequest(int FacilityId, int SpecialityId, int DoctorId);
+        public record RememberSlotRequest(string? Date, string? Start);
 
         [BindProperty] public int FacilityId { get; set; }
         [BindProperty] public int? SpecialityId { get; set; }
@@ -44,9 +46,11 @@ namespace Book_An_Appointment1.Pages.Appointment
             ISlotService slotService,
             ILogger<AppointmentModel> logger,
             IConfiguration configuration,
-            JsonStringLocalizer localizer)
+            JsonStringLocalizer localizer,
+            IHttpClientFactory httpClientFactory)
         {
             _localizer = localizer;
+            _httpClientFactory = httpClientFactory;
             _facilityService = facilityService;
             _specialityService = specialityService;
             _doctorService = doctorService;
@@ -71,6 +75,13 @@ namespace Book_An_Appointment1.Pages.Appointment
                 FacilityId = sessionData.FacilityId;
                 SpecialityId = sessionData.SpecialityId > 0 ? sessionData.SpecialityId : null;
                 DoctorId = sessionData.DoctorId > 0 ? sessionData.DoctorId : null;
+                // A remembered date that is already in the past is dropped — the calendar starts from today again
+                if (!string.IsNullOrEmpty(sessionData.SlotDate) && string.CompareOrdinal(sessionData.SlotDate,
+                        DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)) < 0)
+                {
+                    sessionData.SlotDate = "";
+                    sessionData.SlotTime = "";
+                }
                 SavedSlotDate = sessionData.SlotDate;
                 SavedSlotStart = sessionData.SlotTime;
 
@@ -183,6 +194,14 @@ namespace Book_An_Appointment1.Pages.Appointment
                 var existing = SessionHelper.GetAppointmentData(HttpContext.Session)
                                ?? new AppointmentSessionData();
 
+                // Another doctor → the remembered date/slot belonged to the previous one
+                if (existing.DoctorId != (DoctorId ?? 0) || existing.FacilityId != FacilityId)
+                {
+                    existing.SlotDate = "";
+                    existing.SlotTime = "";
+                    existing.SlotDisplayText = "";
+                }
+
                 existing.FacilityId = FacilityId;
                 existing.DoctorId = DoctorId ?? 0;
                 existing.SpecialityId = SpecialityId ?? 0;
@@ -243,15 +262,15 @@ namespace Book_An_Appointment1.Pages.Appointment
         // ── GET: Slots by Date ───────────────────────────────
         public async Task<JsonResult> OnGetSlotsByDateAsync(int facilityId, int? doctorId, int hospitalLocationId, string date)
         {
+            // Only a real yyyy-MM-dd date is passed on to the hospital API
+            if (!DateTime.TryParseExact(date, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+                return new JsonResult(new List<SlotResponse>());
+
             try
             {
                 var slots = await GetDoctorSlotsAsync(facilityId, doctorId ?? 0, hospitalLocationId, date);
 
                 return new JsonResult(slots);
-
-                //var slotResponse = await _slotService.GetSlotsAsync(facilityId, (doctorId ?? 0), hospitalLocationId, date, date);
-                //var slots = slotResponse?.Data?.SlotsDetails ?? new List<SlotResponse>();
-                //return new JsonResult(slots);
             }
             catch (Exception ex)
             {
@@ -261,6 +280,31 @@ namespace Book_An_Appointment1.Pages.Appointment
             }
         }
 
+        // ── AJAX: Remember the picked date / slot ────────────
+        // Lets a page reload restore the user's choice. It is only a draft: Continue still re-checks
+        // the slot against the doctor's live slot list before the booking moves on.
+        public JsonResult OnPostRememberSlot([FromBody] RememberSlotRequest request)
+        {
+            var sessionData = SessionHelper.GetAppointmentData(HttpContext.Session);
+            if (sessionData == null || sessionData.DoctorId <= 0)
+                return new JsonResult(new { success = false });
+
+            if (!DateTime.TryParseExact(request?.Date, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var day))
+                return new JsonResult(new { success = false });
+
+            var start = request?.Start?.Trim();
+            if (!string.IsNullOrEmpty(start) &&
+                (start.Length > 40 ||
+                 !DateTime.TryParse(start, CultureInfo.InvariantCulture, DateTimeStyles.None, out var startAt) ||
+                 startAt.Date != day.Date))
+                return new JsonResult(new { success = false });
+
+            sessionData.SlotDate = day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            sessionData.SlotTime = start ?? "";
+            SessionHelper.SetAppointmentData(HttpContext.Session, sessionData);
+            return new JsonResult(new { success = true });
+        }
+
         // ── POST: Continue Button ────────────────────────────
         // MODIFIED: Validation fail hone pe ab poora Wizard reload karta hai
         // taaki dropdowns/doctor card UI mein blank na dikhein
@@ -268,7 +312,7 @@ namespace Book_An_Appointment1.Pages.Appointment
         public async Task<IActionResult> OnPostContinueAsync(string selectedSlotStart, string selectedSlotEnd,
             int facilityId, int? specialityId, int? doctorId, string? patientType)
         {
-            _logger.LogInformation("OnPostContinueAsync | Slot={Slot} FacilityId={F} SpecialityId={S} DoctorId={D}",
+            _logger.LogInformation("OnPostContinueAsync | Slot={Slot} FacilityId={F} SpecialityId={S} DoctorId={D} PatientType={P}",
                 selectedSlotStart, facilityId, specialityId, doctorId, patientType);
 
             ModelState.Clear();
@@ -289,6 +333,25 @@ namespace Book_An_Appointment1.Pages.Appointment
 
             if (string.IsNullOrEmpty(selectedSlotStart))
                 ModelState.AddModelError("Slot", _localizer.Text("Validation.SelectSlot"));
+
+            // ── Server Side Validation — doctor + slot must be what this session loaded ──
+            var sessionData = SessionHelper.GetAppointmentData(HttpContext.Session);
+            if (ModelState.IsValid)
+            {
+                if (sessionData == null || sessionData.FacilityId != facilityId || sessionData.DoctorId != doctorId)
+                {
+                    ModelState.AddModelError("Doctor", _localizer.Text("Errors.SelectDoctorAgain"));
+                }
+                else
+                {
+                    // Slot time is never trusted from the browser: it must be a free slot of this doctor
+                    var slot = await FindAvailableSlotAsync(sessionData, selectedSlotStart);
+                    if (slot == null)
+                        ModelState.AddModelError("Slot", _localizer.Text("Errors.SlotUnavailable"));
+                    else
+                        selectedSlotEnd = slot.EndTime;
+                }
+            }
 
             if (!ModelState.IsValid)
             {
@@ -317,9 +380,7 @@ namespace Book_An_Appointment1.Pages.Appointment
 
 
             // ── Session Save ──────────────────────────────
-            var sessionData = SessionHelper.GetAppointmentData(HttpContext.Session)
-                              ?? new AppointmentSessionData();
-            sessionData.PatientType = type;
+            sessionData!.PatientType = type;
             sessionData.SlotTime = selectedSlotStart;
             HttpContext.Session.SetString("Booking.SlotEnd", selectedSlotEnd ?? ""); 
             // Machine format — invariant so the chosen portal language never changes it
@@ -330,11 +391,26 @@ namespace Book_An_Appointment1.Pages.Appointment
 
             SessionHelper.SetAppointmentData(HttpContext.Session, sessionData);
 
-            
-
             _logger.LogInformation("Session slot saved | SlotDisplayText={S}", sessionData.SlotDisplayText);
 
-            return RedirectToPage("/PatientDetails/PatientDetails", new { patientType = type });
+            // Slot verified → step 2 (/patientdetails/{new id}); the step-1 URL stops working
+            return this.GoToStep(BookingStep.PatientDetails);
+        }
+
+        // Slot from the doctor's live slot list for that day; null when it is not offered or already passed
+        private async Task<SlotResponse?> FindAvailableSlotAsync(AppointmentSessionData sessionData, string slotStart)
+        {
+            if (!DateTime.TryParse(slotStart, CultureInfo.InvariantCulture, DateTimeStyles.None, out var start) || start <= DateTime.Now)
+                return null;
+
+            var date = start.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            var slots = await GetDoctorSlotsAsync(sessionData.FacilityId, sessionData.DoctorId, sessionData.HospitalLocationId, date);
+            var slot = slots.FirstOrDefault(s => string.Equals(s.StartTime?.Trim(), slotStart.Trim(), StringComparison.Ordinal));
+
+            if (slot == null)
+                _logger.LogWarning("Continue — slot not available | DoctorId={D} Slot={S}", sessionData.DoctorId, slotStart);
+
+            return slot;
         }
 
         // ── Private Loaders ──────────────────────────────────
@@ -503,7 +579,7 @@ namespace Book_An_Appointment1.Pages.Appointment
 
             try
             {
-                using var resp = await _imageClient.GetAsync(uri);
+                using var resp = await _httpClientFactory.CreateClient("DoctorImageClient").GetAsync(uri);
                 var type = resp.Content.Headers.ContentType?.MediaType ?? "";
                 if (!resp.IsSuccessStatusCode || !type.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
                     return NotFound();

@@ -1,0 +1,13 @@
+/* ══ AIIMS Hospital ═════════════════════════════════════════════════════════════
+   appsettings.json → "ThemeSettings": { "Theme": "aiims" }
+
+   New hospital: copy this file to {name}.css (lowercase, letters / numbers / -),
+   change the 4 colours and set ThemeSettings:Theme to {name}. Every lighter / darker
+   shade is calculated from these automatically (wwwroot/css/theme.css). */
+
+:root {
+    --primary: #8B1E3F;      /* buttons, links, selected slot, header title */
+    --success: #1C9A6C;      /* verified, completed steps, booked */
+    --accent: #D97706;       /* consultation-fee highlight */
+    --footer-bg: #1A0F14;    /* footer background — keep it dark */
+}

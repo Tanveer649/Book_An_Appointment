@@ -1,4 +1,4 @@
-﻿@page
+﻿@page "/patient-details"
 @model Book_An_Appointment1.Pages.Appointment.PatientDetailsModel
 @{
     ViewData["Title"] = L["PatientDetails.PageTitle"];
@@ -103,24 +103,16 @@
                 <div class="section-card">
                     <div class="section-title"><span aria-hidden="true">👤</span> @L["PatientDetails.PatientInformation"]</div>
 
-                    @* Locked to the choice made on the previous page (see applyPatientTypeLock in patient-details.js) *@
+                    @* Shows the type chosen on page 1 — locked. It changes only via the "Continue as …" hint after the OTP API
+                       reports the number as the other type (switchPatientType in patient-details.js) *@
                     <div class="patient-toggle" id="patientToggle" role="group" aria-label="@L["PatientDetails.PatientType"]">
-                        <button type="button" class="toggle-btn active" onclick="switchMode('new')" id="btn-new" aria-pressed="true">
+                        <button type="button" class="toggle-btn active" id="btn-new" aria-pressed="true">
                             @L["Common.NewPatient"]
                         </button>
-                        <button type="button" class="toggle-btn" onclick="switchMode('registered')" id="btn-existing" aria-pressed="false">
+                        <button type="button" class="toggle-btn" id="btn-existing" aria-pressed="false" disabled>
                             @L["Common.AlreadyRegistered"]
                         </button>
                     </div>
-
-                    @*
-                    <p class="toggle-note" id="toggleNote" hidden>
-                        Booking as <strong id="toggleNoteType"></strong>.
-                        <a asp-page="/Appointment/Appointment">Change patient type</a>
-                    </p>
-
-                    *@
-
 
                     @* ════════════════ NEW PATIENT FORM ════════════════ *@
                     <div id="new-patient-form">
@@ -360,11 +352,14 @@
 
                 @* Footer *@
                 <div class="footer-actions">
-                    <a asp-page="/Appointment/Appointment" class="btn-back">@L["Common.Back"]</a>
+                    <button type="submit" form="flowBack" class="btn-back">@L["Common.Back"]</button>
                     <button type="submit" id="submitBtn" class="btn-continue">@L["Js.ReviewConfirm"]</button>
                 </div>
 
             </form>
+
+            @* "← Back" submits this form (OnPostBack) — steps change only through buttons, never via the URL *@
+            <form id="flowBack" method="post" action="?handler=Back" hidden>@Html.AntiForgeryToken()</form>
         </div>
 
     </div>
@@ -375,15 +370,16 @@
     <script>
         var OTP_LENGTH = @Model.Form.OtpLength;
         var DefaultCountryId = @Model.Form.CountryId;
-        var SavedTitleName = '@Model.Form.NewPatient.TitleName';
-        var SavedTitleId = '@Model.Form.NewPatient.TitleId';
-        var SavedCountryName = '@Model.Form.CountryName';
-        var SavedStateName = '@Model.Form.NewPatient.StateName';
-        var SavedStateId = '@Model.Form.NewPatient.StateId';
-        var SavedCityName = '@Model.Form.NewPatient.CityName';
-        var SavedCityId = '@Model.Form.NewPatient.CityId';
-        var SavedPatientType = '@Model.Form.PatientType';
+        var SavedTitleName = @Html.Raw(Json.Serialize(Model.Form.NewPatient.TitleName ?? ""));
+        var SavedTitleId = @Html.Raw(Json.Serialize(Model.Form.NewPatient.TitleId.ToString()));
+        var SavedCountryName = @Html.Raw(Json.Serialize(Model.Form.CountryName ?? ""));
+        var SavedStateName = @Html.Raw(Json.Serialize(Model.Form.NewPatient.StateName ?? ""));
+        var SavedStateId = @Html.Raw(Json.Serialize(Model.Form.NewPatient.StateId?.ToString() ?? ""));
+        var SavedCityName = @Html.Raw(Json.Serialize(Model.Form.NewPatient.CityName ?? ""));
+        var SavedCityId = @Html.Raw(Json.Serialize(Model.Form.NewPatient.CityId?.ToString() ?? ""));
+        var SavedPatientType = @Html.Raw(Json.Serialize(Model.Form.PatientType ?? ""));
         var SavedRegisteredPatients = @Html.Raw(Json.Serialize(Model.RegisteredPatients));
+        var SavedSelectedPatient = @Model.SelectedPatientIndex;
 
         initPatientDetailsPage();
     </script>

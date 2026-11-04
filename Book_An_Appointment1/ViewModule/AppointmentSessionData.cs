@@ -97,6 +97,10 @@ namespace Book_An_Appointment1.ViewModule
 
             // RegisteredPatientInfo defined on modals/patientOTP/VerifyOtpResponseData
             public List<RegisteredPatientInfo> PatientList { get; set; } = new();
+
+            // Position of the chosen family member in PatientList (-1 = none). Not the UHID:
+            // a patient with an account but no appointment booked yet has UHID "0", and several can share it.
+            public int SelectedIndex { get; set; } = -1;
         }
     }
 }

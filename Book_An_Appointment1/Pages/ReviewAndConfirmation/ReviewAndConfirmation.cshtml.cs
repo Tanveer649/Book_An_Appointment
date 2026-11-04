@@ -1,5 +1,6 @@
 using Book_An_Appointment1.Helpers;
 using Book_An_Appointment1.Localization;
+using Book_An_Appointment1.Security;
 using Book_An_Appointment1.Models.Appointment;
 using Book_An_Appointment1.Services.Interfaces;
 using Book_An_Appointment1.ViewModule;
@@ -38,7 +39,7 @@ namespace Book_An_Appointment1.Pages.ReviewAndConfimation
             if (sessionData == null)
             {
                 _logger.LogWarning("Session null — redirecting to Page 1");
-                return RedirectToPage("/Appointment/Appointment");
+                return this.GoToStep(BookingStep.Appointment);
             }
 
             // Appointment details
@@ -108,6 +109,10 @@ namespace Book_An_Appointment1.Pages.ReviewAndConfimation
             return Page();
         }
 
+        // Edit / Back buttons (anti-forgery checked) — the only way to an earlier step; typing URLs cannot do it
+        public IActionResult OnPostBack(string? to) =>
+            this.GoToStep(to == "appointment" ? BookingStep.Appointment : BookingStep.PatientDetails);
+
         // ── AJAX: Create Appointment (Pay on arrival / Pay now) ──
         public async Task<JsonResult> OnPostCreateAppointmentAsync([FromBody] CreateAppointmentPostRequest request)
         {
@@ -122,7 +127,7 @@ namespace Book_An_Appointment1.Pages.ReviewAndConfimation
                 {
                     success = false,
                     message = _localizer.Text("Errors.SessionExpired"),
-                    redirectUrl = Url.Page("/Appointment/Appointment")
+                    redirectUrl = Url.Content("~" + BookingFlow.BasePath)
                 });
             }
 
@@ -288,7 +293,10 @@ namespace Book_An_Appointment1.Pages.ReviewAndConfimation
             if (!Regex.IsMatch(r.MobileNo, @"^\d{10}$"))
                 errors.Add(_localizer.Text("Validation.MobileInvalid"));
 
-            if (isRegistered && r.RegistrationNo <= 0)
+            // A family member must be selected; UHID may be 0 (account created, no appointment booked yet) —
+            // CreateAppointment then gets registrationNo 0 + the patient's own details, as for unregistered patients
+            if (isRegistered && (s.RegisteredPatient.SelectedIndex < 0 ||
+                                 s.RegisteredPatient.SelectedIndex >= s.RegisteredPatient.PatientList.Count))
                 errors.Add(_localizer.Text("Errors.RegisteredNotFound"));
 
             if (!isRegistered)

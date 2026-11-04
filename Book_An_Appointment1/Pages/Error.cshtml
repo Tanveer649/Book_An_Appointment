@@ -1,0 +1,20 @@
+@page "/error"
+@model Book_An_Appointment1.Pages.ErrorModel
+@{
+    var notFound = Model.Code == 404;
+    ViewData["Title"] = notFound ? L["Error.NotFoundTitle"] : L["Error.Title"];
+}
+
+<div style="max-width:560px;margin:72px auto;padding:36px 28px;text-align:center;background:#fff;border:1px solid var(--line);border-radius:22px;box-shadow:0 10px 24px -16px rgba(18,40,61,.22);">
+    <div style="font-size:40px;line-height:1;margin-bottom:14px;" aria-hidden="true">@(notFound ? "🔎" : "⚠")</div>
+    <h1 style="font-size:24px;font-weight:600;color:var(--ink);margin-bottom:10px;">
+        @(notFound ? L["Error.NotFoundTitle"] : L["Error.Title"])
+    </h1>
+    <p style="color:var(--ink-soft);font-size:15px;margin-bottom:24px;">
+        @(notFound ? L["Error.NotFoundText"] : L["Error.Text"])
+    </p>
+    <a href="~/book"
+       style="display:inline-flex;align-items:center;height:46px;padding:0 28px;border-radius:999px;background:var(--primary);color:#fff;font-weight:600;text-decoration:none;">
+        @L["Error.BackToBooking"]
+    </a>
+</div>

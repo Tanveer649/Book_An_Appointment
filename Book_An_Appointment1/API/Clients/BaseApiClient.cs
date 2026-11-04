@@ -30,10 +30,9 @@ public class BaseApiClient
 
             var content = await response.Content.ReadAsStringAsync();
 
-            Logger.LogInformation(
-                "API Response: {StatusCode} | {Content}",
-                response.StatusCode,
-                content);
+            // Body only at Debug — responses contain patient data (names, mobile, DOB)
+            Logger.LogInformation("API Response: {StatusCode} | {Url}", response.StatusCode, url);
+            Logger.LogDebug("API Response body: {Content}", content);
 
             if (!response.IsSuccessStatusCode)
                 throw new Exception(
@@ -64,9 +63,9 @@ public class BaseApiClient
             var response = await client.PostAsync(url, content);
             var responseContent = await response.Content.ReadAsStringAsync();
 
-            Logger.LogInformation(
-                "API POST Response: {StatusCode} | {Content}",
-                response.StatusCode, responseContent);
+            // Body only at Debug — responses contain patient data / OTP
+            Logger.LogInformation("API POST Response: {StatusCode} | {Url}", response.StatusCode, url);
+            Logger.LogDebug("API POST Response body: {Content}", responseContent);
 
             if (!response.IsSuccessStatusCode)
                 throw new Exception($"API Failed: {response.StatusCode}");

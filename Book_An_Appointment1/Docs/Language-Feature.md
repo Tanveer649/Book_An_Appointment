@@ -11,7 +11,7 @@ validation messages, dates, calendar and dropdown search texts — switches to t
 
 ```
 User picks "हिन्दी" in header dropdown
-        │  link: /set-language?culture=hi&returnUrl=/PatientDetails/PatientDetails
+        │  link: /set-language?culture=hi&returnUrl=/patient-details
         ▼
 Program.cs  MapGet("/set-language")
         │  • accepts only languages from LanguageSettings

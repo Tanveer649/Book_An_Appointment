@@ -1,0 +1,39 @@
+/* ══ Default theme ══════════════════════════════════════════════════════════════
+   Used when appsettings.json → ThemeSettings:Theme is "default", empty, or names a theme file
+   that does not exist. For a new hospital copy aiims.css (only the 4 brand colours) — not this
+   file: the exact shades below only keep the original blue design pixel-identical. */
+
+:root {
+    /* Brand */
+    --primary: #0F5C93;
+    --success: #1C9A6C;
+    --accent: #E4623F;
+    --footer-bg: #0B1220;
+
+    /* Exact shades of the original design (other themes let theme.css derive them) */
+    --primary-dark: #0A3F66;
+    --primary-tint: #E4EFF8;
+    --primary-soft: #D3E5F3;
+    --primary-border: #B9D3E8;
+    --primary-border-strong: #93C5FD;
+    --paper: #F3F7FB;
+    --surface-alt: #EAF1F8;
+    --surface-soft: #EEF3F8;
+    --line: #DCE6EF;
+
+    --success-dark: #15803D;
+    --success-wash: #F3FBF7;
+    --success-tint: #E4F5EE;
+    --success-soft: #D7F0E4;
+    --success-border: #BDE5D3;
+    --success-border-strong: #9ED9BF;
+
+    --accent-dark: #C64F30;
+    --accent-tint: #FDECE6;
+    --accent-border: #F8D3C7;
+    --footer-bg-2: #111C2F;
+    --footer-link: #8EC5FF;
+    --footer-text: #DBE7F5;
+    --footer-text-soft: #C8D5E6;
+    --footer-text-muted: #8EA2BB;
+}

@@ -12,6 +12,8 @@ public class LocationService : BaseApiClient, ILocationService
 {
     private readonly IMemoryCache _cache;
     private const string CountryCacheKey = "countries_data";
+    private static readonly TimeSpan CacheLifetime = TimeSpan.FromHours(24);   // master data, changes rarely
+
     public LocationService(
         IHttpClientFactory clientFactory,
         ILogger<LocationService> logger,
@@ -22,57 +24,31 @@ public class LocationService : BaseApiClient, ILocationService
         _cache = cache;
     }
 
-    public async Task<ApiResponse<List<CountryItem>>?> GetCountriesAsync()
-    {
-        //var url = ApiUrlBuilder.BuildUrl(
-        //    ApiRoutes.GetCountryList, "GetCountryListParams");
-        //return await GetAsync<ApiResponse<List<CountryItem>>>(url);
+    public Task<ApiResponse<List<CountryItem>>?> GetCountriesAsync() =>
+        GetCachedAsync<CountryItem>(CountryCacheKey, ApiRoutes.GetCountryList);
 
-        if (_cache.TryGetValue(CountryCacheKey,
-               out ApiResponse<List<CountryItem>>? cached))
+    public Task<ApiResponse<List<StateItem>>?> GetStatesAsync(int countryId) =>
+        GetCachedAsync<StateItem>($"states_{countryId}", $"{ApiRoutes.GetStateList}?countryId={countryId}");
+
+    public Task<ApiResponse<List<CityItem>>?> GetCitiesAsync(int stateId) =>
+        GetCachedAsync<CityItem>($"cities_{stateId}", $"{ApiRoutes.GetCityList}?stateId={stateId}");
+
+    private async Task<ApiResponse<List<T>>?> GetCachedAsync<T>(string cacheKey, string url)
+    {
+        if (_cache.TryGetValue(cacheKey, out ApiResponse<List<T>>? cached))
         {
-            Logger.LogInformation("Countries — cache hit");
+            Logger.LogInformation("{Key} — cache hit", cacheKey);
             return cached;
         }
 
-        var result = await GetAsync<ApiResponse<List<CountryItem>>>(ApiRoutes.GetCountryList);
-        if (result != null)
+        var result = await GetAsync<ApiResponse<List<T>>>(url);
+
+        // Empty / failed answers are not cached, so a temporary API problem is not remembered
+        if (result?.Data?.Count > 0)
         {
-            _cache.Set(CountryCacheKey, result, new MemoryCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24)
-            });
-            Logger.LogInformation("Countries — cached for 24 hours");
+            _cache.Set(cacheKey, result, CacheLifetime);
+            Logger.LogInformation("{Key} — cached for 24 hours", cacheKey);
         }
         return result;
-    }
-
-    public async Task<ApiResponse<List<StateItem>>?> GetStatesAsync(int countryId)
-    {
-        //var url = ApiUrlBuilder.BuildUrl(
-        //    ApiRoutes.GetStateList, "GetStateListParams",
-        //    new Dictionary<string, string>
-        //    {
-        //        { "countryId", countryId.ToString() }
-        //    });
-        //return await GetAsync<ApiResponse<List<StateItem>>>(url);
-
-        var url = $"{ApiRoutes.GetStateList}?countryId={countryId}";
-        return await GetAsync<ApiResponse<List<StateItem>>>(url);
-    }
-
-    public async Task<ApiResponse<List<CityItem>>?> GetCitiesAsync(int stateId)
-    {
-        //var url = ApiUrlBuilder.BuildUrl(
-        //    ApiRoutes.GetCityList, "GetCityListParams",
-        //    new Dictionary<string, string>
-        //    {
-        //        { "stateId", stateId.ToString() }
-        //    });
-        //return await GetAsync<ApiResponse<List<CityItem>>>(url);
-
-
-        var url = $"{ApiRoutes.GetCityList}?stateId={stateId}";
-        return await GetAsync<ApiResponse<List<CityItem>>>(url);
     }
 }

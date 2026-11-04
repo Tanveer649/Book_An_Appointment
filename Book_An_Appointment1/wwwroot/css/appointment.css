@@ -1,25 +1,6 @@
 ﻿@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,450;9..144,560;9..144,650&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-    --paper: #F3F7FB;
-    --surface: #FFFFFF;
-    --surface-alt: #EAF1F8;
-    --ink: #12283D;
-    --ink-soft: #56728A;
-    --ink-faint: #8DA2B5;
-    --line: #DCE6EF;
-    --primary: #0F5C93;
-    --primary-dark: #0A3F66;
-    --primary-tint: #E4EFF8;
-    --accent: #E4623F;
-    --accent-dark: #C64F30;
-    --accent-tint: #FDECE6;
-    --success: #1C9A6C;
-    --success-tint: #E4F5EE;
-    --gold: #B87A08;
-    --gold-tint: #FBF1DD;
-    --danger: #C4432E;
-    --danger-tint: #FBEAE6;
     --font-display: 'Fraunces', Georgia, serif;
     --font-body: 'Inter', 'Segoe UI', sans-serif;
     --radius-lg: 22px;
@@ -600,7 +581,7 @@ body {
 
 .fee-block {
     background: var(--accent-tint);
-    border: 1px solid #F8D3C7;
+    border: 1px solid var(--accent-border);
     border-radius: var(--radius-md);
     padding: 14px 18px;
     display: flex;
@@ -899,7 +880,7 @@ body {
         background: var(--primary);
         border-color: var(--primary);
         color: #fff;
-        box-shadow: 0 8px 16px -10px rgba(15, 92, 147, .65);
+        box-shadow: 0 8px 16px -10px color-mix(in srgb, var(--primary) 65%, transparent);
     }
 
 .text-muted {
@@ -923,7 +904,7 @@ body {
     padding: 12px 16px;
     border-radius: var(--radius-md);
     background: var(--surface-alt);
-    border: 1px dashed #BFD2E3;
+    border: 1px dashed var(--primary-border);
     color: var(--ink-soft);
     font-size: 14px;
     font-weight: 500;
@@ -938,7 +919,7 @@ body {
 
 .selection-banner.has-slot {
     background: var(--primary-tint);
-    border: 1px solid #B9D3E8;
+    border: 1px solid var(--primary-border);
     color: var(--primary-dark);
 }
 
@@ -961,7 +942,7 @@ body {
     padding: 12px 32px;
     border-radius: var(--radius-pill);
     cursor: pointer;
-    box-shadow: 0 14px 24px -12px rgba(15, 92, 147, .55);
+    box-shadow: 0 14px 24px -12px color-mix(in srgb, var(--primary) 55%, transparent);
     transition: background .15s, transform .1s;
 }
 
@@ -1251,99 +1232,5 @@ body {
     }
 }
 
-
-
-
-
-
-
-
-
-/*body {
-    background: #f5f8fc;
-    font-family: Segoe UI;
-}
-
-.page-layout {
-    display: grid;
-    grid-template-columns: 280px 1fr;
-    gap: 24px;
-    align-items: flex-start;
-}*/
-
 /* ── Progress Bar ── */
-/*.progress-bar {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 0;
-    margin-bottom: 2rem;
-    width: 100%;
-    margin-top: -40px;
-}
-
-.step-item {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-.step-circle {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 500;
-    flex-shrink: 0;
-}
-
-    .step-circle.done {
-        background: #1D9E75;
-        color: #fff;
-    }
-
-    .step-circle.active {
-        background: #185FA5;
-        color: #fff;
-    }
-
-    .step-circle.pending {
-        background: #f1f5f9;
-        color: #94a3b8;
-        border: 1px solid #e2e8f0;
-    }
-
-.step-label {
-    font-size: 12px;
-    color: #94a3b8;
-    white-space: nowrap;
-}
-
-    .step-label.active {
-        color: #185FA5;
-        font-weight: 500;
-    }
-
-    .step-label.done {
-        color: #1D9E75;
-    }
-
-.step-connector {
-    flex: 1;
-    height: 1px;
-    background: #e2e8f0;
-    margin: 0 8px;
-    min-width: 16px;
-}
-
-    .step-connector.done {
-        background: #1D9E75;
-    }*/
-
 

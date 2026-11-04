@@ -11,15 +11,15 @@
 
     // Language dropdown: every language from appsettings LanguageSettings; returns to the same page
     var currentLanguage = Languages.Current;
-    var returnUrl = Context.Request.PathBase + Context.Request.Path;
+    var returnUrl = BookingFlow.PublicPath(Context);   // current step URL, e.g. /patientdetails/{id}
 }
 
 <style>
     .hospital-header {
         width: 100%;
         background: #ffffff;
-        border-top: 2px solid #0b78b5;
-        border-bottom: 1px solid #e5eaf0;
+        border-top: 2px solid var(--primary);
+        border-bottom: 1px solid var(--line);
         box-shadow: 0 2px 8px rgba(15, 40, 70, 0.05);
         border-radius: 0 0 10px 10px;
     }
@@ -51,7 +51,7 @@
     }
 
     .hospital-name {
-        color: #172f4d;
+        color: var(--ink);
         font-size: clamp(16px, 1.9vw, 27px);
         font-weight: 600;
         line-height: 1.2;
@@ -65,7 +65,7 @@
     /* ── Center: title ─────────────────────────────────── */
     .header-title {
         text-align: center;
-        color: #1167b1;
+        color: var(--primary);
         font-size: clamp(24px, 2.5vw, 36px);
         font-weight: 550;
         line-height: 1.2;
@@ -87,7 +87,7 @@
         align-items: center;
         gap: 10px;
         padding-left: 18px;
-        border-left: 1px solid #e5eaf0;
+        border-left: 1px solid var(--line);
     }
 
     .header-actions > .emergency-section:first-child {
@@ -107,8 +107,8 @@
         height: 34px;
         padding: 0 10px 0 11px;
         background: #fff;
-        color: #203550;
-        border: 1px solid #dfe6ee;
+        color: var(--ink);
+        border: 1px solid var(--line);
         border-radius: 999px;
         font-size: 13px;
         font-weight: 600;
@@ -119,22 +119,22 @@
     }
 
         .lang-btn:hover, .lang-btn[aria-expanded="true"] {
-            background: #f3f7fb;
-            border-color: #c9d6e3;
+            background: var(--paper);
+            border-color: var(--primary-border);
         }
 
         .lang-btn:focus-visible {
-            outline: 2px solid #1167b1;
+            outline: 2px solid var(--primary);
             outline-offset: 2px;
         }
 
         .lang-btn .lang-globe {
-            color: #1167b1;
+            color: var(--primary);
             flex-shrink: 0;
         }
 
         .lang-btn .lang-chevron {
-            color: #8da2b5;
+            color: var(--ink-faint);
             transition: transform .15s;
         }
 
@@ -157,7 +157,7 @@
         padding: 6px;
         list-style: none;
         background: #fff;
-        border: 1px solid #e5eaf0;
+        border: 1px solid var(--line);
         border-radius: 12px;
         box-shadow: 0 16px 32px -12px rgba(15, 40, 70, .25);
     }
@@ -173,30 +173,30 @@
             gap: 14px;
             padding: 9px 10px;
             border-radius: 8px;
-            color: #203550;
+            color: var(--ink);
             text-decoration: none;
             font-size: 14px;
             font-weight: 500;
         }
 
             .lang-menu a:hover, .lang-menu a:focus-visible {
-                background: #f1f6fb;
+                background: var(--paper);
                 outline: none;
             }
 
             .lang-menu a[aria-current="true"] {
-                color: #1167b1;
+                color: var(--primary);
                 font-weight: 600;
             }
 
         .lang-menu .lang-en {
             font-size: 12px;
             font-weight: 400;
-            color: #8da2b5;
+            color: var(--ink-faint);
         }
 
         .lang-menu .lang-check {
-            color: #1167b1;
+            color: var(--primary);
             font-size: 13px;
         }
 
@@ -228,7 +228,7 @@
     }
 
     .emergency-number {
-        color: #203550;
+        color: var(--ink);
         font-size: 17px;
         font-weight: 600;
         text-decoration: none;
@@ -236,7 +236,7 @@
     }
 
         .emergency-number:hover {
-            color: #1167b1;
+            color: var(--primary);
         }
 
     /* ── Large screens ─────────────────────────────────── */
@@ -292,7 +292,7 @@
             grid-area: title;
             font-size: 22px;
             padding-top: 8px;
-            border-top: 1px solid #eef2f6;
+            border-top: 1px solid var(--surface-soft);
             white-space: normal;
         }
     }

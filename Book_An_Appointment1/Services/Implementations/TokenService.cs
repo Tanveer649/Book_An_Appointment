@@ -2,65 +2,83 @@
 using Book_An_Appointment1.API.EndPoints;
 using Book_An_Appointment1.Models.Token;
 using Book_An_Appointment1.Services.Interfaces;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Book_An_Appointment1.Services
 {
+    // Hospital API token for the portal's own API account — the same for every visitor,
+    // so it is cached once for the whole app until shortly before it expires.
     public class TokenService : ITokenService
     {
-        private readonly IHttpContextAccessor _contextAccessor;
+        private const string CacheKey = "api_access_token";
+        private static readonly SemaphoreSlim RefreshLock = new(1, 1);   // one token request at a time
+
+        private readonly IMemoryCache _cache;
         private readonly IHttpClientFactory _clientFactory;
         private readonly IConfiguration _configuration;
+        private readonly ILogger<TokenService> _logger;
 
         public TokenService(
-            IHttpContextAccessor contextAccessor,
+            IMemoryCache cache,
             IHttpClientFactory clientFactory,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            ILogger<TokenService> logger)
         {
-            _contextAccessor = contextAccessor;
+            _cache = cache;
             _clientFactory = clientFactory;
             _configuration = configuration;
+            _logger = logger;
         }
 
         public async Task<string> GetTokenAsync()
         {
-            var session = _contextAccessor.HttpContext?.Session;
+            if (_cache.TryGetValue(CacheKey, out string? cached) && !string.IsNullOrWhiteSpace(cached))
+                return cached;
 
-            if (session == null)
-                throw new Exception("Session unavailable.");
-
-            var existingToken = session.GetString("AccessToken");
-
-            if (!string.IsNullOrWhiteSpace(existingToken))
-                return existingToken;
-
-            var client = _clientFactory.CreateClient("TokenClient");
-
-            var request = new TokenRequest
+            await RefreshLock.WaitAsync();
+            try
             {
-                UserName = _configuration["ApiSettings:UserName"],
-                Password = _configuration["ApiSettings:Password"]
-            };
+                // Another request may have refreshed it while we waited
+                if (_cache.TryGetValue(CacheKey, out cached) && !string.IsNullOrWhiteSpace(cached))
+                    return cached;
 
-            var response =
-                await client.PostAsJsonAsync(ApiRoutes.GetToken, request);
+                var userName = _configuration["ApiSettings:UserName"];
+                var password = _configuration["ApiSettings:Password"];
+                if (string.IsNullOrWhiteSpace(userName) || string.IsNullOrWhiteSpace(password))
+                    throw new InvalidOperationException("ApiSettings:UserName / Password not configured (see Docs/Security.md).");
 
-            response.EnsureSuccessStatusCode();
+                var client = _clientFactory.CreateClient("TokenClient");
 
-            var result =
-                await response.Content.ReadFromJsonAsync<TokenResponse>();
+                var response = await client.PostAsJsonAsync(ApiRoutes.GetToken,
+                    new TokenRequest { UserName = userName, Password = password });
 
-            if (string.IsNullOrWhiteSpace(result?.AccessToken))
-                throw new Exception("Token not received.");
+                response.EnsureSuccessStatusCode();
 
-            session.SetString("AccessToken", result.AccessToken);
+                var result = await response.Content.ReadFromJsonAsync<TokenResponse>();
 
-            return result.AccessToken;
+                if (string.IsNullOrWhiteSpace(result?.AccessToken))
+                    throw new Exception("Token not received.");
+
+                // Refresh 1 minute early; unknown lifetime → 20 minutes
+                var lifetime = result.ExpiresIn > 120
+                    ? TimeSpan.FromSeconds(result.ExpiresIn - 60)
+                    : TimeSpan.FromMinutes(20);
+
+                _cache.Set(CacheKey, result.AccessToken, lifetime);
+                _logger.LogInformation("API token refreshed | ValidFor={Minutes} min", (int)lifetime.TotalMinutes);
+
+                return result.AccessToken;
+            }
+            finally
+            {
+                RefreshLock.Release();
+            }
         }
 
+        // Called by AuthHandler on 401 — next call fetches a new token
         public void ClearToken()
         {
-            _contextAccessor.HttpContext?.Session
-                ?.Remove("AccessToken");
+            _cache.Remove(CacheKey);
         }
     }
 }

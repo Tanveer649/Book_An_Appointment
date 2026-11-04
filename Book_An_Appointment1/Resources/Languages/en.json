@@ -191,7 +191,9 @@
     "SelectDoctorAgain": "Please select hospital and doctor again.",
     "InvalidSlot": "Invalid appointment slot. Please select the slot again.",
     "SlotPassed": "The selected slot time has already passed. Please select another slot.",
-    "RegisteredNotFound": "Registered patient details not found. Please verify your mobile number again."
+    "RegisteredNotFound": "Registered patient details not found. Please verify your mobile number again.",
+    "TooManyAttempts": "Too many attempts. Please wait a few minutes and try again.",
+    "SlotUnavailable": "This slot is no longer available. Please select another slot."
   },
   "Js": {
     "SelectFacility": "Select Facility",
@@ -231,7 +233,6 @@
     "Year": "Year",
     "LoadingSlots": "Loading slots…",
     "SlotsLoadFailed": "Could not load slots. Please pick the date again.",
-    "ChangePatientTypeHint": "Go back to change the patient type",
     "PleaseWait": "Please wait…",
     "ReviewConfirm": "Review & Confirm →",
     "OtpSent": "OTP Sent ✓",
@@ -262,6 +263,17 @@
       "RemoveAllItems": "Remove all items",
       "RemoveItem": "Remove item",
       "Search": "Search"
-    }
+    },
+    "NotRegistered": "This mobile number is not registered with us yet. You can continue as a new patient.",
+    "ContinueAsNew": "Continue as new patient",
+    "AlreadyRegistered": "This mobile number is already registered with us. You can continue as a registered patient.",
+    "ContinueAsRegistered": "Continue as registered patient"
+  },
+  "Error": {
+    "Title": "Something went wrong",
+    "Text": "We could not complete your request. Please start your booking again.",
+    "NotFoundTitle": "Page not found",
+    "NotFoundText": "The page you are looking for does not exist.",
+    "BackToBooking": "Go to Book Appointment"
   }
 }

@@ -1,0 +1,12 @@
+/* ══ Theme B — Emerald ═══════════════════════════════════════════════════════════════
+   Ready-made palette for a new client. To use it:
+     1. rename / copy this file to {client}.css (lowercase: letters, numbers, -)
+     2. appsettings.json → "ThemeSettings": { "Theme": "{client}" }
+   Every lighter / darker shade is calculated from these 4 colours (wwwroot/css/theme.css). */
+
+:root {
+    --primary: #047857;      /* buttons, links, selected slot, header title */
+    --success: #15803D;      /* verified, completed steps, booked */
+    --accent: #D97706;       /* consultation-fee highlight */
+    --footer-bg: #062A20;    /* footer background — keep it dark */
+}

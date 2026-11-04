@@ -1,5 +1,6 @@
 using Book_An_Appointment1.Helpers;
 using Book_An_Appointment1.Localization;
+using Book_An_Appointment1.Security;
 using Book_An_Appointment1.Models;
 using Book_An_Appointment1.Models.Patient;
 using Book_An_Appointment1.Services.Interfaces;
@@ -21,6 +22,11 @@ namespace Book_An_Appointment1.Pages.Appointment
         private readonly ITitleService _titleService;
         private readonly JsonStringLocalizer _localizer;
 
+        // Development only: Send OTP does not send an SMS and TestOtp is accepted.
+        // On any other environment the real OTP APIs are always used.
+        private readonly bool _useTestOtp;
+        private const string TestOtp = "123456";
+
         [BindProperty]
         public PatientDetailsViewModel Form { get; set; } = new();
 
@@ -28,7 +34,17 @@ namespace Book_An_Appointment1.Pages.Appointment
 
         // Family members linked to the verified mobile — rendered as cards (restored on Back / validation failure)
         public List<RegisteredPatientInfo> RegisteredPatients { get; set; } = new();
-        public record SelectRegisteredPatientRequest(string? RegistrationNo);
+        public record SelectRegisteredPatientRequest(int? Index);   // position in the verified PatientList
+
+        // Selected family member (-1 = none) — restores the selected card after Back / validation failure
+        public int SelectedPatientIndex { get; set; } = -1;
+        public record SwitchPatientTypeRequest(string? PatientType);
+        public record RememberExtrasRequest(string? Notes, bool ConsentTerms, bool ConsentMarketing);
+        private const int NotesMaxLength = 300;   // same as the textarea maxlength
+
+        // How the OTP APIs say "wrong patient type" — override per client in appsettings OtpSettings
+        private const string DefaultNotRegisteredPattern = @"not\s+registered|register\s+first";
+        private const string DefaultAlreadyRegisteredPattern = @"already\s+(registered|exists?)";
 
         public PatientDetailsModel(
              IOtpService otpService,
@@ -36,9 +52,11 @@ namespace Book_An_Appointment1.Pages.Appointment
              IConfiguration configuration,
              ILocationService locationService,
              ITitleService titleService,
-             JsonStringLocalizer localizer)
+             JsonStringLocalizer localizer,
+             IWebHostEnvironment environment)
         {
             _localizer = localizer;
+            _useTestOtp = environment.IsDevelopment();
             _otpService = otpService;
             _logger = logger;
             _configuration = configuration;
@@ -49,7 +67,7 @@ namespace Book_An_Appointment1.Pages.Appointment
         {
             SessionData = SessionHelper.GetAppointmentData(HttpContext.Session);
             if (SessionData == null)
-                return RedirectToPage("/Appointment/Appointment");
+                return this.GoToStep(BookingStep.Appointment);
 
             LoadPageData();
             return Page();
@@ -90,7 +108,10 @@ namespace Book_An_Appointment1.Pages.Appointment
                 Form.RegisteredPatient.Email = SessionData.RegisteredPatient.Email;
 
                 if (SessionData.RegisteredPatient.IsMobileVerified)
+                {
                     RegisteredPatients = SessionData.RegisteredPatient.PatientList;
+                    SelectedPatientIndex = SessionData.RegisteredPatient.SelectedIndex;
+                }
 
             }
             else
@@ -126,113 +147,87 @@ namespace Book_An_Appointment1.Pages.Appointment
                 "DefaultLocationSettings:DefaultCountryName", "INDIA") ?? "INDIA";
         }
 
+        // ── New Patient — Send OTP ───────────────────────────
         public async Task<JsonResult> OnPostSendOtpAsync([FromBody] OtpRequestModel request)
         {
+            if (!IsValidMobile(request?.MobileNo))
+                return Fail(_localizer.Text("Validation.MobileInvalid"));
 
+            var mobile = request!.MobileNo.Trim();
             try
             {
-                //var result = await _otpService.SendOtpAsync(request.MobileNo);
-
-                //if (result?.Status?.ToUpper() != "TRUE")
-                //{
-                //    _logger.LogWarning(
-                //        "SendOtp API returned failure | Mobile={Mobile}", request.MobileNo);
-                //    return new JsonResult(new
-                //    {
-                //        success = false,
-                //        message = result?.Message ?? "Failed to send OTP"
-                //    });
-                //}
-
-                return new JsonResult(new
+                // Development: no SMS is sent, test OTP is accepted (see TestOtp)
+                if (!_useTestOtp)
                 {
-                    success = true,
-                    message = "OTP sent successfully"
-                });
+                    var result = await _otpService.SendOtpAsync(mobile);
+
+                    if (result?.Status?.ToUpper() != "TRUE")
+                    {
+                        _logger.LogWarning("SendOtp API returned failure | Mobile={Mobile} Message={Msg}", LogMask.Mobile(mobile), result?.Message);
+
+                        // Number already belongs to a patient → page offers "Continue as registered patient"
+                        if (MatchesOtpPattern(result?.Message, "OtpSettings:AlreadyRegisteredPattern", DefaultAlreadyRegisteredPattern))
+                            return WrongPatientType("registered", _localizer.Text("Js.AlreadyRegistered"));
+
+                        return Fail(result?.Message ?? _localizer.Text("Errors.OtpSendFailed"));
+                    }
+                }
+
+                return new JsonResult(new { success = true, message = "OTP sent successfully" });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                    "OnPostSendOtpAsync failed | Mobile={Mobile}", request.MobileNo);
-                return new JsonResult(new
-                {
-                    success = false,
-                    message = _localizer.Text("Errors.SomethingWrong")
-                });
+                _logger.LogError(ex, "OnPostSendOtpAsync failed | Mobile={Mobile}", LogMask.Mobile(mobile));
+                return Fail(_localizer.Text("Errors.SomethingWrong"));
             }
         }
 
+        // ── New Patient — Verify OTP ─────────────────────────
         public async Task<JsonResult> OnPostVerifyOtpAsync([FromBody] VerifyOtpRequestModel request)
         {
+            if (!IsValidMobile(request?.MobileNo) || !IsValidOtp(request?.OtpNo))
+                return Fail(_localizer.Text("Errors.InvalidOtp"));
+
+            var mobile = request!.MobileNo.Trim();
             try
             {
-                if (request.OtpNo != "123456")
+                if (_useTestOtp)
                 {
-                    _logger.LogWarning(
-                        "VerifyOtp failed | Mobile={Mobile}", request.MobileNo);
-
-                    return new JsonResult(new
+                    if (request.OtpNo.Trim() != TestOtp)
                     {
-                        success = false,
-                        message = _localizer.Text("Errors.InvalidOtp")
-                    });
+                        _logger.LogWarning("VerifyOtp failed (test OTP) | Mobile={Mobile}", LogMask.Mobile(mobile));
+                        return Fail(_localizer.Text("Errors.InvalidOtp"));
+                    }
+                }
+                else
+                {
+                    var result = await _otpService.VerifyOtpAsync(mobile, request.OtpNo.Trim());
+                    if (result?.Status?.ToLower() != "success")
+                    {
+                        _logger.LogWarning("VerifyOtp failed | Mobile={Mobile}", LogMask.Mobile(mobile));
+                        return Fail(result?.Message ?? _localizer.Text("Errors.InvalidOtp"));
+                    }
                 }
 
-                // Session mein verified mark karo
-
+                // Verified number is kept in session — the form post is checked against it
                 var sessionData = SessionHelper.GetAppointmentData(HttpContext.Session)
                   ?? new AppointmentSessionData();
 
                 sessionData.NewPatient.IsMobileVerified = true;
-                sessionData.NewPatient.Mobile = request.MobileNo;
+                sessionData.NewPatient.Mobile = mobile;
 
                 SessionHelper.SetAppointmentData(HttpContext.Session, sessionData);
 
-                return new JsonResult(new
-                {
-                    success = true,
-                    message = "OTP verified successfully"
-                });
-
-
-                //var result = await _otpService.VerifyOtpAsync(request.MobileNo, request.OtpNo);
-                //if (result?.Status?.ToLower() != "success")
-                //{
-                //    _logger.LogWarning(
-                //        "VerifyOtp failed | Mobile={Mobile}", request.MobileNo);
-                //    return new JsonResult(new
-                //    {
-                //        success = false,
-                //        message = result?.Message ?? _localizer.Text("Errors.InvalidOtp")
-                //    });
-                //}
-
-                //// Session mein verified mark karo
-                
-                //var sessionData = SessionHelper.GetAppointmentData(HttpContext.Session) ?? new AppointmentSessionData();
-                //sessionData.NewPatient.IsMobileVerified = true;
-                //sessionData.NewPatient.Mobile = request.MobileNo;
-
-                //SessionHelper.SetAppointmentData(HttpContext.Session, sessionData);
-
-                //_logger.LogInformation("VerifyOtp success | Mobile={M}", request.MobileNo);
-                //return new JsonResult(new 
-                //{ 
-                //    success = true, 
-                //    message = "OTP verified successfully" 
-                //});
+                _logger.LogInformation("VerifyOtp success | Mobile={Mobile}", LogMask.Mobile(mobile));
+                return new JsonResult(new { success = true, message = "OTP verified successfully" });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                    "OnPostVerifyOtpAsync failed | Mobile={Mobile}", request.MobileNo);
-                return new JsonResult(new
-                {
-                    success = false,
-                    message = _localizer.Text("Errors.SomethingWrong")
-                });
+                _logger.LogError(ex, "OnPostVerifyOtpAsync failed | Mobile={Mobile}", LogMask.Mobile(mobile));
+                return Fail(_localizer.Text("Errors.SomethingWrong"));
             }
         }
+
         public async Task<JsonResult> OnGetCountriesAsync()
         {
             try
@@ -309,45 +304,55 @@ namespace Book_An_Appointment1.Pages.Appointment
         // ── Registered Patient — Send OTP ────────────────────
         public async Task<JsonResult> OnPostSendRegisteredOtpAsync([FromBody] OtpRequestModel request)
         {
-            _logger.LogInformation(
-                "OnPostSendRegisteredOtpAsync | Mobile={M}", request.MobileNo);
+            if (!IsValidMobile(request?.MobileNo))
+                return Fail(_localizer.Text("Validation.MobileInvalid"));
+
+            var mobile = request!.MobileNo.Trim();
+            _logger.LogInformation("OnPostSendRegisteredOtpAsync | Mobile={M}", LogMask.Mobile(mobile));
             try
             {
-                //var result = await _otpService.SendRegisteredOtpAsync(request.MobileNo);
+                // Development: no SMS is sent, test OTP is accepted (see TestOtp)
+                if (!_useTestOtp)
+                {
+                    var result = await _otpService.SendRegisteredOtpAsync(mobile);
 
-                //if (result?.Status?.ToUpper() != "TRUE")
-                //{
-                //    _logger.LogWarning("SendRegisteredOtp failed | Mobile={M}", request.MobileNo);
+                    if (result?.Status?.ToUpper() != "TRUE")
+                    {
+                        _logger.LogWarning("SendRegisteredOtp failed | Mobile={M} Message={Msg}", LogMask.Mobile(mobile), result?.Message);
 
-                //    return new JsonResult(new
-                //    {
-                //        success = false,
-                //        message = result?.Message ?? "Failed to send OTP"
-                //    });
-                //}
+                        // Number not registered yet → page offers "Continue as new patient"
+                        if (MatchesOtpPattern(result?.Message, "OtpSettings:NotRegisteredPattern", DefaultNotRegisteredPattern))
+                            return WrongPatientType("new", _localizer.Text("Js.NotRegistered"));
+
+                        return Fail(result?.Message ?? _localizer.Text("Errors.OtpSendFailed"));
+                    }
+                }
 
                 return new JsonResult(new { success = true, message = "OTP sent successfully" });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                    "SendRegisteredOtp error | Mobile={M}", request.MobileNo);
-                return new JsonResult(new { success = false, message = _localizer.Text("Errors.SomethingWrong") });
+                _logger.LogError(ex, "SendRegisteredOtp error | Mobile={M}", LogMask.Mobile(mobile));
+                return Fail(_localizer.Text("Errors.SomethingWrong"));
             }
         }
 
         // ── Registered Patient — Verify OTP + Fetch Details ──
         public async Task<JsonResult> OnPostVerifyRegisteredOtpAsync([FromBody] VerifyOtpRequestModel request)
         {
+            if (!IsValidMobile(request?.MobileNo) || !IsValidOtp(request?.OtpNo))
+                return Fail(_localizer.Text("Errors.InvalidOtp"));
 
-            _logger.LogInformation("OnPostVerifyRegisteredOtpAsync | Mobile={M}", request.MobileNo);
+            request!.MobileNo = request.MobileNo.Trim();
+            request.OtpNo = request.OtpNo.Trim();
+            _logger.LogInformation("OnPostVerifyRegisteredOtpAsync | Mobile={M}", LogMask.Mobile(request.MobileNo));
 
             try
             {
                 VerifyOtpResponseData? apiData;
 
-                // TESTING: hardcoded OTP response
-                if (request.OtpNo == "123456")
+                // Development only: test OTP returns the hardcoded family below (other OTPs use the real API)
+                if (_useTestOtp && request.OtpNo == TestOtp)
                 {
                     apiData = new VerifyOtpResponseData
                     {
@@ -447,7 +452,7 @@ namespace Book_An_Appointment1.Pages.Appointment
 
                     if (result?.Status?.ToLower() != "success")
                     {
-                        _logger.LogWarning("VerifyRegisteredOtp failed | Mobile={M}", request.MobileNo);
+                        _logger.LogWarning("VerifyRegisteredOtp failed | Mobile={M}", LogMask.Mobile(request.MobileNo));
 
                         return new JsonResult(new
                         {
@@ -473,11 +478,12 @@ namespace Book_An_Appointment1.Pages.Appointment
 
                 var registeredPatient = sessionData.RegisteredPatient;
 
-                // Top-level API response details
-                registeredPatient.Mobile = apiData.MobileNo ?? request.MobileNo;
+                // Top-level API response details — the verified number is the one the user entered
+                // (the form post is checked against it); the OTP itself is never stored
+                registeredPatient.Mobile = request.MobileNo;
                 registeredPatient.IsMobileVerified = true;
 
-                registeredPatient.Otp = apiData.Otp;
+                registeredPatient.Otp = null;
                 registeredPatient.IsUserExist = apiData.IsUserExist;
                 registeredPatient.Id = apiData.Id;
                 registeredPatient.Name = apiData.Name;
@@ -497,33 +503,21 @@ namespace Book_An_Appointment1.Pages.Appointment
                     : null;
 
                 if (selectedPatient != null)
-                    ApplySelectedPatient(registeredPatient, selectedPatient);
+                    ApplySelectedPatient(registeredPatient, 0);
                 else
                     ClearSelectedPatient(registeredPatient);
 
                 SessionHelper.SetAppointmentData(HttpContext.Session, sessionData);
 
+                // Only what the page uses (no OTP, no account-level data in the browser)
                 return new JsonResult(new
                 {
                     success = true,
 
-                    // Top-level API details
-                    mobileNo = apiData.MobileNo,
-                    otp = apiData.Otp,
-                    isUserExist = apiData.IsUserExist,
-                    id = apiData.Id,
-                    name = apiData.Name,
-                    gender = apiData.Gender,
-                    dob = apiData.Dob,
-                    emailId = apiData.EmailId,
-                    isHisRegistered = apiData.IsHisRegistered,
-                    verifyPatinetListCount = apiData.VerifyPatinetListCount,
-
-                    // Return all family members
+                    // All family members for the cards
                     patientList = registeredPatient.PatientList,
 
                     // Currently selected patient (null when user has to choose)
-                    patient = selectedPatient,
                     selected = selectedPatient != null ? SelectedPatientFields(registeredPatient) : null
                 });
             }
@@ -532,7 +526,7 @@ namespace Book_An_Appointment1.Pages.Appointment
                 _logger.LogError(
                     ex,
                     "OnPostVerifyRegisteredOtpAsync failed | Mobile={M}",
-                    request.MobileNo);
+                    LogMask.Mobile(request.MobileNo));
 
                 return new JsonResult(new
                 {
@@ -541,10 +535,44 @@ namespace Book_An_Appointment1.Pages.Appointment
                 });
             }
         }
+        // ── Patient type switch (only via "Continue as …") ──
+        // The patient cannot toggle the type. It changes only to the type the OTP API just pointed to
+        // (see WrongPatientType); the session keeps it because OnPost and Review trust only the session.
+        public JsonResult OnPostSwitchPatientType([FromBody] SwitchPatientTypeRequest request)
+        {
+            var type = request?.PatientType;
+            var allowed = HttpContext.Session.GetString(SessionHelper.AllowedTypeSwitchKey);
+            if ((type != "new" && type != "registered") || type != allowed)
+            {
+                _logger.LogWarning("SwitchPatientType refused | Requested={Type} Allowed={Allowed}", type, allowed ?? "-");
+                return Fail(_localizer.Text("Errors.SomethingWrong"));
+            }
+
+            HttpContext.Session.Remove(SessionHelper.AllowedTypeSwitchKey);   // one switch per API answer
+
+            var sessionData = SessionHelper.GetAppointmentData(HttpContext.Session);
+            if (sessionData == null)
+                return new JsonResult(new
+                {
+                    success = false,
+                    message = _localizer.Text("Errors.SessionExpired"),
+                    redirectUrl = Url.Content("~" + BookingFlow.BasePath)
+                });
+
+            if (sessionData.PatientType != type)
+            {
+                sessionData.PatientType = type;
+                SessionHelper.SetAppointmentData(HttpContext.Session, sessionData);
+                _logger.LogInformation("Patient type switched | PatientType={Type}", type);
+            }
+
+            return new JsonResult(new { success = true });
+        }
+
         // ── Registered Patient — Select family member card ──
         public JsonResult OnPostSelectRegisteredPatient([FromBody] SelectRegisteredPatientRequest request)
         {
-            _logger.LogInformation("OnPostSelectRegisteredPatient | RegistrationNo={R}", request?.RegistrationNo);
+            _logger.LogInformation("OnPostSelectRegisteredPatient | Index={I}", request?.Index);
 
             var sessionData = SessionHelper.GetAppointmentData(HttpContext.Session);
             var registeredPatient = sessionData?.RegisteredPatient;
@@ -552,24 +580,44 @@ namespace Book_An_Appointment1.Pages.Appointment
             if (registeredPatient == null || !registeredPatient.IsMobileVerified)
                 return new JsonResult(new { success = false, message = _localizer.Text("Validation.VerifyMobile") });
 
-            // Only a member returned for this verified mobile can be selected
-            var patient = registeredPatient.PatientList.FirstOrDefault(x =>
-                !string.IsNullOrWhiteSpace(x.RegistrationNo) && x.RegistrationNo == request?.RegistrationNo?.Trim());
-
-            if (patient == null)
+            // Only a member returned for this verified mobile can be selected (by position — works for UHID "0" too)
+            var index = request?.Index ?? -1;
+            if (index < 0 || index >= registeredPatient.PatientList.Count)
             {
-                _logger.LogWarning("SelectRegisteredPatient — not in patient list | RegistrationNo={R}", request?.RegistrationNo);
+                _logger.LogWarning("SelectRegisteredPatient — not in patient list | Index={I}", request?.Index);
                 return new JsonResult(new { success = false, message = _localizer.Text("Errors.PatientNotFound") });
             }
 
-            ApplySelectedPatient(registeredPatient, patient);
+            ApplySelectedPatient(registeredPatient, index);
             SessionHelper.SetAppointmentData(HttpContext.Session, sessionData!);
 
             return new JsonResult(new { success = true, selected = SelectedPatientFields(registeredPatient) });
         }
 
-        private static void ApplySelectedPatient(AppointmentSessionData.RegisteredPatientData registeredPatient, RegisteredPatientInfo selectedPatient)
+        // ── AJAX: Remember notes + consent ticks ─────────────
+        // So a page reload keeps them. Only a draft: the Review & Confirm submit validates them again.
+        public JsonResult OnPostRememberExtras([FromBody] RememberExtrasRequest request)
         {
+            var sessionData = SessionHelper.GetAppointmentData(HttpContext.Session);
+            if (sessionData == null || request == null)
+                return new JsonResult(new { success = false });
+
+            var notes = request.Notes?.Trim();
+            if (notes?.Length > NotesMaxLength) notes = notes[..NotesMaxLength];
+
+            sessionData.AppointmentNotes = notes;
+            sessionData.ConsentAccepted = request.ConsentTerms;
+            sessionData.ConsentMarketing = request.ConsentMarketing;
+            SessionHelper.SetAppointmentData(HttpContext.Session, sessionData);
+
+            return new JsonResult(new { success = true });
+        }
+
+        private static void ApplySelectedPatient(AppointmentSessionData.RegisteredPatientData registeredPatient, int index)
+        {
+            var selectedPatient = registeredPatient.PatientList[index];
+            registeredPatient.SelectedIndex = index;
+
             // Per-patient value from the API ("0" for HIS-registered patients)
             registeredPatient.GuestPatientId = string.IsNullOrWhiteSpace(selectedPatient.GuestPatientId)
                 ? "0"
@@ -617,6 +665,7 @@ namespace Book_An_Appointment1.Pages.Appointment
 
         private static void ClearSelectedPatient(AppointmentSessionData.RegisteredPatientData registeredPatient)
         {
+            registeredPatient.SelectedIndex = -1;
             registeredPatient.GuestPatientId = null;
             registeredPatient.RegistrationId = 0;
             registeredPatient.RegistrationNo = null;
@@ -642,6 +691,7 @@ namespace Book_An_Appointment1.Pages.Appointment
         // Values for the registered hidden inputs (Reg_*)
         private static object SelectedPatientFields(AppointmentSessionData.RegisteredPatientData p) => new
         {
+            selectedIndex = p.SelectedIndex,
             guestPatientId = p.GuestPatientId,
             registrationNo = p.RegistrationNo,
             titleName = p.TitleName,
@@ -661,14 +711,17 @@ namespace Book_An_Appointment1.Pages.Appointment
 
             var sessionData = SessionHelper.GetAppointmentData(HttpContext.Session);
             if (sessionData == null)
-                return RedirectToPage("/Appointment/Appointment");
+                return this.GoToStep(BookingStep.Appointment);
 
             ModelState.Clear();
+
+            // Patient type was chosen on page 1 and is locked — never taken from the posted form
+            Form.PatientType = sessionData.PatientType == "registered" ? "registered" : "new";
 
             // ── Validation — PatientType ke basis pe ──────
             if (Form.PatientType == "new" || string.IsNullOrEmpty(Form.PatientType))
             {
-                ValidateNewPatient();
+                ValidateNewPatient(sessionData);
             }
             else if (Form.PatientType == "registered")
             {
@@ -740,13 +793,52 @@ namespace Book_An_Appointment1.Pages.Appointment
             _logger.LogInformation(
                 "PatientDetails session saved | PatientType={Type}", sessionData.PatientType);
 
-            return RedirectToPage("/ReviewAndConfirmation/ReviewAndConfirmation");
+            // Patient details valid → step 3 (/reviewconfirm/{new id})
+            return this.GoToStep(BookingStep.Review);
+        }
+
+        // "← Back" button (anti-forgery checked) — the only way back to step 1; typing URLs cannot do it
+        public IActionResult OnPostBack() => this.GoToStep(BookingStep.Appointment);
+
+        // ── Request Helpers (AJAX handlers) ────────────────
+        private static bool IsValidMobile(string? mobile) =>
+            !string.IsNullOrWhiteSpace(mobile) && Regex.IsMatch(mobile.Trim(), @"^\d{10}$");
+
+        private bool IsValidOtp(string? otp) =>
+            !string.IsNullOrWhiteSpace(otp) &&
+            Regex.IsMatch(otp.Trim(), $@"^\d{{{_configuration.GetValue<int>("OtpSettings:OtpLength", 6)}}}$");
+
+        private static JsonResult Fail(string message) => new(new { success = false, message });
+
+        // Number belongs to the other patient type — the page shows "Continue as …" and the session
+        // remembers that exactly this switch is allowed (OnPostSwitchPatientType)
+        private JsonResult WrongPatientType(string targetType, string message)
+        {
+            HttpContext.Session.SetString(SessionHelper.AllowedTypeSwitchKey, targetType);
+            return new JsonResult(new { success = false, wrongType = true, message });
+        }
+
+        private bool MatchesOtpPattern(string? apiMessage, string configKey, string defaultPattern)
+        {
+            if (string.IsNullOrWhiteSpace(apiMessage)) return false;
+            var pattern = _configuration[configKey];
+            try
+            {
+                return Regex.IsMatch(apiMessage, string.IsNullOrWhiteSpace(pattern) ? defaultPattern : pattern,
+                    RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(200));
+            }
+            catch (Exception ex) when (ex is ArgumentException or RegexMatchTimeoutException)   // bad pattern in appsettings
+            {
+                _logger.LogError(ex, "Invalid regex in {Key}", configKey);
+                return false;
+            }
         }
 
         // ── Validation Helpers ─────────────────────────────
-        private void ValidateNewPatient()
+        private void ValidateNewPatient(AppointmentSessionData sessionData)
         {
             var p = Form.NewPatient;
+            var saved = sessionData.NewPatient;   // OTP result is trusted from session, not the hidden input
 
             if (string.IsNullOrWhiteSpace(p.TitleName))
                 ModelState.AddModelError("Form.NewPatient.TitleName", _localizer.Text("Validation.SelectTitle"));
@@ -782,7 +874,7 @@ namespace Book_An_Appointment1.Pages.Appointment
             else if (!Regex.IsMatch(p.Mobile.Trim(), @"^\d{10}$"))
                 ModelState.AddModelError("Form.NewPatient.Mobile", _localizer.Text("Validation.MobileInvalid"));
 
-            if (!p.IsMobileVerified)
+            if (!p.IsMobileVerified || !saved.IsMobileVerified || saved.Mobile != p.Mobile?.Trim())
                 ModelState.AddModelError("Form.NewPatient.IsMobileVerified", _localizer.Text("Validation.VerifyMobile"));
 
             if (!string.IsNullOrWhiteSpace(p.Pincode) &&
@@ -802,8 +894,7 @@ namespace Book_An_Appointment1.Pages.Appointment
 
             if (!p.IsMobileVerified || !saved.IsMobileVerified || saved.Mobile != p.Mobile?.Trim())
                 ModelState.AddModelError("Form.RegisteredPatient.IsMobileVerified", _localizer.Text("Validation.VerifyMobile"));
-            else if (string.IsNullOrWhiteSpace(saved.RegistrationNo) ||
-                     !saved.PatientList.Any(x => x.RegistrationNo == saved.RegistrationNo))
+            else if (saved.SelectedIndex < 0 || saved.SelectedIndex >= saved.PatientList.Count)
                 ModelState.AddModelError("Form.RegisteredPatient.RegistrationNo", _localizer.Text("Validation.SelectPatient"));
         }
 
@@ -833,6 +924,7 @@ namespace Book_An_Appointment1.Pages.Appointment
             if (sessionData.RegisteredPatient.IsMobileVerified)
             {
                 RegisteredPatients = sessionData.RegisteredPatient.PatientList;
+                SelectedPatientIndex = sessionData.RegisteredPatient.SelectedIndex;
                 Form.RegisteredPatient.RegistrationNo = sessionData.RegisteredPatient.RegistrationNo;
             }
 

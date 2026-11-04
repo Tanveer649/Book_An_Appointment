@@ -5,6 +5,10 @@ namespace Book_An_Appointment1.Helpers
     public class SessionHelper
     {
         private const string AppointmentKey = "AppointmentData";
+
+        // Patient type the OTP API pointed to ("new" / "registered") — the only switch Patient Details allows
+        public const string AllowedTypeSwitchKey = "Booking.AllowedTypeSwitch";
+
         public static void SetAppointmentData(
             ISession session, AppointmentSessionData data)
         {
@@ -22,6 +26,8 @@ namespace Book_An_Appointment1.Helpers
         {
             session.Remove(AppointmentKey);
             session.Remove("Booking.SlotEnd");
+            session.Remove(AllowedTypeSwitchKey);
+            Security.BookingFlow.Reset(session);   // old /book/{token} URLs stop working
         }
     }
 }

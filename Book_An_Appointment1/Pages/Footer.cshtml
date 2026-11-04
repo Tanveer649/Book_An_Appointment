@@ -2,8 +2,8 @@
 
 <style>
     .custom-footer {
-        background: linear-gradient(135deg, #0b1220 0%, #111c2f 100%);
-        color: #dbe7f5;
+        background: linear-gradient(135deg, var(--footer-bg) 0%, var(--footer-bg-2) 100%);
+        color: var(--footer-text);
         width: 100%;
         border-top: 1px solid rgba(255,255,255,.08);
     }
@@ -20,7 +20,7 @@
         align-items: flex-start;
         font-size: 12px;
         line-height: 1.65;
-        color: #c8d5e6;
+        color: var(--footer-text-soft);
     }
 
         .footer-disclaimer strong {
@@ -54,7 +54,7 @@
     }
 
         .footer-links a {
-            color: #8ec5ff;
+            color: var(--footer-link);
             text-decoration: none;
             font-size: 13px;
             font-weight: 600;
@@ -66,7 +66,7 @@
             }
 
     .footer-security {
-        color: #8ea2bb;
+        color: var(--footer-text-muted);
         font-size: 12px;
         display: inline-flex;
         align-items: center;
