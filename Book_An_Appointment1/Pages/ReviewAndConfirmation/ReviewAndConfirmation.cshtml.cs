@@ -19,13 +19,17 @@ namespace Book_An_Appointment1.Pages.ReviewAndConfimation
         private readonly IConfiguration _configuration;
         private readonly IAppointmentBookingService _bookingService;
         private readonly JsonStringLocalizer _localizer;
+        private readonly IAppointmentSlipService _slipService;
+        private readonly ISlipIndex _slipIndex;
         public ReviewAndConfirmationViewModel Summary { get; set; } = new();
         public record CreateAppointmentPostRequest(string? PaymentType);
 
         public ReviewAndConfirmationModel(ILogger<ReviewAndConfirmationModel> logger, IConfiguration configuration,
-            IAppointmentBookingService bookingService, JsonStringLocalizer localizer)
+            IAppointmentBookingService bookingService, JsonStringLocalizer localizer, IAppointmentSlipService slipService, ISlipIndex slipIndex)
         {
             _localizer = localizer;
+            _slipService = slipService;
+            _slipIndex = slipIndex;
             _logger = logger;
             _configuration = configuration;
             _bookingService = bookingService;
@@ -196,6 +200,7 @@ namespace Book_An_Appointment1.Pages.ReviewAndConfimation
                 }
 
                 await ApplyAppointmentDetailsAsync(booked);
+                AttachSlip(booked);
 
                 return new JsonResult(new { success = true, appointment = booked });
             }
@@ -329,7 +334,7 @@ namespace Book_An_Appointment1.Pages.ReviewAndConfimation
         {
             var isRegistered = s.PatientType == "registered";
             var slot = ParseDate(s.SlotTime);
-            var total = s.ConsultationFee + (isRegistered ? 0 : s.RegistrationFee);
+            var total = Fee.Total(s.ConsultationFee, isRegistered ? 0 : s.RegistrationFee);   // whole rupees, as shown on Review
 
             return new BookedAppointmentViewModel
             {
@@ -346,8 +351,61 @@ namespace Book_An_Appointment1.Pages.ReviewAndConfimation
                 AppointmentDay = slot?.ToString("dddd") ?? "",
                 AppointmentTime = slot?.ToString("hh:mm tt") ?? s.SlotTime,
                 AmountPayable = "₹ " + Money(total),
-                PaymentMode = _localizer.Text("Review.PayAtHospital")
+                PaymentMode = _localizer.Text("Review.PayAtHospital"),
+                StartsAt = slot,
+                EndsAt = ParseDate(HttpContext.Session.GetString("Booking.SlotEnd"))
             };
+        }
+
+        // Slip link + QR + PDF / print / calendar links for the booked popup. Never fails the booking.
+        private void AttachSlip(BookedAppointmentViewModel booked)
+        {
+            try
+            {
+                var token = _slipService.CreateToken(new SlipTicket(booked.AppointmentId, booked.AmountPayable, booked.Mobile,
+                    booked.PaymentMode, booked.RegistrationNo ?? "", booked.PatientName));
+                var slipUrl = _slipService.SlipUrl(Request, token);
+
+                // Optional buttons — appsettings SlipSettings:EnableViewSlip / EnableAddToCalendar
+                var viewSlip = _configuration.GetValue("SlipSettings:EnableViewSlip", false);
+                var calendar = _configuration.GetValue("SlipSettings:EnableAddToCalendar", false) && booked.StartsAt != null;
+
+                booked.SlipUrl = slipUrl;
+                booked.ViewSlipUrl = viewSlip ? slipUrl : null;
+                booked.PdfUrl = slipUrl + "?handler=Pdf";
+                booked.PrintUrl = _configuration.GetValue("SlipSettings:EnablePrint", false) ? slipUrl + "?print=1" : null;
+                booked.IcsUrl = calendar ? slipUrl + "?handler=Ics" : null;
+                booked.QrSvg = _slipService.QrSvg(slipUrl);
+
+                // "Find my slip" (appsettings FindSlipSettings:Enabled): remember this slip for the patient's mobile
+                if (_configuration.GetValue("FindSlipSettings:Enabled", false))   // save the slip detail in app_data folder which used to find the sleep detail.
+                    _slipIndex.Save(booked.Mobile, new SlipRecord
+                    {
+                        AppointmentId = booked.AppointmentId,
+                        MaskedMobile = booked.Mobile,
+                        Amount = booked.AmountPayable,
+                        PaymentMode = booked.PaymentMode,
+                        Uhid = booked.RegistrationNo ?? "",
+                        PatientName = booked.PatientName,
+                        DoctorName = booked.DoctorName,
+                        Specialisation = booked.Specialisation,
+                        StartsAt = booked.StartsAt
+                    });
+                if (calendar) booked.GoogleCalendarUrl = _slipService.GoogleCalendarUrl(new AppointmentSlip
+                {
+                    AppointmentId = booked.AppointmentId,
+                    PatientName = booked.PatientName,
+                    DoctorName = booked.DoctorName,
+                    Specialisation = booked.Specialisation,
+                    HospitalName = booked.HospitalName,
+                    StartsAt = booked.StartsAt,
+                    EndsAt = booked.EndsAt
+                }, slipUrl);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Appointment slip could not be prepared | AppointmentId={A}", booked.AppointmentId);
+            }
         }
 
         // Booked details from GetAppointmentByID; on any failure keep the session values
@@ -376,6 +434,8 @@ namespace Book_An_Appointment1.Pages.ReviewAndConfimation
                 booked.AppointmentDate = start?.ToString("dd MMM yyyy") ?? booked.AppointmentDate;
                 booked.AppointmentDay = start?.ToString("dddd") ?? booked.AppointmentDay;
                 booked.AppointmentTime = start?.ToString("hh:mm tt") ?? booked.AppointmentTime;
+                booked.StartsAt = start ?? booked.StartsAt;
+                booked.EndsAt = ParseDate(item.AppToTime) ?? booked.EndsAt;
                 booked.VisitType = item.VisitType;
                 booked.Status = item.Status;
             }
@@ -386,22 +446,8 @@ namespace Book_An_Appointment1.Pages.ReviewAndConfimation
         }
 
         // ── Helpers ──────────────────────────────────────────
-        private string GetGenderCode(string? gender)
-        {
-            var g = gender?.Trim();
-            if (string.IsNullOrEmpty(g)) return "";
-            if (int.TryParse(g, out _)) return g;   // already a code
-
-            // Match "Male" / "M" against AppointmentApi:GenderCodes keys
-            var match = _configuration.GetSection("AppointmentApi:GenderCodes").GetChildren()
-                .FirstOrDefault(x => string.Equals(x.Key, g, StringComparison.OrdinalIgnoreCase) ||
-                                     (g.Length == 1 && x.Key.StartsWith(g, StringComparison.OrdinalIgnoreCase)));
-
-            if (match == null)
-                _logger.LogWarning("Gender code not configured | Gender={G}", g);
-
-            return match?.Value ?? "";
-        }
+        // Match "Male" / "M" against AppointmentApi:GenderCodes keys
+        private string GetGenderCode(string? gender) => GenderCode.Resolve(_configuration, gender, _logger);
 
         private static DateTime? ParseDate(string? value) =>
             DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var d) ? d : null;
@@ -415,6 +461,6 @@ namespace Book_An_Appointment1.Pages.ReviewAndConfimation
         private static string CleanSpaces(string value) =>
             string.Join(" ", value.Split(' ', StringSplitOptions.RemoveEmptyEntries));
 
-        private static string Money(decimal v) => v == decimal.Truncate(v) ? v.ToString("N0") : v.ToString("N2");
+        private static string Money(decimal v) => Fee.Text(v);   // whole rupees (Helpers/Fee.cs)
     }
 }

@@ -1,0 +1,298 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560&family=Inter:wght@400;500;600;700&display=swap');
+
+/* Find my slip (/find-slip) — colours from theme.css / the hospital theme file */
+body {
+    background: var(--paper);
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    color: var(--ink);
+}
+
+.fs-page {
+    max-width: 620px;
+    margin: 0 auto;
+    padding: 2rem 0 3rem;
+}
+
+.fs-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-top: 5px solid var(--primary);
+    border-radius: 22px;
+    box-shadow: 0 28px 56px -32px rgba(10, 25, 40, .35);
+    padding: 1.75rem;
+}
+
+.fs-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--primary-tint);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.fs-title {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 24px;
+    font-weight: 560;
+    margin: 0;
+    color: var(--primary-dark);
+}
+
+.fs-sub {
+    color: var(--ink-soft);
+    font-size: 14px;
+    margin: 4px 0 1.25rem;
+}
+
+.fs-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin: 10px 0 6px;
+}
+
+.fs-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+    .fs-row input {
+        flex: 1;
+        min-width: 0;
+        height: 44px;
+        padding: 0 12px;
+        border: 1.5px solid var(--primary-border-strong);
+        border-radius: 10px;
+        font-size: 15px;
+        background: var(--surface);
+    }
+
+        .fs-row input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-tint);
+        }
+
+.fs-cc {
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 12px;
+    border-radius: 10px;
+    background: var(--surface-alt);
+    color: var(--ink-soft);
+    font-weight: 600;
+}
+
+.fs-otp {
+    letter-spacing: .4em;
+    max-width: 200px;
+}
+
+.fs-btn {
+    height: 44px;
+    padding: 0 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 999px;
+    border: 1.5px solid var(--primary-border-strong);
+    background: var(--surface);
+    color: var(--primary-dark);
+    font-weight: 600;
+    font-size: 14px;
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+    .fs-btn:hover {
+        background: var(--primary-tint);
+        color: var(--primary-dark);
+    }
+
+    .fs-btn:disabled {
+        opacity: .6;
+        cursor: default;
+    }
+
+.fs-btn-primary {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+    .fs-btn-primary:hover {
+        background: var(--primary-dark);
+        color: #fff;
+    }
+
+.fs-link {
+    margin-top: 8px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--primary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+    .fs-link:disabled {
+        color: var(--ink-faint);
+        cursor: default;
+    }
+
+.fs-timer {
+    margin-left: 8px;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+}
+
+.fs-error {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--danger-tint);
+    color: var(--danger);
+    font-size: 13.5px;
+}
+
+.fs-result-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+    .fs-result-head .fs-link {
+        margin: 0;
+    }
+
+.fs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.fs-slip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 18px 20px;
+    border: 1px solid var(--primary-border);
+    border-radius: 16px;
+    background: var(--primary-tint);
+}
+
+    .fs-slip.fs-past {
+        background: var(--surface-alt);
+        border-color: var(--line);
+    }
+
+.fs-slip-info {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.fs-slip-who {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 2px;
+}
+
+.fs-slip-name {
+    font-size: 16.5px;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+.fs-chip {
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--primary-border);
+    color: var(--primary-dark);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.fs-badge {
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--ink-soft);
+    font-size: 12px;
+    border: 1px solid var(--line);
+}
+
+.fs-slip-when {
+    font-weight: 600;
+    color: var(--primary-dark);
+    font-size: 14.5px;
+}
+
+.fs-slip-doc {
+    font-size: 13.5px;
+    color: var(--ink);
+}
+
+.fs-slip-id {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+}
+
+.fs-slip-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.fs-back {
+    display: inline-block;
+    margin-top: 1.25rem;
+    font-size: 13.5px;
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+@media (max-width: 560px) {
+    .fs-page {
+        padding-top: 1rem;
+    }
+
+    .fs-card {
+        padding: 1.25rem 1.1rem;
+    }
+
+    .fs-row {
+        flex-wrap: wrap;
+    }
+
+        .fs-row .fs-btn {
+            flex: 1 1 100%;
+        }
+
+    .fs-slip {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 16px;
+    }
+
+    .fs-slip-actions .fs-btn {
+        flex: 1;
+    }
+}

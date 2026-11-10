@@ -13,7 +13,10 @@ namespace Book_An_Appointment1.Security
             ["SendRegisteredOtp"] = "OtpSend",
             ["VerifyOtp"] = "OtpVerify",
             ["VerifyRegisteredOtp"] = "OtpVerify",
-            ["CreateAppointment"] = "Booking"
+            ["CreateAppointment"] = "Booking",
+            ["AddFamilyMember"] = "Booking",
+            ["FindSlipSendOtp"] = "OtpSend",
+            ["FindSlipVerify"] = "OtpVerify"
         };
 
         public static IServiceCollection AddPortalRateLimiting(this IServiceCollection services, IConfiguration configuration)

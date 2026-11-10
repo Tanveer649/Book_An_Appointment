@@ -32,7 +32,8 @@
     "Verified": "✓ Verified",
     "NewPatient": "New patient",
     "AlreadyRegistered": "Already registered",
-    "RegisteredPatient": "Registered patient"
+    "RegisteredPatient": "Registered patient",
+    "Cancel": "Cancel"
   },
   "Gender": {
     "Male": "Male",
@@ -45,7 +46,7 @@
     "Speciality": "Speciality",
     "Doctor": "Doctor",
     "WelcomeTitle": "Find your doctor and book a slot",
-    "WelcomeText": "Choose where you want to be seen, then pick a speciality and a doctor to view their profile and live availability.",
+    "WelcomeText": "Pick a speciality or search a doctor by name.",
     "StepFacility": "Select a facility",
     "StepSpeciality": "Select a speciality",
     "StepDoctor": "Select a doctor",
@@ -55,7 +56,13 @@
     "NewPatientDesc": "This is my first visit",
     "RegisteredDesc": "I have visited this hospital before",
     "DateTooFar": "That date is too far ahead",
-    "ChooseAnotherDate": "Choose another date"
+    "ChooseAnotherDate": "Choose another date",
+    "StartOver": "Start over",
+    "StartOverTitle": "Start over?",
+    "StartOverText": "Your speciality, doctor and slot choices on this page will be cleared, so you can choose again.",
+    "FindSlip": "Find my slip",
+    "AlreadyBooked": "Already booked?",
+    "FindSlipSub": "Get your appointment slip again"
   },
   "PatientDetails": {
     "PageTitle": "Patient Details",
@@ -172,7 +179,10 @@
     "VerifyMobile": "Please verify your mobile number via OTP",
     "PincodeInvalid": "Pincode must be exactly 6 digits",
     "AcceptTerms": "Please accept terms and conditions",
-    "SelectPatient": "Please select the patient for whom you want to book the appointment"
+    "SelectPatient": "Please select the patient for whom you want to book the appointment",
+    "SelectState": "Please select a state",
+    "SelectCity": "Please select a city",
+    "AddressTooLong": "Address can be at most 200 characters"
   },
   "Errors": {
     "SomethingWrong": "Something went wrong",
@@ -193,7 +203,10 @@
     "SlotPassed": "The selected slot time has already passed. Please select another slot.",
     "RegisteredNotFound": "Registered patient details not found. Please verify your mobile number again.",
     "TooManyAttempts": "Too many attempts. Please wait a few minutes and try again.",
-    "SlotUnavailable": "This slot is no longer available. Please select another slot."
+    "SlotUnavailable": "This slot is no longer available. Please select another slot.",
+    "FamilyMemberExists": "This family member is already in the list — please select their card.",
+    "FamilyMemberFailed": "Could not add the family member. Please try again.",
+    "FamilyOtpExpired": "The OTP has expired. Please verify the mobile number again (Resend OTP), then add the family member."
   },
   "Js": {
     "SelectFacility": "Select Facility",
@@ -267,7 +280,24 @@
     "NotRegistered": "This mobile number is not registered with us yet. You can continue as a new patient.",
     "ContinueAsNew": "Continue as new patient",
     "AlreadyRegistered": "This mobile number is already registered with us. You can continue as a registered patient.",
-    "ContinueAsRegistered": "Continue as registered patient"
+    "ContinueAsRegistered": "Continue as registered patient",
+    "NoFamilyMembers": "No family members found on this mobile number yet — add one below",
+    "FamilyMemberAdded": "Family member added and selected",
+    "SaveSelect": "Save & select",
+    "LinkCopied": "Link copied",
+    "CopyLink": "Copy this link",
+    "NoSlotsOn": "No free slots on {0}",
+    "FindingNextFreeDay": "Looking for the next free day…",
+    "NextFreeDay": "Next free day is {0}",
+    "GoToDay": "Go to {0} →",
+    "ChooseAnotherDate": "Please choose another date in the calendar.",
+    "SlipsFound": "{0} appointment slip(s) found",
+    "NoSlipsFound": "No appointment slips found for this mobile number.",
+    "PastAppointment": "Past",
+    "DownloadPdf": "Download PDF",
+    "ViewSlip": "View slip",
+    "Patient": "Patient",
+    "AppointmentIdLabel": "Appointment ID"
   },
   "Error": {
     "Title": "Something went wrong",
@@ -275,5 +305,62 @@
     "NotFoundTitle": "Page not found",
     "NotFoundText": "The page you are looking for does not exist.",
     "BackToBooking": "Go to Book Appointment"
+  },
+  "Family": {
+    "AddMember": "Add family member",
+    "AddMemberSub": "Booking for someone not in the list? Add them in a few seconds.",
+    "AddedUnder": "They will be added under {0}"
+  },
+  "Slip": {
+    "PageTitle": "Appointment slip",
+    "Title": "Appointment slip",
+    "QrAlt": "QR code of this appointment slip",
+    "ScanHint": "Scan to open this slip on another phone",
+    "ScanHintLong": "Scan the QR code with any phone to open and download this slip. Show it at the registration counter.",
+    "YourSlip": "Your appointment slip",
+    "DownloadPdf": "Download PDF",
+    "Print": "Print",
+    "ViewSlip": "View slip",
+    "AddToCalendar": "Add to calendar",
+    "GoogleCalendar": "Google Calendar",
+    "OtherCalendar": "Apple / Outlook (.ics)",
+    "ArriveNote": "Please arrive {0} minutes before your appointment time and show this slip (printed or on your phone) at the registration counter.",
+    "Invalid": "This slip link is invalid or has expired",
+    "InvalidSub": "Please use the link from your booking confirmation, or contact the hospital.",
+    "Unavailable": "We could not load this appointment right now. Please try again in a few minutes."
+  },
+  "Doctor": {
+    "NotFoundTitle": "Doctor not found",
+    "NotFoundSub": "This doctor profile is not available any more. You can still book with another doctor.",
+    "FindDoctor": "Find a doctor",
+    "BookAppointment": "Book appointment",
+    "Share": "Share profile",
+    "About": "About",
+    "AtAGlance": "At a glance",
+    "Languages": "Languages",
+    "Awards": "Awards & recognition",
+    "OgDescription": "Book an appointment online at {0}.",
+    "LinkNotFound": "The doctor from that link is not available for online booking right now. Please choose a doctor below.",
+    "SlotTaken": "The selected time is no longer available. Please choose another slot."
+  },
+  "BookingQr": {
+    "PageTitle": "Booking QR poster",
+    "Help": "Print this poster for the hospital walls and reception. Patients scan the QR code with their phone camera to book an appointment.",
+    "PrintPoster": "Print poster",
+    "Title": "Scan to book your appointment",
+    "Subtitle": "No queue, no call — book a doctor appointment from your phone in 2 minutes.",
+    "QrAlt": "QR code that opens online appointment booking",
+    "Step1": "Scan with phone camera",
+    "Step2": "Choose doctor and time",
+    "Step3": "Verify mobile with OTP",
+    "OrVisit": "Or visit"
+  },
+  "FindSlip": {
+    "PageTitle": "Find my slip",
+    "Title": "Find my appointment slip",
+    "Subtitle": "Enter the mobile number you booked with. We will send an OTP and show your appointment slips from the last {0} days.",
+    "EnterOtp": "Enter the OTP sent to your mobile",
+    "ShowSlips": "Show my slips",
+    "OtherNumber": "Use another number"
   }
 }

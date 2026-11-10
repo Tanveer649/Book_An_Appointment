@@ -1,7 +1,8 @@
 ﻿@inject IConfiguration Configuration
 @{
-    // Logo size from config is passed as CSS variables (not inline width/height),
-    // so the responsive rules below can still resize the logo on small screens.
+    // Logo size from config is passed as CSS variables (not inline width/height), so the rules below
+    // keep it inside safe limits (32–60 px high, max 200 px wide) and still resize it on small screens.
+    // Recommended: LogoHeight "56px", LogoWidth "auto" — see Docs/Deploy-New-Client.md
     var logoW = Configuration["HospitalSettings:LogoWidth"];
     var logoH = Configuration["HospitalSettings:LogoHeight"];
     var logoStyle = (string.IsNullOrWhiteSpace(logoW) ? "" : $"--logo-w:{logoW};")
@@ -42,11 +43,17 @@
         min-width: 0;
     }
 
+    /* Logo stays inside a safe box whatever the image size / shape or the config values:
+       height from HospitalSettings:LogoHeight but kept between 32 and 60 px (header height never changes), width follows the image
+       (or LogoWidth) up to 200 px, never stretched or cropped (object-fit: contain). */
     .hospital-logo {
-        width: var(--logo-w, 58px);
-        height: var(--logo-h, 58px);
-        max-width: 100%;
+        display: block;
+        height: clamp(32px, var(--logo-h, 56px), 60px);
+        width: var(--logo-w, auto);
+        max-width: min(200px, 28vw);
+        max-height: 60px;
         object-fit: contain;
+        object-position: left center;
         flex-shrink: 0;
     }
 
@@ -253,8 +260,8 @@
         }
 
         .hospital-logo {
-            width: 52px;
-            height: 52px;
+            height: clamp(32px, var(--logo-h, 56px), 52px);
+            max-width: 160px;
         }
 
         .emergency-icon {
@@ -309,8 +316,8 @@
         }
 
         .hospital-logo {
-            width: 42px;
             height: 42px;
+            max-width: 120px;
         }
 
         .hospital-name {
@@ -380,8 +387,8 @@
     /* ── Very small phones ─────────────────────────────── */
     @@media (max-width: 380px) {
         .hospital-logo {
-            width: 38px;
-            height: 38px;
+            height: 36px;
+            max-width: 96px;
         }
 
         .hospital-name {
@@ -409,7 +416,8 @@
             <img src="@Configuration["HospitalSettings:LogoPath"]"
                  alt="@Configuration["HospitalSettings:HospitalName"]"
                  class="hospital-logo"
-                 style="@logoStyle" />
+                 style="@logoStyle"
+                 onerror="this.style.display='none'" />
             <div class="hospital-name" title="@Configuration["HospitalSettings:HospitalName"]">
                 @Configuration["HospitalSettings:HospitalName"]
             </div>

@@ -1,0 +1,182 @@
+@page "/doctor/{doctorId:int}"
+@model Book_An_Appointment1.Pages.WebsiteDoctorLink.DoctorProfileModel
+@{
+    var d = Model.Doctor;
+    ViewData["Title"] = d != null ? d.FullName : L["Doctor.NotFoundTitle"].Value;
+    var hospital = d?.ConsultingHospitals?.FirstOrDefault();
+    var hospitalText = hospital == null ? Model.Match?.FacilityName
+        : hospital.FacilityName + (string.IsNullOrWhiteSpace(hospital.CityName) ? "" : ", " + hospital.CityName);
+    var initials = d == null ? "" : string.Concat((d.FullName ?? "").Replace("Dr.", "").Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(w => char.ToUpper(w[0])));
+    string Money(decimal v) => Book_An_Appointment1.Helpers.Fee.Text(v);   // whole rupees, as on the booking pages
+}
+@section Styles {
+    @if (d != null)
+    {
+        @* Link previews (WhatsApp, Facebook, …) when the profile is shared *@
+        <meta name="description" content="@d.FullName — @d.SpecialisationName, @hospitalText" />
+        <meta property="og:type" content="profile" />
+        <meta property="og:title" content="@d.FullName — @d.SpecialisationName" />
+        <meta property="og:description" content="@L["Doctor.OgDescription", hospitalText ?? ""]" />
+        <meta property="og:url" content="@Model.ProfileUrl" />
+        @if (Model.PhotoUrl.StartsWith("https://"))
+        {
+            <meta property="og:image" content="@Model.PhotoUrl" />
+        }
+        <link rel="canonical" href="@Model.ProfileUrl" />
+    }
+    <link rel="stylesheet" href="~/css/doctor-profile.css" asp-append-version="true" />
+}
+
+<div class="dp-page">
+    @if (d == null)
+    {
+        <section class="dp-card dp-empty" role="alert">
+            <div class="dp-empty-icon" aria-hidden="true">?</div>
+            <h1 class="dp-empty-title">@L["Doctor.NotFoundTitle"]</h1>
+            <p class="dp-empty-sub">@L["Doctor.NotFoundSub"]</p>
+            <a class="dp-btn dp-btn-primary" href="~/book">@L["Doctor.FindDoctor"]</a>
+        </section>
+    }
+    else
+    {
+        @* ── Hero ── *@
+        <section class="dp-card dp-hero" aria-labelledby="dpName">
+            <div class="dp-photo @(string.IsNullOrEmpty(Model.PhotoUrl) ? "no-photo" : "")" data-initials="@initials">
+                @if (!string.IsNullOrEmpty(Model.PhotoUrl))
+                {
+                    <img src="@Model.PhotoUrl" alt="@d.FullName" width="150" height="150" data-photo />
+                }
+            </div>
+
+            <div class="dp-identity">
+                <h1 class="dp-name" id="dpName">@d.FullName</h1>
+                @if (Model.Designation != null)
+                {
+                    <div class="dp-designation">@Model.Designation</div>
+                }
+                <div class="dp-chips">
+                    <span class="dp-chip dp-chip-primary">@d.SpecialisationName</span>
+                    @if (!string.IsNullOrWhiteSpace(d.DepartmentName) && !string.Equals(d.DepartmentName.Trim(), d.SpecialisationName?.Trim(), StringComparison.OrdinalIgnoreCase))
+                    {
+                        <span class="dp-chip">@d.DepartmentName</span>
+                    }
+                    @if (d.IsTeleconsult)
+                    {
+                        <span class="dp-chip dp-chip-success">@L["Js.Teleconsultation"]</span>
+                    }
+                </div>
+                @if (!string.IsNullOrWhiteSpace(hospitalText))
+                {
+                    <div class="dp-hospital"><span aria-hidden="true">🏥</span> @hospitalText</div>
+                }
+                @if (!string.IsNullOrWhiteSpace(d.Rating))
+                {
+                    <div class="dp-rating"><span class="dp-stars">★ @d.Rating</span> <span class="dp-reviews">@L["Js.Reviews", string.IsNullOrWhiteSpace(d.Review) ? "0" : d.Review]</span></div>
+                }
+            </div>
+
+            <aside class="dp-book">
+                @if (Model.Fee != null)
+                {
+                    <div class="dp-fee">
+                        <span class="dp-fee-label">@L["Js.ConsultationFee"]</span>
+                        <span class="dp-fee-value">₹ @Money(Model.Fee.Value)</span>
+                    </div>
+                }
+                @if (Model.NextAvailable != null)
+                {
+                    <div class="dp-next">
+                        <span class="dp-next-label">@L["Js.NextAvailable"]</span>
+                        <span class="dp-next-value">@Model.NextAvailable</span>
+                    </div>
+                }
+                <a class="dp-btn dp-btn-primary dp-btn-block" href="@Model.BookUrl">@L["Doctor.BookAppointment"]</a>
+                <button type="button" class="dp-btn dp-btn-block" data-share data-url="@Model.ProfileUrl" data-title="@d.FullName">
+                    <span aria-hidden="true">🔗</span> <span data-share-label>@L["Doctor.Share"]</span>
+                </button>
+            </aside>
+        </section>
+
+        @* ── Details ── *@
+        <div class="dp-columns">
+            @if (Model.About != null)
+            {
+                <section class="dp-card dp-section dp-wide">
+                    <h2 class="dp-section-title">@L["Doctor.About"]</h2>
+                    <p class="dp-about">@Model.About</p>
+                </section>
+            }
+
+            @if (Model.Education.Count > 0)
+            {
+                <section class="dp-card dp-section">
+                    <h2 class="dp-section-title"><span aria-hidden="true">🎓</span> @L["Js.Education"]</h2>
+                    <ul class="dp-list">
+                        @foreach (var e in Model.Education)
+                        {
+                            <li>@e</li>
+                        }
+                    </ul>
+                </section>
+            }
+
+            <section class="dp-card dp-section">
+                <h2 class="dp-section-title"><span aria-hidden="true">🩺</span> @L["Doctor.AtAGlance"]</h2>
+                <dl class="dp-facts">
+                    <div><dt>@L["Review.Specialty"]</dt><dd>@d.SpecialisationName</dd></div>
+                    @if (!string.IsNullOrWhiteSpace(d.WorkExperience))
+                    {
+                        <div><dt>@L["Js.Experience"]</dt><dd>@d.WorkExperience</dd></div>
+                    }
+                    @if (d.Languages.Count > 0)
+                    {
+                        <div><dt>@L["Doctor.Languages"]</dt><dd>@string.Join(", ", d.Languages)</dd></div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(hospitalText))
+                    {
+                        <div><dt>@L["Js.Hospital"]</dt><dd>@hospitalText</dd></div>
+                    }
+                </dl>
+            </section>
+
+            @if (Model.Treatments.Count > 0)
+            {
+                <section class="dp-card dp-section">
+                    <h2 class="dp-section-title"><span aria-hidden="true">💊</span> @L["Js.Treatments"]</h2>
+                    <div class="dp-tags">
+                        @foreach (var t in Model.Treatments)
+                        {
+                            <span class="dp-tag">@t</span>
+                        }
+                    </div>
+                </section>
+            }
+
+            @if (Model.Awards.Count > 0)
+            {
+                <section class="dp-card dp-section">
+                    <h2 class="dp-section-title"><span aria-hidden="true">🏆</span> @L["Doctor.Awards"]</h2>
+                    <ul class="dp-list">
+                        @foreach (var a in Model.Awards)
+                        {
+                            <li>@a</li>
+                        }
+                    </ul>
+                </section>
+            }
+        </div>
+
+        @* Phone: booking button always in reach *@
+        <div class="dp-sticky">
+            @if (Model.Fee != null)
+            {
+                <span class="dp-sticky-fee">₹ @Money(Model.Fee.Value)</span>
+            }
+            <a class="dp-btn dp-btn-primary" href="@Model.BookUrl">@L["Doctor.BookAppointment"]</a>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script src="~/js/pages/doctor-profile.js" asp-append-version="true"></script>
+}

@@ -1,16 +1,21 @@
 using Book_An_Appointment1.API.Clients;
 using Book_An_Appointment1.API.Handlers;
+using Book_An_Appointment1.Helpers;
 using Book_An_Appointment1.Localization;
 using Book_An_Appointment1.Models.Settings;
 using Book_An_Appointment1.Security;
 using Book_An_Appointment1.Services;
 using Book_An_Appointment1.Services.Implementations;
 using Book_An_Appointment1.Services.Interfaces;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.Localization;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Daily log files in logs/ — only the last FileLogging:RetainDays days are kept (Helpers/FileLogger.cs)
+builder.Logging.AddPortalFileLogging(builder.Configuration, builder.Environment);
 
 // No "Server: Kestrel" header (do not advertise the stack)
 builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
@@ -34,6 +39,26 @@ builder.Services.AddAntiforgery(options =>
     options.Cookie.SameSite = SameSiteMode.Strict;
     options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
 });
+
+// Keys that sign/encrypt antiforgery tokens, the session cookie and appointment slip links.
+// Kept on disk (not only in memory) so an app-pool recycle / restart does not break slip links patients already have.
+// Several servers behind a load balancer: point DataProtection:KeysPath of all of them to the same shared folder.
+// Nothing to set up: the folder is created automatically. If the site cannot write there (IIS permissions),
+// the portal still starts and uses ASP.NET's default key storage instead — see the warning in the log.
+
+
+var keysPath = builder.Configuration["DataProtection:KeysPath"];
+var keysDir = new DirectoryInfo(string.IsNullOrWhiteSpace(keysPath)
+    ? Path.Combine(builder.Environment.ContentRootPath, "App_Data", "keys")
+    : keysPath);
+var keysWritable = CanWrite(keysDir);
+var dataProtection = builder.Services.AddDataProtection().SetApplicationName("BookAnAppointmentPortal");
+if (keysWritable)
+{
+    dataProtection.PersistKeysToFileSystem(keysDir);
+    if (OperatingSystem.IsWindows())
+        dataProtection.ProtectKeysWithDpapi(protectToLocalMachine: true);   // key files are encrypted at rest
+}
 
 builder.Services.AddTransient<AuthHandler>();
 
@@ -102,6 +127,10 @@ builder.Services.AddScoped<IOtpService, OtpService>();
 builder.Services.AddScoped<ILocationService, LocationService>();
 builder.Services.AddScoped<ITitleService, TitleService>();
 builder.Services.AddScoped<IAppointmentBookingService, AppointmentBookingService>();
+builder.Services.AddScoped<IAppointmentSlipService, AppointmentSlipService>();
+builder.Services.AddScoped<IDoctorDirectory, DoctorDirectory>();
+builder.Services.AddScoped<IPatientRegistrationService, PatientRegistrationService>();
+builder.Services.AddSingleton<ISlipIndex, SlipIndex>();   // "Find my slip" store (App_Data/slips)
 
 var app = builder.Build();
 
@@ -119,6 +148,13 @@ else
 {
     app.Logger.LogInformation("API credentials loaded | Environment={Env}", app.Environment.EnvironmentName);
 }
+
+if (keysWritable)
+    app.Logger.LogInformation("Data Protection keys folder: {Path}", keysDir.FullName);
+else
+    app.Logger.LogWarning("Data Protection keys folder {Path} is not writable — using ASP.NET's default key storage. " +
+        "Slip links / QR codes may stop working after an app-pool restart. Give the app-pool user write access to it " +
+        "(or set DataProtection:KeysPath). See Docs/Deploy-New-Client.md section 6.", keysDir.FullName);
 
 if (!app.Environment.IsDevelopment())
 {
@@ -184,3 +220,20 @@ app.MapGet("/set-language", (string? culture, string? returnUrl, HttpContext con
 });
 
 app.Run();
+
+// Keys folder usable? Creates it if needed and tries a small test write.
+static bool CanWrite(DirectoryInfo dir)
+{
+    try
+    {
+        dir.Create();
+        var probe = Path.Combine(dir.FullName, ".write-test");
+        File.WriteAllText(probe, "");
+        File.Delete(probe);
+        return true;
+    }
+    catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
+    {
+        return false;
+    }
+}

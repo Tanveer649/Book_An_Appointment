@@ -28,3 +28,8 @@ packages/
 # OS files
 .DS_Store
 Thumbs.db
+# Data Protection keys (antiforgery, session, appointment slip links) — per server, never committed
+**/App_Data/keys/
+**/App_Data/slips/
+# Portal log files (FileLogging) — per server, never committed
+**/logs/

@@ -44,6 +44,22 @@ namespace Book_An_Appointment1.Models.DoctorItem
         public string IsTeleconsultation { get; set; }
         [JsonProperty("awards")]
         public string Awards { get; set; }
+        [JsonProperty("designation")]
+        public string? Designation { get; set; }
+        [JsonProperty("departmentName")]
+        public string? DepartmentName { get; set; }
+
+        // API sends a list (strings or objects, often empty) — read flexibly
+        [JsonProperty("language")]
+        public Newtonsoft.Json.Linq.JToken? Language { get; set; }
+
+        public List<string> Languages => Language is Newtonsoft.Json.Linq.JArray arr
+            ? arr.Select(x => x.Type == Newtonsoft.Json.Linq.JTokenType.Object
+                    ? (string?)(x["languageName"] ?? x["name"] ?? x["language"])
+                    : x.ToString())
+                 .Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s!.Trim()).Distinct().ToList()
+            : new List<string>();
+
         [JsonProperty("consultingHospitals")]
         public List<ConsultingHospital> ConsultingHospitals { get; set; } = new();
         public int HospitalLocationId =>int.TryParse(ConsultingHospitals.FirstOrDefault()?.OrganizationId, out var id) ? id : 0;

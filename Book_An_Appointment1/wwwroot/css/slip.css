@@ -1,0 +1,377 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560&family=Inter:wght@400;500;600;700&display=swap');
+
+/* Appointment slip (/slip/{token}) — colours from theme.css / the hospital theme file */
+:root {
+    --radius-lg: 22px;
+    --radius-md: 14px;
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-body: 'Inter', 'Segoe UI', sans-serif;
+}
+
+body {
+    background: var(--paper);
+    font-family: var(--font-body);
+    color: var(--ink);
+}
+
+.slip-page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 1.75rem 0 3rem;
+}
+
+.slip-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-top: 5px solid var(--primary);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 28px 56px -32px rgba(10, 25, 40, .35);
+    padding: 1.6rem 1.75rem;
+}
+
+/* ── Head ── */
+.slip-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--line);
+}
+
+.slip-kicker {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+}
+
+.slip-title {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 560;
+    margin: 2px 0 0;
+    color: var(--primary-dark);
+}
+
+.slip-status {
+    flex-shrink: 0;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--success-dark);
+    background: var(--success-tint);
+    border: 1px solid var(--success-border);
+}
+
+/* ── Hero: ID + date/time + QR ── */
+.slip-hero {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 1.25rem 0;
+}
+
+.slip-id-label, .slip-tile-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+}
+
+/* Appointment ID | UHID side by side */
+.slip-ids {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0 22px;
+}
+
+.slip-uhid {
+    padding-left: 22px;
+    border-left: 1px solid var(--line);
+}
+
+.slip-id {
+    font-size: 34px;
+    font-weight: 700;
+    letter-spacing: .02em;
+    color: var(--ink);
+    line-height: 1.15;
+    margin: 2px 0 14px;
+    word-break: break-all;
+}
+
+.slip-when {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.slip-tile {
+    display: flex;
+    flex-direction: column;
+    min-width: 150px;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    background: var(--primary-tint);
+    border: 1px solid var(--primary-border);
+}
+
+    .slip-tile .slip-tile-label {
+        color: var(--primary-dark);
+    }
+
+.slip-tile-value {
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+.slip-tile-sub {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+}
+
+.slip-qr {
+    margin: 0;
+    flex-shrink: 0;
+    width: 168px;
+    text-align: center;
+}
+
+.slip-qr-img {
+    width: 168px;
+    height: 168px;
+    padding: 6px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+}
+
+    .slip-qr-img svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+.slip-qr figcaption {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--ink-soft);
+}
+
+/* ── Details ── */
+.slip-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 1.5rem;
+    margin: 0;
+    border-top: 1px solid var(--line);
+}
+
+.slip-item {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--surface-soft);
+}
+
+    .slip-item dt {
+        font-size: 11.5px;
+        font-weight: 600;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+    }
+
+    .slip-item dd {
+        margin: 2px 0 0;
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--ink);
+        overflow-wrap: anywhere;
+    }
+
+.slip-wide {
+    grid-column: 1 / -1;
+}
+
+.slip-amount {
+    color: var(--accent-dark) !important;
+}
+
+.slip-note {
+    margin: 1.1rem 0 0;
+    padding: 12px 14px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--ink);
+    background: var(--primary-tint);
+    border-radius: var(--radius-md);
+}
+
+/* ── Actions ── */
+.slip-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-top: 1.25rem;
+}
+
+.slip-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 42px;
+    padding: 0 18px;
+    border-radius: 999px;
+    border: 1.5px solid var(--primary-border-strong);
+    background: var(--surface);
+    color: var(--primary-dark);
+    font: 600 14px var(--font-body);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+}
+
+    .slip-btn:hover, .slip-btn:focus-visible {
+        background: var(--primary-tint);
+        border-color: var(--primary);
+        color: var(--primary-dark);
+    }
+
+.slip-btn-primary {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+    .slip-btn-primary:hover, .slip-btn-primary:focus-visible {
+        background: var(--primary-dark);
+        border-color: var(--primary-dark);
+        color: #fff;
+    }
+
+.slip-btn-soft {
+    min-height: 36px;
+    padding: 0 14px;
+    font-size: 13px;
+}
+
+.slip-cal {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.slip-cal-label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink-soft);
+}
+
+/* ── Invalid / unavailable ── */
+.slip-empty {
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+}
+
+.slip-empty-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--danger);
+    background: var(--danger-tint);
+}
+
+.slip-empty-title {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 560;
+}
+
+.slip-empty-sub {
+    color: var(--ink-soft);
+    margin-bottom: 1.25rem;
+}
+
+/* ── Phone ── */
+@media (max-width: 600px) {
+    .slip-page {
+        padding-top: 1rem;
+    }
+
+    .slip-card {
+        padding: 1.2rem 1.1rem;
+    }
+
+    .slip-hero {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+
+    .slip-qr {
+        width: 100%;
+    }
+
+    .slip-qr-img {
+        margin: 0 auto;
+    }
+
+    .slip-id {
+        font-size: 28px;
+    }
+
+    .slip-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .slip-actions > .slip-btn {
+        flex: 1 1 100%;
+    }
+
+    .slip-cal {
+        margin-left: 0;
+    }
+}
+
+/* ── Print: only the slip ── */
+@media print {
+    @page {
+        size: A4;
+        margin: 14mm;
+    }
+
+    .hospital-header, .custom-footer, [data-no-print] {
+        display: none !important;
+    }
+
+    body {
+        background: #fff;
+    }
+
+    .slip-page {
+        padding: 0;
+        max-width: none;
+    }
+
+    .slip-card {
+        box-shadow: none;
+        border-color: #ccc;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}

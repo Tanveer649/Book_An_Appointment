@@ -1,0 +1,220 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560&family=Inter:wght@400;500;600;700&display=swap');
+
+/* Booking QR wall poster (/booking-qr) — colours from the hospital theme */
+body {
+    background: var(--paper);
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    color: var(--ink);
+}
+
+.bq-page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 1.5rem 0 3rem;
+}
+
+.bq-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 1rem;
+}
+
+.bq-help {
+    margin: 0;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    max-width: 420px;
+}
+
+.bq-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.bq-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1.5px solid var(--primary-border-strong);
+    background: var(--surface);
+    color: var(--primary-dark);
+    font: 600 14px 'Inter', sans-serif;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+    .bq-btn:hover {
+        background: var(--primary-tint);
+        color: var(--primary-dark);
+    }
+
+.bq-btn-primary {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+    .bq-btn-primary:hover {
+        background: var(--primary-dark);
+        color: #fff;
+    }
+
+/* ── Poster ── */
+.bq-poster {
+    text-align: center;
+    background: var(--surface);
+    border-radius: 24px;
+    border-top: 10px solid var(--primary);
+    box-shadow: 0 28px 56px -32px rgba(10, 25, 40, .35);
+    padding: 2.2rem 2rem 2rem;
+}
+
+.bq-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.bq-logo {
+    height: 56px;
+    width: auto;
+}
+
+.bq-hospital {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+.bq-title {
+    margin: 1.3rem 0 .3rem;
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 40px;
+    font-weight: 560;
+    line-height: 1.15;
+    color: var(--primary-dark);
+}
+
+.bq-subtitle {
+    margin: 0 auto;
+    max-width: 520px;
+    font-size: 17px;
+    color: var(--ink-soft);
+}
+
+.bq-qr {
+    width: 340px;
+    height: 340px;
+    margin: 1.6rem auto;
+    padding: 14px;
+    background: #fff;
+    border: 3px solid var(--primary);
+    border-radius: 20px;
+}
+
+    .bq-qr svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+.bq-steps {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px 26px;
+    padding: 0;
+    margin: 0 0 1.2rem;
+    list-style: none;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+    .bq-steps li {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .bq-steps span {
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: var(--primary);
+        color: #fff;
+        font-size: 14px;
+    }
+
+.bq-url {
+    margin: 0;
+    font-size: 14px;
+    color: var(--ink-soft);
+    word-break: break-all;
+}
+
+    .bq-url strong {
+        color: var(--ink);
+    }
+
+@media (max-width: 600px) {
+    .bq-poster {
+        padding: 1.5rem 1rem;
+    }
+
+    .bq-title {
+        font-size: 28px;
+    }
+
+    .bq-qr {
+        width: 260px;
+        height: 260px;
+    }
+}
+
+/* Print: only the poster, filling an A4 page */
+@media print {
+    @page {
+        size: A4;
+        margin: 12mm;
+    }
+
+    .hospital-header, .custom-footer, [data-no-print] {
+        display: none !important;
+    }
+
+    body {
+        background: #fff;
+    }
+
+    .bq-page {
+        max-width: none;
+        padding: 0;
+    }
+
+    .bq-poster {
+        box-shadow: none;
+        border: 2px solid var(--primary);
+        border-top-width: 14px;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .bq-title {
+        font-size: 46px;
+    }
+
+    .bq-qr {
+        width: 110mm;
+        height: 110mm;
+    }
+}

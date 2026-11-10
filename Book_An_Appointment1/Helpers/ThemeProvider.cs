@@ -41,6 +41,25 @@ namespace Book_An_Appointment1.Helpers
             }
         }
 
+        // Hospital brand colour (--primary of the theme file) for places CSS cannot reach, e.g. the PDF slip
+        public string PrimaryColor
+        {
+            get
+            {
+                var url = ThemeUrl;
+                if (url == null) return FallbackPrimary;
+                var file = _environment.WebRootFileProvider.GetFileInfo(url.TrimStart('~', '/'));
+                if (!file.Exists) return FallbackPrimary;
+
+                using var reader = new StreamReader(file.CreateReadStream());
+                var match = PrimaryVar.Match(reader.ReadToEnd());
+                return match.Success ? match.Groups[1].Value : FallbackPrimary;
+            }
+        }
+
+        private const string FallbackPrimary = "#0F5C93";   // theme.css default
+        private static readonly Regex PrimaryVar = new(@"--primary\s*:\s*(#[0-9a-fA-F]{6})\b", RegexOptions.Compiled);
+
         private bool Exists(string name) =>
             _environment.WebRootFileProvider.GetFileInfo($"{Folder}/{name}.css").Exists;
 

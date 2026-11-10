@@ -181,13 +181,14 @@ $(document).ready(function () {
         if (!facilityId) {
             lockDropdown('#specialityDropdown', '#specialityLockWrap', t('Js.SelectFacilityFirst'));
             lockDropdown('#doctorDropdown', '#doctorLockWrap', t('Js.SelectFacilityFirst'));
-        } else if (!specialityId) {
-            unlockDropdown('#specialityDropdown', '#specialityLockWrap');
-            lockDropdown('#doctorDropdown', '#doctorLockWrap', t('Js.SelectSpecialityFirst'));
         } else {
+            // Facility chosen → speciality AND doctor are open: the patient may start with either one
             unlockDropdown('#specialityDropdown', '#specialityLockWrap');
             unlockDropdown('#doctorDropdown', '#doctorLockWrap');
         }
+        // 'Start over' only makes sense once something beyond the default facility is chosen
+        $('#startOverBtn').prop('hidden', !specialityId && !doctorId);
+
         var current = !facilityId ? 'facility' : !specialityId ? 'speciality' : !doctorId ? 'doctor' : 'slot';
         var order = ['facility', 'speciality', 'doctor', 'slot'];
         $('#welcomeSteps li').each(function () {
@@ -292,33 +293,53 @@ $(document).ready(function () {
                 refreshLockState();
             }
         });
+        loadDoctors(facilityId, 0);       // every doctor of the facility — a doctor can be chosen before the speciality
     });
 
+    // Speciality chosen → only its doctors; speciality cleared → every doctor of the facility again
     $('#specialityDropdown').on('change', function () {
         var facilityId = parseInt($('#facilityDropdown').val());
-        var specialityId = parseInt($(this).val());
+        var specialityId = parseInt($(this).val()) || 0;
         resetDropdown('#doctorDropdown', t('Js.SearchDoctor'));
         showWelcome();
         AppointmentValidation.clearErrors();
         refreshLockState();
-        if (!facilityId || !specialityId) return;
+        if (!facilityId) return;
+        loadDoctors(facilityId, specialityId);
+    });
 
+    // Doctor list (GetDoctorList: specialityId 0 = all). keepDoctorId re-selects a doctor after the list changes.
+    var doctorListRequestId = 0;
+    function loadDoctors(facilityId, specialityId, keepDoctorId) {
+        var reqId = ++doctorListRequestId;
         $.ajax({
             url: '?handler=GetDoctors', method: 'POST', contentType: 'application/json',
             headers: { 'RequestVerificationToken': token },
             data: JSON.stringify({ facilityId: facilityId, specialityId: specialityId }),
             success: function (res) {
-                if (!res.success || parseInt($('#specialityDropdown').val()) !== specialityId) return;
-                populateDropdown('#doctorDropdown', res.data, 'id', 'fullName', t('Js.SearchDoctor'));
+                if (!res.success || reqId !== doctorListRequestId || parseInt($('#facilityDropdown').val()) !== facilityId) return;
+                populateDoctors(res.data);
+                if (keepDoctorId) $('#doctorDropdown').val(String(keepDoctorId)).trigger('change.select2');
                 refreshLockState();
             }
         });
-    });
+    }
 
     $('#doctorDropdown').on('change', function () {
         var facilityId = parseInt($('#facilityDropdown').val());
-        var specialityId = parseInt($('#specialityDropdown').val());
         var doctorId = parseInt($(this).val());
+
+        // Doctor picked before (or outside) the speciality → select the doctor's speciality and narrow the doctor
+        // list to that speciality, keeping this doctor selected. 'change.select2' only redraws the dropdown, it does
+        // not run the speciality handler above (which would clear the doctor).
+        var doctorSpeciality = parseInt($(this).find('option:selected').attr('data-speciality')) || 0;
+        if (doctorId && doctorSpeciality && parseInt($('#specialityDropdown').val()) !== doctorSpeciality &&
+            $('#specialityDropdown option[value="' + doctorSpeciality + '"]').length) {
+            $('#specialityDropdown').val(String(doctorSpeciality)).trigger('change.select2');
+            loadDoctors(facilityId, doctorSpeciality, doctorId);
+        }
+
+        var specialityId = parseInt($('#specialityDropdown').val()) || doctorSpeciality;
         AppointmentValidation.clearErrors();
         refreshLockState();
 
@@ -362,6 +383,7 @@ $(document).ready(function () {
         if (saved) { $('#hdnSelectedSlotStart').val(saved.startTime); $('#hdnSelectedSlotEnd').val(saved.endTime); }
         updateSummary();
         initCalendar(doc.hospitalLocationId, facilityId, doctorId, date);
+        if (!slots.length) showEmptyDay(date, facilityId, doctorId, doc.hospitalLocationId);
     }
 
     function setDateLabel(dateStr) {
@@ -445,7 +467,20 @@ $(document).ready(function () {
     function hideLimitDialog() { $('#limitDialog').prop('hidden', true); }
     $('#limitDialogClose').on('click', hideLimitDialog);
     $('#limitDialog').on('click', function (e) { if (e.target === this) hideLimitDialog(); });
-    $(document).on('keydown', function (e) { if (e.key === 'Escape') { hideLimitDialog(); closePatientTypeDialog(); } });
+    $(document).on('keydown', function (e) { if (e.key === 'Escape') { hideLimitDialog(); closePatientTypeDialog(); hideStartOver(); } });
+
+    /* ── Start over (confirmation → ?handler=StartOver clears this page's choices) ── */
+    function hideStartOver() {
+        if ($('#startOverDialog').prop('hidden')) return;
+        $('#startOverDialog').prop('hidden', true);
+        $('#startOverBtn').trigger('focus');
+    }
+    $('#startOverBtn').on('click', function () {
+        $('#startOverDialog').prop('hidden', false);
+        $('#startOverCancel').trigger('focus');
+    });
+    $('#startOverCancel').on('click', hideStartOver);
+    $('#startOverDialog').on('click', function (e) { if (e.target === this) hideStartOver(); });
 
     function initCalendar(hospitalLocationId, facilityId, doctorId, date) {
         if (window._flatpickrInstance) window._flatpickrInstance.destroy();
@@ -493,11 +528,57 @@ $(document).ready(function () {
         }).done(function (data) {
             if (reqId !== slotRequestId) return;
             $('#slotsContainer').html(UI.renderSlots(data, '', t('Js.NoSlotsForDate')));
+            if (!(data || []).length) showEmptyDay(date, facilityId, doctorId, hospitalLocationId);
         }).fail(function () {
             if (reqId !== slotRequestId) return;
             $('#slotsContainer').html('<div class="text-danger">' + UI.esc(t('Js.SlotsLoadFailed')) + '</div>');
         });
     }
+
+    /* ── Day without free slots → next free day (appsettings AppointmentPageSettings:EnableNextAvailable) ── */
+    var calendarOffIcon = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" ' +
+        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5h9a2 2 0 0 1 2 2v9M20 20H6a2 2 0 0 1-2-2V7' +
+        'a2 2 0 0 1 1-1.7M16 3v4M8 3v1M4 11h7M15 11h5M3 3l18 18"/></svg>';
+
+    function emptyDayHtml(title, sub, goDate, goLabel) {
+        return '<div class="empty-day" role="status"><div class="empty-day-icon">' + calendarOffIcon + '</div>' +
+            '<div class="empty-day-title">' + UI.esc(title) + '</div>' +
+            (sub ? '<div class="empty-day-sub">' + UI.esc(sub) + '</div>' : '') +
+            (goDate ? '<button type="button" class="empty-day-btn" data-go-day="' + UI.esc(goDate) + '">' + UI.esc(goLabel) + '</button>' : '') +
+            '</div>';
+    }
+
+    function dayLabel(dateStr) {
+        var d = UI.parseSlot(dateStr + 'T00:00:00');
+        return d ? UI.formatDay(d) : dateStr;
+    }
+
+    function showEmptyDay(dateStr, facilityId, doctorId, hospitalLocationId) {
+        if (!cfg.nextAvailableEnabled) return;                       // switched off → plain "No slots available" text
+        var reqId = slotRequestId;                                   // a newer date / doctor choice wins
+        var title = t('Js.NoSlotsOn', dayLabel(dateStr));
+        $('#slotsContainer').html(emptyDayHtml(title, t('Js.FindingNextFreeDay')));
+
+        $.get('?handler=NextFreeDay', {
+            facilityId: facilityId, doctorId: doctorId, hospitalLocationId: hospitalLocationId, after: dateStr
+        }).done(function (res) {
+            if (reqId !== slotRequestId) return;
+            if (res && res.date) {
+                var next = dayLabel(res.date);
+                $('#slotsContainer').html(emptyDayHtml(title, t('Js.NextFreeDay', next), res.date, t('Js.GoToDay', next)));
+            } else {
+                $('#slotsContainer').html(emptyDayHtml(title, t('Js.ChooseAnotherDate')));
+            }
+        }).fail(function () {
+            if (reqId !== slotRequestId) return;
+            $('#slotsContainer').html(emptyDayHtml(title, t('Js.ChooseAnotherDate')));
+        });
+    }
+
+    // "Go to …" → same as picking that day in the calendar (moves the calendar, loads that day's slots)
+    $(document).on('click', '[data-go-day]', function () {
+        if (window._flatpickrInstance) window._flatpickrInstance.setDate($(this).attr('data-go-day'), true);
+    });
 
     /* ── Dropdown helpers ─────────────────────────────── */
     function resetDropdown(selector, placeholder) {
@@ -508,6 +589,15 @@ $(document).ready(function () {
         $el.empty().append($('<option>', { value: '', text: placeholder }));
         $.each(data || [], function (i, item) {
             $el.append($('<option>', { value: item[valField], text: item[textField] || item.name || t('Js.NA') }));
+        });
+        $el.trigger('change.select2');
+    }
+    // Doctor options carry their speciality (data-speciality) so choosing a doctor first can fill the speciality
+    function populateDoctors(doctors) {
+        var $el = $('#doctorDropdown');
+        $el.empty().append($('<option>', { value: '', text: t('Js.SearchDoctor') }));
+        $.each(doctors || [], function (i, d) {
+            $el.append($('<option>', { value: d.id, text: d.fullName || t('Js.NA'), 'data-speciality': d.specialisationId || '' }));
         });
         $el.trigger('change.select2');
     }

@@ -2,6 +2,7 @@ function initPatientDetailsPage() {
 
     const timers = {};              // one countdown per OTP box (new / registered), they must not cancel each other
     let currentMode = null;         // 'new' | 'registered' — the open section
+    let titleList = [];             // titles from ?handler=Titles (new patient form + family member form)
 
     // Both OTP boxes run the same flow; only element ids / handler differ
     const OTP_BOX = {
@@ -28,6 +29,7 @@ function initPatientDetailsPage() {
         prefillCommonFields();
         limitDobToPast();
         rememberExtrasOnChange();
+        initFamilyMemberForm();
 
         // Open the section chosen on page 1 (also after a server-side validation failure)
         applyMode(SavedPatientType === 'registered' ? 'registered' : 'new');
@@ -165,6 +167,7 @@ function initPatientDetailsPage() {
             .then(r => r.json())
             .then(res => {
                 if (!res.success) return;
+                titleList = res.data || [];          // reused by the "Add family member" form
 
                 const select = document.getElementById('Form_Title');
                 select.innerHTML = '<option value="">--</option>';
@@ -624,12 +627,14 @@ function initPatientDetailsPage() {
         list.innerHTML = '';
         hidePatientError();
 
-        if (!patients.length) { wrap.style.display = 'none'; return; }
+        // Verified mobile with nobody on it yet → only "Add family member" is offered
         wrap.style.display = 'block';
 
-        document.getElementById('pf-list-sub').textContent = patients.length === 1
-            ? t('Js.OnePatientFound')
-            : t('Js.PatientsFound', patients.length);
+        document.getElementById('pf-list-sub').textContent = !patients.length
+            ? t('Js.NoFamilyMembers')
+            : patients.length === 1
+                ? t('Js.OnePatientFound')
+                : t('Js.PatientsFound', patients.length);
 
         patients.forEach((p, i) => list.appendChild(buildPatientCard(p, i, i === selectedIndex)));
     }
@@ -756,6 +761,219 @@ function initPatientDetailsPage() {
         btn.classList.remove('otp-sent');
         sendRegisteredOTP();
     };
+
+    // ── Add family member (registered patient) ───────────
+    // Form in #familyModal → ?handler=AddFamilyMember (MobSaveRegistrationForPatient). On success the server
+    // adds the member to the verified list and selects it; the cards are redrawn from its answer.
+
+    
+    function initFamilyMemberForm() {
+        const modal = document.getElementById('familyModal');
+        const addBtn = document.getElementById('pf-add-btn');
+        if (!modal || !addBtn) return;
+
+        const $ = id => document.getElementById(id);
+        const form = $('familyForm');
+        const saveBtn = $('fm-save');
+        let opener = null, busy = false, statesLoaded = false;
+
+        addBtn.addEventListener('click', open);
+        modal.querySelectorAll('[data-fm-close]').forEach(b => b.addEventListener('click', close));
+        modal.addEventListener('click', e => { if (e.target === modal) close(); });
+        modal.addEventListener('keydown', e => {
+            if (e.key === 'Escape') { e.stopPropagation(); close(); return; }
+            if (e.key !== 'Tab') return;                                  // keep focus inside the dialog
+            const items = Array.from(modal.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled])'))
+                .filter(x => x.offsetParent !== null);
+            if (!items.length) return;
+            const first = items[0], last = items[items.length - 1];
+            if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+            else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        });
+
+        // Title → gender (same as the new patient form)
+        $('fm-title').addEventListener('change', function () {
+            const g = this.options[this.selectedIndex]?.dataset.gender;
+            if (g === 'M') setGender('Male'); else if (g === 'F') setGender('Female');
+        });
+        $('fm-gender').querySelectorAll('.gender-btn').forEach(b => b.addEventListener('click', () => setGender(b.dataset.value)));
+        $('fm-state').addEventListener('change', function () { loadFmCities(this.value); });
+        $('fm-pincode').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); });
+        form.querySelectorAll('[data-field]').forEach(f => ['input', 'change'].forEach(ev => f.addEventListener(ev, () => fieldError(f.dataset.field, ''))));
+
+        form.addEventListener('submit', e => { e.preventDefault(); save(); });
+
+        function open() {
+            opener = document.activeElement;
+            form.reset();
+            setGender('');
+            showFormError('');
+            form.querySelectorAll('[data-field]').forEach(f => fieldError(f.dataset.field, ''));
+            $('fm-mobile').textContent = '+91 ' + (document.getElementById('reg-phone-input').value || '');
+            $('fm-dob').max = document.getElementById('Form_DOB')?.max || '';
+            fillTitles();
+            if (!statesLoaded) loadFmStates();
+            modal.hidden = false;
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => $('fm-title').focus(), 30);
+        }
+
+        function close() {
+            if (busy || modal.hidden) return;
+            modal.hidden = true;
+            document.body.style.overflow = '';
+            if (opener && opener.focus) opener.focus();
+        }
+
+        function fillTitles() {
+            const select = $('fm-title');
+            if (select.options.length > 1) return;
+            const add = list => list.forEach(x => {
+                const opt = new Option((x.name || '').trim(), x.titleId);
+                opt.dataset.gender = x.gender || '';
+                select.appendChild(opt);
+            });
+            if (titleList.length) { add(titleList); return; }
+            fetch('?handler=Titles').then(r => r.json()).then(res => { if (res.success) { titleList = res.data || []; add(titleList); } }).catch(() => { });
+        }
+
+        function loadFmStates() {
+            const select = $('fm-state');
+            fetch(`?handler=States&countryId=${DefaultCountryId || 1}`).then(r => r.json()).then(res => {
+                if (!res.success) return;
+                (res.data || []).forEach(s => select.appendChild(new Option(s.stateName.trim(), s.stateId)));
+                statesLoaded = true;
+            }).catch(() => { });
+        }
+
+        function loadFmCities(stateId) {
+            const select = $('fm-city');
+            select.innerHTML = '';
+            select.appendChild(new Option(t('Js.SelectCity'), ''));
+            select.disabled = true;
+            if (!stateId) return;
+            fetch(`?handler=Cities&stateId=${encodeURIComponent(stateId)}`).then(r => r.json()).then(res => {
+                if (!res.success || $('fm-state').value !== stateId) return;
+                (res.data || []).forEach(c => select.appendChild(new Option(c.cityName.trim(), c.cityId)));
+                select.disabled = !(res.data || []).length;
+            }).catch(() => { });
+        }
+
+        function setGender(value) {
+            $('fm-gender').dataset.value = value;
+            $('fm-gender').querySelectorAll('.gender-btn').forEach(b => {
+                const on = b.dataset.value === value;
+                b.classList.toggle('sel', on);
+                b.setAttribute('aria-checked', String(on));
+            });
+            if (value) fieldError('gender', '');
+        }
+
+        function values() {
+            const title = $('fm-title');
+            return {
+                titleId: Number(title.value) || 0,
+                titleName: title.value ? title.options[title.selectedIndex].text : '',
+                firstName: $('fm-first').value.trim(),
+                middleName: $('fm-middle').value.trim(),
+                lastName: $('fm-last').value.trim(),
+                dob: $('fm-dob').value,
+                gender: $('fm-gender').dataset.value || '',
+                email: $('fm-email').value.trim(),
+                address: $('fm-address').value.trim(),
+                countryId: Number(DefaultCountryId) || 0,
+                stateId: Number($('fm-state').value) || 0,
+                cityId: Number($('fm-city').value) || 0,
+                pincode: $('fm-pincode').value.trim()
+            };
+        }
+
+        // Same rules as the server (OnPostAddFamilyMemberAsync) — the first problem is shown at its field
+        function validate(v) {
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const checks = [
+                ['title', !v.titleId, 'Validation.SelectTitle'],
+                ['firstName', !v.firstName, 'Validation.FirstNameRequired'],
+                ['firstName', !nameRegex.test(v.firstName), 'Validation.FirstNameLetters'],
+                ['middleName', v.middleName && !nameRegex.test(v.middleName), 'Validation.MiddleNameLetters'],
+                ['lastName', !v.lastName, 'Validation.LastNameRequired'],
+                ['lastName', !nameRegex.test(v.lastName), 'Validation.LastNameLetters'],
+                ['dob', !v.dob, 'Validation.DobRequired'],
+                ['dob', v.dob && new Date(v.dob) >= today, 'Validation.DobPast'],
+                ['gender', !v.gender, 'Validation.SelectGender'],
+                ['state', !v.stateId, 'Validation.SelectState'],
+                ['city', !v.cityId, 'Validation.SelectCity'],
+                ['email', v.email && !emailRegex.test(v.email), 'Validation.EmailInvalid'],
+                ['pincode', v.pincode && !/^\d{6}$/.test(v.pincode), 'Validation.PincodeInvalid']
+            ];
+            const seen = new Set();
+            let ok = true;
+            checks.forEach(([field, bad, key]) => {
+                if (!bad || seen.has(field)) return;
+                seen.add(field);
+                fieldError(field, t(key));
+                ok = false;
+            });
+            if (!ok) form.querySelector('.fm-invalid')?.focus();
+            return ok;
+        }
+
+        function save() {
+            if (busy) return;
+            showFormError('');
+            const v = values();
+            if (!validate(v)) return;
+
+            setBusy(true);
+            postJson('AddFamilyMember', v)
+                .then(data => {
+                    setBusy(false);
+                    if (data.success) {
+                        close();
+                        renderPatientCards(data.patientList || [], data.selected ? data.selected.selectedIndex : -1);
+                        fillRegisteredHiddenFields(data.selected || {});
+                        const card = document.querySelector('#pf-list .pf-card.selected');
+                        if (card) {
+                            card.classList.add('pf-card-new');
+                            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                        document.getElementById('pf-list-sub').textContent = t('Js.FamilyMemberAdded');
+                        return;
+                    }
+                    if (data.field) { fieldError(data.field, data.message); return; }
+                    if (data.redirectUrl) { window.location.href = data.redirectUrl; return; }
+                    showFormError(data.message || t('Errors.FamilyMemberFailed'));
+                })
+                .catch(() => { setBusy(false); showFormError(t('Js.SomethingWrong')); });
+        }
+
+        function setBusy(on) {
+            busy = on;
+            saveBtn.disabled = on;
+            saveBtn.textContent = on ? t('Js.PleaseWait') : t('Js.SaveSelect');
+            modal.querySelectorAll('[data-fm-close]').forEach(b => b.disabled = on);
+        }
+
+        function showFormError(msg) {
+            const box = $('fm-error');
+            box.textContent = msg || '';
+            box.hidden = !msg;
+            if (msg) box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+
+        function fieldError(field, msg) {
+            const input = form.querySelector(`[data-field="${field}"]`);
+            if (!input) { if (msg) showFormError(msg); return; }
+            const group = input.closest('.form-group');
+            group?.querySelector('.fm-field-error')?.remove();
+            input.classList.toggle('fm-invalid', !!msg);
+            input.classList.toggle('input-error', !!msg && input.tagName !== 'DIV');
+            if (!msg) return;
+            const err = el('span', 'field-error fm-field-error', msg);
+            err.setAttribute('role', 'alert');
+            (group || input.parentNode).appendChild(err);
+        }
+    }
 
     // ── Notes + consent survive a page reload ────────────
     // Two layers (draft only — the Review & Confirm submit still validates everything):

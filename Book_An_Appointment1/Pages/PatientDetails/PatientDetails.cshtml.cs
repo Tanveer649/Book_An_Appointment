@@ -21,6 +21,7 @@ namespace Book_An_Appointment1.Pages.Appointment
         private readonly ILocationService _locationService;
         private readonly ITitleService _titleService;
         private readonly JsonStringLocalizer _localizer;
+        private readonly IPatientRegistrationService _registrationService;
 
         // Development only: Send OTP does not send an SMS and TestOtp is accepted.
         // On any other environment the real OTP APIs are always used.
@@ -40,6 +41,11 @@ namespace Book_An_Appointment1.Pages.Appointment
         public int SelectedPatientIndex { get; set; } = -1;
         public record SwitchPatientTypeRequest(string? PatientType);
         public record RememberExtrasRequest(string? Notes, bool ConsentTerms, bool ConsentMarketing);
+        public record AddFamilyMemberRequest(int TitleId, string? TitleName, string? FirstName, string? MiddleName, string? LastName,
+            string? Dob, string? Gender, string? Email, string? Address, int CountryId, int StateId, int CityId, string? Pincode);
+
+        // How MobSaveRegistrationForPatient reports a wrong / expired OTP ("OTP Or Mobile No is incorrect!")
+        private const string DefaultOtpErrorPattern = @"\botp\b";
         private const int NotesMaxLength = 300;   // same as the textarea maxlength
 
         // How the OTP APIs say "wrong patient type" — override per client in appsettings OtpSettings
@@ -53,9 +59,11 @@ namespace Book_An_Appointment1.Pages.Appointment
              ILocationService locationService,
              ITitleService titleService,
              JsonStringLocalizer localizer,
-             IWebHostEnvironment environment)
+             IWebHostEnvironment environment,
+             IPatientRegistrationService registrationService)
         {
             _localizer = localizer;
+            _registrationService = registrationService;
             _useTestOtp = environment.IsDevelopment();
             _otpService = otpService;
             _logger = logger;
@@ -145,6 +153,10 @@ namespace Book_An_Appointment1.Pages.Appointment
             Form.OtpLength = _configuration.GetValue<int>("OtpSettings:OtpLength", 6);
             Form.CountryName = _configuration.GetValue<string>(
                 "DefaultLocationSettings:DefaultCountryName", "INDIA") ?? "INDIA";
+
+            // Registered patients too: the "Add family member" form lists the states of this country
+            if (Form.CountryId <= 0)
+                Form.CountryId = _configuration.GetValue<int>("DefaultLocationSettings:DefaultCountryId", 1);
         }
 
         // ── New Patient — Send OTP ───────────────────────────
@@ -479,9 +491,13 @@ namespace Book_An_Appointment1.Pages.Appointment
                 var registeredPatient = sessionData.RegisteredPatient;
 
                 // Top-level API response details — the verified number is the one the user entered
-                // (the form post is checked against it); the OTP itself is never stored
+                // (the form post is checked against it). The OTP is not part of the booking data; it is kept
+                // separately on the server only for "Add family member" (the API checks mobile + OTP).
                 registeredPatient.Mobile = request.MobileNo;
                 registeredPatient.IsMobileVerified = true;
+                // The verify API may return its own OTP value (data.otp) — preferred for MobSaveRegistrationForPatient
+                HttpContext.Session.SetString(SessionHelper.FamilyOtpKey,
+                    IsValidOtp(apiData.Otp) ? apiData.Otp!.Trim() : request.OtpNo);
 
                 registeredPatient.Otp = null;
                 registeredPatient.IsUserExist = apiData.IsUserExist;
@@ -592,6 +608,205 @@ namespace Book_An_Appointment1.Pages.Appointment
             SessionHelper.SetAppointmentData(HttpContext.Session, sessionData!);
 
             return new JsonResult(new { success = true, selected = SelectedPatientFields(registeredPatient) });
+        }
+
+        // ── AJAX: Add family member (registered patient) ─────
+        // New member under the verified mobile → MobSaveRegistrationForPatient → added to the cards and selected.
+        // The API checks mobile + OTP: the OTP the mobile was just verified with is used (no second OTP for the patient).
+        public async Task<JsonResult> OnPostAddFamilyMemberAsync([FromBody] AddFamilyMemberRequest request)
+        {
+            var sessionData = SessionHelper.GetAppointmentData(HttpContext.Session);
+            var registered = sessionData?.RegisteredPatient;
+            if (sessionData == null || registered == null || !registered.IsMobileVerified || !IsValidMobile(registered.Mobile))
+                return Fail(_localizer.Text("Validation.VerifyMobile"));
+
+            var invalid = ValidateFamilyMember(request, registered);
+            if (invalid != null) return invalid;
+
+            // OTP of the mobile verification (kept on the server); missing → the mobile must be verified again
+            var otp = HttpContext.Session.GetString(SessionHelper.FamilyOtpKey);
+            if (!IsValidOtp(otp))
+                return Fail(_localizer.Text("Validation.VerifyMobile"));
+
+            var apiRequest = new FamilyMemberRegistrationRequest
+            {
+                HospitalLocationId = sessionData.HospitalLocationId > 0
+                    ? sessionData.HospitalLocationId
+                    : _configuration.GetValue("ApiParam:GetFacilitiesParams:HospitalLocationId", 1),
+                FacilityId = sessionData.FacilityId.ToString(),
+                FirstName = request.FirstName!.Trim(),
+                MiddleName = string.IsNullOrWhiteSpace(request.MiddleName) ? " " : request.MiddleName.Trim(),
+                LastName = request.LastName!.Trim(),
+                Dob = DateTime.Parse(request.Dob!, CultureInfo.InvariantCulture).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                Gender = GenderCode.Resolve(_configuration, request.Gender, _logger),
+                Mobile = registered.Mobile,
+                Email = request.Email?.Trim() ?? "",
+                TitleId = request.TitleId.ToString(),
+                Address = request.Address?.Trim() ?? "",
+                CountryId = (request.CountryId > 0 ? request.CountryId : _configuration.GetValue("ApiParam:DefaultLocationSettings:DefaultCountryId", 1)).ToString(),
+                StateId = request.StateId.ToString(),
+                CityId = request.CityId.ToString(),
+                AreaId = _configuration["FamilyMemberSettings:DefaultAreaId"] ?? "0",
+                ZipCode = request.Pincode?.Trim() ?? "",
+                PaymentFlag = _configuration["FamilyMemberSettings:PaymentFlag"] ?? "0",
+                Otp = otp!
+            };
+
+            try
+            {
+                FamilyMemberRegistrationResult result;
+                if (_useTestOtp && otp == TestOtp)
+                    result = TestFamilyMember(apiRequest, request);   // Development: no record is created in the hospital system
+                else
+                {
+                    result = await _registrationService.SaveFamilyMemberAsync(apiRequest);
+
+                    // The verified OTP is used up by VerifyPatientOTP → the API answers "OTP Or Mobile No is incorrect!".
+                    // Ask the OTP API for a fresh OTP for the same verified mobile (its response carries the OTP number)
+                    // and retry once — the patient is not asked for anything again.
+                    if (!result.Success && MatchesOtpPattern(result.Message, "FamilyMemberSettings:OtpErrorPattern", DefaultOtpErrorPattern))
+                    {
+                        var freshOtp = await FreshFamilyOtpAsync(registered.Mobile);
+                        if (freshOtp != null)
+                        {
+                            apiRequest.Otp = freshOtp;
+                            result = await _registrationService.SaveFamilyMemberAsync(apiRequest);
+                            if (result.Success) HttpContext.Session.SetString(SessionHelper.FamilyOtpKey, freshOtp);
+                        }
+                    }
+                }
+
+                if (!result.Success || result.Patient == null)
+                {
+                    _logger.LogWarning("AddFamilyMember failed | Mobile={M} Message={Msg}", LogMask.Mobile(registered.Mobile), result.Message);
+
+                    // OTP still refused → verify the mobile again for a new one
+                    if (MatchesOtpPattern(result.Message, "FamilyMemberSettings:OtpErrorPattern", DefaultOtpErrorPattern))
+                        return Fail(_localizer.Text("Errors.FamilyOtpExpired"));
+                    return Fail(!string.IsNullOrWhiteSpace(result.Message) ? result.Message : _localizer.Text("Errors.FamilyMemberFailed"));
+                }
+
+                // Card data falls back to what was entered when the API leaves a field empty
+                var p = result.Patient;
+                p.TitleName ??= request.TitleName?.Trim();
+                p.TitleId ??= request.TitleId.ToString();
+                p.FirstName ??= apiRequest.FirstName;
+                p.MiddleName ??= request.MiddleName?.Trim();
+                p.LastName ??= apiRequest.LastName;
+                p.PatientName ??= string.Join(" ", new[] { request.TitleName, apiRequest.FirstName, request.MiddleName, apiRequest.LastName }
+                    .Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x!.Trim()));
+                p.Gender ??= request.Gender;
+                p.Dob ??= apiRequest.Dob;
+                p.MobileNo ??= registered.Mobile;
+                p.RegistrationNo ??= "0";
+                p.FacilityID ??= sessionData.FacilityId.ToString();
+
+                registered.PatientList.Add(p);
+                ApplySelectedPatient(registered, registered.PatientList.Count - 1);   // the new member is selected
+                SessionHelper.SetAppointmentData(HttpContext.Session, sessionData);
+
+                _logger.LogInformation("Family member added | Mobile={M} GuestPatientId={G}", LogMask.Mobile(registered.Mobile), p.GuestPatientId);
+
+                return new JsonResult(new
+                {
+                    success = true,
+                    patientList = registered.PatientList,
+                    selected = SelectedPatientFields(registered)
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "AddFamilyMember error | Mobile={M}", LogMask.Mobile(registered.Mobile));
+                return Fail(_localizer.Text("Errors.FamilyMemberFailed"));
+            }
+        }
+
+        // New OTP for the verified mobile, read from the OTP API's own response (Data[].OtpNo) — server side only.
+        // null when the API does not return the number (then the patient re-verifies the mobile).
+        private async Task<string?> FreshFamilyOtpAsync(string mobile)
+        {
+            try
+            {
+                var response = await _otpService.SendRegisteredOtpAsync(mobile);
+                var otp = response?.Data?.FirstOrDefault(d => string.IsNullOrWhiteSpace(d.MobileNo) || d.MobileNo.Trim().EndsWith(mobile[^4..]))?.OtpNo?.Trim();
+                if (response?.Status?.ToUpper() == "TRUE" && IsValidOtp(otp))
+                {
+                    _logger.LogInformation("AddFamilyMember — fresh OTP obtained | Mobile={M}", LogMask.Mobile(mobile));
+                    return otp;
+                }
+                _logger.LogWarning("AddFamilyMember — OTP API returned no OTP number | Mobile={M} Status={S} Message={Msg}",
+                    LogMask.Mobile(mobile), response?.Status, response?.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "AddFamilyMember — fresh OTP request failed | Mobile={M}", LogMask.Mobile(mobile));
+            }
+            return null;
+        }
+
+        // Server-side checks (the page checks the same before sending). Returns the error response or null.
+        private JsonResult? ValidateFamilyMember(AddFamilyMemberRequest? r, AppointmentSessionData.RegisteredPatientData registered)
+        {
+            JsonResult Field(string field, string key) => new(new { success = false, field, message = _localizer.Text(key) });
+            var name = new Regex(@"^[a-zA-Z\s'\-]{1,50}$");
+
+            if (r == null) return Fail(_localizer.Text("Errors.SomethingWrong"));
+            if (r.TitleId <= 0) return Field("title", "Validation.SelectTitle");
+            if (string.IsNullOrWhiteSpace(r.FirstName)) return Field("firstName", "Validation.FirstNameRequired");
+            if (!name.IsMatch(r.FirstName.Trim())) return Field("firstName", "Validation.FirstNameLetters");
+            if (!string.IsNullOrWhiteSpace(r.MiddleName) && !name.IsMatch(r.MiddleName.Trim())) return Field("middleName", "Validation.MiddleNameLetters");
+            if (string.IsNullOrWhiteSpace(r.LastName)) return Field("lastName", "Validation.LastNameRequired");
+            if (!name.IsMatch(r.LastName.Trim())) return Field("lastName", "Validation.LastNameLetters");
+
+            if (!DateTime.TryParseExact(r.Dob, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var dob))
+                return Field("dob", "Validation.DobRequired");
+            if (dob >= DateTime.Today || dob < DateTime.Today.AddYears(-120)) return Field("dob", "Validation.DobPast");
+
+            if (r.Gender is not ("Male" or "Female" or "Other")) return Field("gender", "Validation.SelectGender");
+            if (!string.IsNullOrWhiteSpace(r.Email) && (r.Email.Length > 100 || !Regex.IsMatch(r.Email.Trim(), @"^[^\s@]+@[^\s@]+\.[^\s@]+$")))
+                return Field("email", "Validation.EmailInvalid");
+            if (r.Address?.Length > 200) return Field("address", "Validation.AddressTooLong");
+            if (r.StateId <= 0) return Field("state", "Validation.SelectState");
+            if (r.CityId <= 0) return Field("city", "Validation.SelectCity");
+            if (!string.IsNullOrWhiteSpace(r.Pincode) && !Regex.IsMatch(r.Pincode.Trim(), @"^\d{6}$")) return Field("pincode", "Validation.PincodeInvalid");
+
+            // Same person already on this mobile → pick the existing card instead
+            var exists = registered.PatientList.Any(p =>
+                string.Equals(p.FirstName?.Trim(), r.FirstName.Trim(), StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(p.LastName?.Trim(), r.LastName.Trim(), StringComparison.OrdinalIgnoreCase) &&
+                DateTime.TryParse(p.Dob, CultureInfo.InvariantCulture, DateTimeStyles.None, out var d) && d.Date == dob.Date);
+            return exists ? Fail(_localizer.Text("Errors.FamilyMemberExists")) : null;
+        }
+
+        // Development only (test OTP): imitates a successful MobSaveRegistrationForPatient
+        private static FamilyMemberRegistrationResult TestFamilyMember(FamilyMemberRegistrationRequest api, AddFamilyMemberRequest r)
+        {
+            var dob = DateTime.Parse(api.Dob, CultureInfo.InvariantCulture);
+            var age = DateTime.Today.Year - dob.Year - (DateTime.Today.DayOfYear < dob.DayOfYear ? 1 : 0);
+            return new FamilyMemberRegistrationResult
+            {
+                Success = true,
+                Message = "Record Saved!",
+                Patient = new RegisteredPatientInfo
+                {
+                    HospitalLocationId = api.HospitalLocationId.ToString(CultureInfo.InvariantCulture),
+                    FacilityID = api.FacilityId,
+                    RegistrationNo = "0",
+                    GuestPatientId = Random.Shared.Next(50000, 99999).ToString(),
+                    PatientName = $"{r.TitleName} {api.FirstName} {api.LastName}".Trim(),
+                    TitleId = api.TitleId,
+                    TitleName = r.TitleName,
+                    FirstName = api.FirstName,
+                    MiddleName = api.MiddleName.Trim(),
+                    LastName = api.LastName,
+                    Gender = r.Gender,
+                    Dob = api.Dob,
+                    Age = $"{age} Yrs/{r.Gender}",
+                    EmailId = api.Email,
+                    MobileNo = api.Mobile,
+                    IsUnRegPat = true
+                }
+            };
         }
 
         // ── AJAX: Remember notes + consent ticks ─────────────
@@ -777,6 +992,7 @@ namespace Book_An_Appointment1.Pages.Appointment
 
                 // ← Registered ka purana stale data clear karo — kyunki "new" select hua hai
                 sessionData.RegisteredPatient = new AppointmentSessionData.RegisteredPatientData();
+                HttpContext.Session.Remove(SessionHelper.FamilyOtpKey);
             }
             else if (Form.PatientType == "registered")
             {

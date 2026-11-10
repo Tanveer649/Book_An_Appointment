@@ -1,0 +1,130 @@
+@page "/slip/{token}"
+@model Book_An_Appointment1.Pages.Slip.SlipModel
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
+@{
+    ViewData["Title"] = L["Slip.PageTitle"];
+    var s = Model.Slip;
+    var arriveMinutes = Config.GetValue("SlipSettings:ArriveMinutesBefore", 15);
+    var handlerUrl = (string h) => $"{Url.Content("~/slip/")}{Model.Token}?handler={h}";
+}
+@section Styles {
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="stylesheet" href="~/css/slip.css" asp-append-version="true" />
+}
+
+<div class="slip-page">
+    @if (Model.LinkInvalid || s == null)
+    {
+        <section class="slip-card slip-empty" role="alert">
+            <div class="slip-empty-icon" aria-hidden="true">!</div>
+            <h1 class="slip-empty-title">@(Model.LinkInvalid ? L["Slip.Invalid"] : L["Slip.Unavailable"])</h1>
+            <p class="slip-empty-sub">@L["Slip.InvalidSub"]</p>
+            <a class="slip-btn slip-btn-primary" href="~/book">@L["Review.BookAnother"]</a>
+            @if (Config.GetValue("FindSlipSettings:Enabled", false))
+            {
+                <a class="slip-btn" href="~/find-slip">@L["Appointment.FindSlip"]</a>
+            }
+        </section>
+    }
+    else
+    {
+        <section class="slip-card" aria-labelledby="slipTitle">
+            <header class="slip-head">
+                <div>
+                    <div class="slip-kicker">@s.HospitalName</div>
+                    <h1 class="slip-title" id="slipTitle">@L["Slip.Title"]</h1>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(s.Status))
+                {
+                    <span class="slip-status">@s.Status</span>
+                }
+            </header>
+
+            <div class="slip-hero">
+                <div class="slip-hero-main">
+                    <div class="slip-ids">
+                        <div>
+                            <div class="slip-id-label">@L["Review.AppointmentId"]</div>
+                            <div class="slip-id">@s.AppointmentId</div>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(s.RegistrationNo))
+                        {
+                            <div class="slip-uhid">
+                                <div class="slip-id-label">@L["Review.Uhid"]</div>
+                                <div class="slip-id">@s.RegistrationNo</div>
+                            </div>
+                        }
+                    </div>
+                    <div class="slip-when">
+                        <div class="slip-tile">
+                            <span class="slip-tile-label">@L["Review.Date"]</span>
+                            <span class="slip-tile-value">@s.DateText</span>
+                            <span class="slip-tile-sub">@s.DayText</span>
+                        </div>
+                        <div class="slip-tile">
+                            <span class="slip-tile-label">@L["Review.Time"]</span>
+                            <span class="slip-tile-value">@s.TimeText</span>
+                        </div>
+                    </div>
+                </div>
+                <figure class="slip-qr">
+                    @* Generated on the server by QRCoder from the slip link — not user input *@
+                    <div class="slip-qr-img" role="img" aria-label="@L["Slip.QrAlt"]">@Html.Raw(Model.QrSvg)</div>
+                    <figcaption>@L["Slip.ScanHint"]</figcaption>
+                </figure>
+            </div>
+
+            <dl class="slip-grid">
+                <div class="slip-item"><dt>@L["Review.Patient"]</dt><dd>@s.PatientName</dd></div>
+                @if (!string.IsNullOrWhiteSpace(s.Mobile))
+                {
+                    <div class="slip-item"><dt>@L["Review.Mobile"]</dt><dd>@s.Mobile</dd></div>
+                }
+                <div class="slip-item"><dt>@L["Review.Doctor"]</dt><dd>@s.DoctorName</dd></div>
+                <div class="slip-item"><dt>@L["Review.Specialty"]</dt><dd>@s.Specialisation</dd></div>
+                <div class="slip-item slip-wide"><dt>@L["Review.Hospital"]</dt><dd>@s.HospitalName</dd></div>
+                @if (!string.IsNullOrWhiteSpace(s.VisitType))
+                {
+                    <div class="slip-item"><dt>@L["Review.VisitType"]</dt><dd>@s.VisitType</dd></div>
+                }
+                @if (!string.IsNullOrWhiteSpace(s.PaymentMode))
+                {
+                    <div class="slip-item"><dt>@L["Review.Payment"]</dt><dd>@s.PaymentMode</dd></div>
+                }
+                @if (!string.IsNullOrWhiteSpace(s.Amount))
+                {
+                    <div class="slip-item"><dt>@L["Review.AmountPayable"]</dt><dd class="slip-amount">@s.Amount</dd></div>
+                }
+            </dl>
+
+            <p class="slip-note"><span aria-hidden="true">ℹ</span> @L["Slip.ArriveNote", arriveMinutes]</p>
+
+            <div class="slip-actions" data-no-print>
+                <a class="slip-btn slip-btn-primary" href="@handlerUrl("Pdf")" download>
+                    <span aria-hidden="true">⬇</span> @L["Slip.DownloadPdf"]
+                </a>
+                @if (Model.PrintEnabled)
+                {
+                    <button type="button" class="slip-btn" data-print>
+                        <span aria-hidden="true">🖨</span> @L["Slip.Print"]
+                    </button>
+                }
+                @if (s.StartsAt != null && Model.CalendarEnabled)
+                {
+                    <div class="slip-cal" role="group" aria-label="@L["Slip.AddToCalendar"]">
+                        <span class="slip-cal-label">@L["Slip.AddToCalendar"]</span>
+                        @if (Model.GoogleCalendarUrl != null)
+                        {
+                            <a class="slip-btn slip-btn-soft" href="@Model.GoogleCalendarUrl" target="_blank" rel="noopener noreferrer">@L["Slip.GoogleCalendar"]</a>
+                        }
+                        <a class="slip-btn slip-btn-soft" href="@handlerUrl("Ics")" download>@L["Slip.OtherCalendar"]</a>
+                    </div>
+                }
+            </div>
+        </section>
+    }
+</div>
+
+@section Scripts {
+    <script src="~/js/pages/slip.js" asp-append-version="true" data-autoprint="@(Model.AutoPrint ? "1" : "0")"></script>
+}

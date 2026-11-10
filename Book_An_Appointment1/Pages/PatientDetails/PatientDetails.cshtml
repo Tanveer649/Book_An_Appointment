@@ -85,7 +85,7 @@
                 </div>
                 @if (Model.Form.ConsultationFee > 0)
                 {
-                    <div class="fee-badge">₹ @Model.Form.ConsultationFee.ToString("N0")</div>
+                    <div class="fee-badge">₹ @Book_An_Appointment1.Helpers.Fee.Text(Model.Form.ConsultationFee)</div>
                 }
             </div>
         </div>
@@ -315,6 +315,15 @@
                             </div>
                             <div class="pf-list" id="pf-list" role="radiogroup" aria-label="@L["PatientDetails.SelectPatient"]"></div>
                             <span id="reg-patient-error" class="field-error" role="alert" style="display:none"></span>
+
+                            @* New member under the same mobile — form in #familyModal (MobSaveRegistrationForPatient) *@
+                            <button type="button" class="pf-add-btn" id="pf-add-btn" aria-haspopup="dialog">
+                                <span class="pf-add-icon" aria-hidden="true">+</span>
+                                <span class="pf-add-text">
+                                    <span class="pf-add-title">@L["Family.AddMember"]</span>
+                                    <span class="pf-add-sub">@L["Family.AddMemberSub"]</span>
+                                </span>
+                            </button>
                         </div>
 
                     </div>
@@ -362,6 +371,92 @@
             <form id="flowBack" method="post" action="?handler=Back" hidden>@Html.AntiForgeryToken()</form>
         </div>
 
+    </div>
+
+    @* ── Add family member (registered patient) — outside #patientForm, sent by patient-details.js (AddFamilyMember) ── *@
+    <div class="fm-overlay" id="familyModal" role="dialog" aria-modal="true" aria-labelledby="familyModalTitle" hidden>
+        <div class="fm-modal">
+            <div class="fm-head">
+                <div>
+                    <div class="fm-title" id="familyModalTitle">@L["Family.AddMember"]</div>
+                    <div class="fm-sub">@L.Html("Family.AddedUnder", "<strong id=\"fm-mobile\"></strong>")</div>
+                </div>
+                <button type="button" class="fm-close" data-fm-close aria-label="@L["Common.Close"]">✕</button>
+            </div>
+
+            <form class="fm-body" id="familyForm" novalidate>
+                <div class="fm-error" id="fm-error" role="alert" hidden></div>
+
+                <div class="form-row form-row-4">
+                    <div class="form-group">
+                        <label for="fm-title">@L["PatientDetails.Title"] <span class="required">*</span></label>
+                        <select id="fm-title" data-field="title"><option value="">--</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="fm-first">@L["PatientDetails.FirstName"] <span class="required">*</span></label>
+                        <input id="fm-first" data-field="firstName" type="text" maxlength="50" autocomplete="off" />
+                    </div>
+                    <div class="form-group">
+                        <label for="fm-middle">@L["PatientDetails.MiddleName"]</label>
+                        <input id="fm-middle" data-field="middleName" type="text" maxlength="50" autocomplete="off" />
+                    </div>
+                    <div class="form-group">
+                        <label for="fm-last">@L["PatientDetails.LastName"] <span class="required">*</span></label>
+                        <input id="fm-last" data-field="lastName" type="text" maxlength="50" autocomplete="off" />
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fm-dob">@L["PatientDetails.DateOfBirth"] <span class="required">*</span></label>
+                        <input id="fm-dob" data-field="dob" type="date" />
+                    </div>
+                    <div class="form-group">
+                        <label>@L["PatientDetails.Gender"] <span class="required">*</span></label>
+                        <div class="gender-row" id="fm-gender" data-field="gender" role="radiogroup" aria-label="@L["PatientDetails.Gender"]">
+                            <button type="button" class="gender-btn" data-value="Male" role="radio" aria-checked="false">@L["Gender.Male"]</button>
+                            <button type="button" class="gender-btn" data-value="Female" role="radio" aria-checked="false">@L["Gender.Female"]</button>
+                            <button type="button" class="gender-btn" data-value="Other" role="radio" aria-checked="false">@L["Gender.Other"]</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fm-state">@L["PatientDetails.State"] <span class="required">*</span></label>
+                        <select id="fm-state" data-field="state"><option value="">@L["Js.SelectState"]</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="fm-city">@L["PatientDetails.City"] <span class="required">*</span></label>
+                        <select id="fm-city" data-field="city" disabled><option value="">@L["Js.SelectCity"]</option></select>
+                    </div>
+                </div>
+
+                <div class="form-row form-row-single">
+                    <div class="form-group">
+                        <label for="fm-address">@L["PatientDetails.Address"]</label>
+                        <input id="fm-address" data-field="address" type="text" maxlength="200" placeholder="@L["PatientDetails.AddressPlaceholder"]" />
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fm-email">@L["PatientDetails.Email"]</label>
+                        <input id="fm-email" data-field="email" type="email" maxlength="100" placeholder="patient@email.com" />
+                    </div>
+                    <div class="form-group">
+                        <label for="fm-pincode">@L["PatientDetails.Pincode"]</label>
+                        <input id="fm-pincode" data-field="pincode" type="text" inputmode="numeric" maxlength="6" placeholder="@L["PatientDetails.PincodePlaceholder"]" />
+                    </div>
+                </div>
+
+            </form>
+
+            <div class="fm-foot">
+                <button type="button" class="btn-back" data-fm-close>@L["Common.Cancel"]</button>
+                <button type="submit" form="familyForm" class="btn-continue" id="fm-save">@L["Js.SaveSelect"]</button>
+            </div>
+        </div>
     </div>
 </div>
 

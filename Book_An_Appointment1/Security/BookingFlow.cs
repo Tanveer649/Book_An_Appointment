@@ -40,6 +40,7 @@ namespace Book_An_Appointment1.Security
             (BookingStep)Math.Clamp(session.GetInt32(StepKey) ?? 1, 1, 3);
 
         // The only URL that works right now, e.g. /patientdetails/Xq3…(64 chars)
+        //Whenever a user tries to access an invalid URL, you can redirect them to the correct current URL.
         public static string CurrentUrl(HttpContext context) =>
             $"{context.Request.PathBase}/{Steps[CurrentStep(context.Session)].Slug}/{CurrentId(context.Session)}";
 

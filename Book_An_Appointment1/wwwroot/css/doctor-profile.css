@@ -1,0 +1,400 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560&family=Inter:wght@400;500;600;700&display=swap');
+
+/* Doctor profile (/doctor/{id}) — colours from theme.css / the hospital theme file */
+:root {
+    --radius-lg: 22px;
+    --radius-md: 14px;
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-body: 'Inter', 'Segoe UI', sans-serif;
+}
+
+body {
+    background: var(--paper);
+    font-family: var(--font-body);
+    color: var(--ink);
+}
+
+.dp-page {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 1.75rem 0 3rem;
+}
+
+.dp-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 10px 24px -16px rgba(18, 40, 61, .22);
+}
+
+/* ── Hero ── */
+.dp-hero {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) 280px;
+    gap: 1.5rem;
+    align-items: start;
+    padding: 1.6rem;
+    border-top: 5px solid var(--primary);
+}
+
+.dp-photo {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--primary-tint);
+    border: 4px solid var(--surface);
+    box-shadow: 0 0 0 2px var(--primary-border);
+}
+
+    .dp-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .dp-photo.no-photo::after {
+        content: attr(data-initials);
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 48px;
+        color: var(--primary-dark);
+    }
+
+.dp-name {
+    font-family: var(--font-display);
+    font-size: 30px;
+    font-weight: 560;
+    margin: 4px 0 2px;
+    color: var(--ink);
+}
+
+.dp-designation {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+}
+
+.dp-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 12px 0 10px;
+}
+
+.dp-chip {
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    background: var(--surface-alt);
+    border: 1px solid var(--line);
+}
+
+.dp-chip-primary {
+    color: var(--primary-dark);
+    background: var(--primary-tint);
+    border-color: var(--primary-border);
+}
+
+.dp-chip-success {
+    color: var(--success-dark);
+    background: var(--success-tint);
+    border-color: var(--success-border);
+}
+
+.dp-hospital {
+    font-size: 14px;
+    color: var(--ink);
+}
+
+.dp-rating {
+    margin-top: 8px;
+    font-size: 13px;
+}
+
+.dp-stars {
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 700;
+    color: var(--gold);
+    background: var(--gold-tint);
+}
+
+.dp-reviews {
+    color: var(--ink-soft);
+    margin-left: 4px;
+}
+
+/* ── Booking box ── */
+.dp-book {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    border-radius: var(--radius-md);
+    background: var(--paper);
+    border: 1px solid var(--line);
+}
+
+.dp-fee, .dp-next {
+    display: flex;
+    flex-direction: column;
+}
+
+.dp-fee-label, .dp-next-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+}
+
+.dp-fee-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--accent-dark);
+}
+
+.dp-next-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--success-dark);
+}
+
+.dp-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 44px;
+    padding: 0 20px;
+    border-radius: 999px;
+    border: 1.5px solid var(--primary-border-strong);
+    background: var(--surface);
+    color: var(--primary-dark);
+    font: 600 14.5px var(--font-body);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+}
+
+    .dp-btn:hover, .dp-btn:focus-visible {
+        background: var(--primary-tint);
+        border-color: var(--primary);
+        color: var(--primary-dark);
+    }
+
+.dp-btn-primary {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+    .dp-btn-primary:hover, .dp-btn-primary:focus-visible {
+        background: var(--primary-dark);
+        border-color: var(--primary-dark);
+        color: #fff;
+    }
+
+.dp-btn-block {
+    width: 100%;
+}
+
+/* ── Sections ── */
+.dp-columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.dp-section {
+    padding: 1.2rem 1.4rem;
+}
+
+.dp-wide {
+    grid-column: 1 / -1;
+}
+
+.dp-section-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0 0 10px;
+    color: var(--primary-dark);
+}
+
+.dp-about {
+    margin: 0;
+    line-height: 1.6;
+    color: var(--ink);
+    white-space: pre-line;
+}
+
+.dp-list {
+    margin: 0;
+    padding-left: 1.1rem;
+    line-height: 1.7;
+}
+
+.dp-facts {
+    margin: 0;
+}
+
+    .dp-facts > div {
+        display: grid;
+        grid-template-columns: 130px minmax(0, 1fr);
+        gap: 10px;
+        padding: 7px 0;
+        border-bottom: 1px solid var(--surface-soft);
+    }
+
+        .dp-facts > div:last-child {
+            border-bottom: none;
+        }
+
+    .dp-facts dt {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--ink-soft);
+    }
+
+    .dp-facts dd {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+.dp-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.dp-tag {
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    background: var(--surface-alt);
+    border: 1px solid var(--line);
+}
+
+.dp-sticky {
+    display: none;
+}
+
+/* ── Not found ── */
+.dp-empty {
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+}
+
+.dp-empty-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--primary-dark);
+    background: var(--primary-tint);
+}
+
+.dp-empty-title {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 560;
+}
+
+.dp-empty-sub {
+    color: var(--ink-soft);
+    margin-bottom: 1.25rem;
+}
+
+/* ── Tablet / phone ── */
+@media (max-width: 900px) {
+    .dp-hero {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .dp-book {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 640px) {
+    .dp-page {
+        padding: 1rem 0 6rem;   /* room for the sticky bar */
+    }
+
+    .dp-hero {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        text-align: center;
+        padding: 1.25rem 1.1rem;
+    }
+
+    .dp-photo {
+        width: 120px;
+        height: 120px;
+    }
+
+    .dp-name {
+        font-size: 25px;
+    }
+
+    .dp-chips {
+        justify-content: center;
+    }
+
+    .dp-book {
+        width: 100%;
+        text-align: left;
+    }
+
+    .dp-columns {
+        grid-template-columns: 1fr;
+    }
+
+    .dp-facts > div {
+        grid-template-columns: 110px minmax(0, 1fr);
+    }
+
+    .dp-sticky {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1030;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+        background: var(--surface);
+        border-top: 1px solid var(--line);
+        box-shadow: 0 -8px 20px -12px rgba(18, 40, 61, .3);
+    }
+
+    .dp-sticky-fee {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--accent-dark);
+    }
+
+    .dp-sticky .dp-btn {
+        flex: 1;
+    }
+}

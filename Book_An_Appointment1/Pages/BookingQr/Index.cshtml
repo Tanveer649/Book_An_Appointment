@@ -1,0 +1,54 @@
+@page "/booking-qr"
+@model Book_An_Appointment1.Pages.BookingQr.IndexModel
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
+@{
+    ViewData["Title"] = L["BookingQr.PageTitle"];
+    var hospital = Config["HospitalSettings:HospitalName"];
+    var logo = Config["HospitalSettings:LogoPath"];
+}
+@section Styles {
+    <meta name="robots" content="noindex" />
+    <link rel="stylesheet" href="~/css/booking-qr.css" asp-append-version="true" />
+}
+
+<div class="bq-page">
+    <div class="bq-actions" data-no-print>
+        <p class="bq-help">@L["BookingQr.Help"]</p>
+        <div class="bq-buttons">
+            <button type="button" class="bq-btn bq-btn-primary" data-print>🖨 @L["BookingQr.PrintPoster"]</button>
+            <a class="bq-btn" href="?handler=Png" download>⬇ PNG</a>
+            <a class="bq-btn" href="?handler=Svg" download>⬇ SVG</a>
+        </div>
+    </div>
+
+    @* The poster (A4) — this part is printed *@
+    <section class="bq-poster" aria-labelledby="bqTitle">
+        <header class="bq-brand">
+            @if (!string.IsNullOrWhiteSpace(logo))
+            {
+                <img src="@Url.Content("~" + logo)" alt="" class="bq-logo" />
+            }
+            <span class="bq-hospital">@hospital</span>
+        </header>
+
+        <h1 class="bq-title" id="bqTitle">@(Model.Title ?? L["BookingQr.Title"].Value)</h1>
+        <p class="bq-subtitle">@(Model.Subtitle ?? L["BookingQr.Subtitle"].Value)</p>
+
+        <div class="bq-qr" role="img" aria-label="@L["BookingQr.QrAlt"]">
+            @* Generated on the server by QRCoder from the configured booking address — not user input *@
+            @Html.Raw(Model.QrSvg)
+        </div>
+
+        <ol class="bq-steps">
+            <li><span>1</span>@L["BookingQr.Step1"]</li>
+            <li><span>2</span>@L["BookingQr.Step2"]</li>
+            <li><span>3</span>@L["BookingQr.Step3"]</li>
+        </ol>
+
+        <p class="bq-url">@L["BookingQr.OrVisit"] <strong>@Model.BookingUrl</strong></p>
+    </section>
+</div>
+
+@section Scripts {
+    <script src="~/js/pages/slip.js" asp-append-version="true" data-autoprint="0"></script>
+}

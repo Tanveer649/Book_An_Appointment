@@ -68,9 +68,31 @@ namespace Book_An_Appointment1.Pages.Appointment
 
             var sessionData = SessionHelper.GetAppointmentData(HttpContext.Session);
 
+            // One-time message, e.g. a doctor link from the hospital website that no longer works
+            var notice = HttpContext.Session.GetString(SessionHelper.NoticeKey);
+            if (!string.IsNullOrEmpty(notice))
+            {
+                HttpContext.Session.Remove(SessionHelper.NoticeKey);
+                ErrorMessage = _localizer.Text(notice);
+            }
+
             await LoadFacilities();
 
-            if (sessionData != null && sessionData.FacilityId > 0)
+            // Fresh visit: the default facility (appsettings ApiParam:GetFacilitiesParams:FacilityCode) is selected and
+            // its specialities + ALL its doctors are loaded, so the patient can start with a speciality OR a doctor.
+            if (sessionData == null || sessionData.FacilityId <= 0 || HideList.IsFacilityHidden(_configuration, sessionData.FacilityId))
+            {
+                FacilityId = DefaultFacilityId();
+                if (FacilityId > 0)
+                {
+                    await LoadSpecialities();
+                    await LoadDoctors();   // SpecialityId empty → every doctor of the facility
+                    _logger.LogInformation("Default facility selected | FacilityId={F} Specialities={S} Doctors={D}",
+                        FacilityId, Wizard.Specialities.Count, Wizard.Doctors.Count);
+                }
+                return;
+            }
+
             {
                 FacilityId = sessionData.FacilityId;
                 SpecialityId = sessionData.SpecialityId > 0 ? sessionData.SpecialityId : null;
@@ -87,19 +109,32 @@ namespace Book_An_Appointment1.Pages.Appointment
 
                 await LoadSpecialities();
 
+                // Doctors of the chosen speciality, or every doctor of the facility when no speciality is chosen yet
+                await LoadDoctors();
+
                 if (SpecialityId.HasValue && SpecialityId > 0)
                 {
-                    await LoadDoctors();
-
                     if (DoctorId.HasValue && DoctorId > 0)
                     {
                         await LoadDoctorDetails();
+
+                        // Arrived from a doctor link (/book/doctor/{id}): only the ids are in the session yet
+                        if (Wizard.SelectedDoctor != null && string.IsNullOrEmpty(sessionData.DoctorName))
+                            SaveDoctorToSession(sessionData);
 
                         var dateToLoad = !string.IsNullOrEmpty(sessionData.SlotDate) ? sessionData.SlotDate : DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
                         var slotResponse = await _slotService.GetSlotsAsync(FacilityId, DoctorId ?? 0, sessionData.HospitalLocationId, dateToLoad, dateToLoad);
 
                         Wizard.Slots = slotResponse?.Data?.SlotsDetails ?? new List<SlotResponse>();
+
+                        // Remembered / linked slot already taken → say so (the day stays open to pick another time)
+                        if (!string.IsNullOrEmpty(SavedSlotStart) &&
+                            !Wizard.Slots.Any(s => string.Equals(s.StartTime?.Trim(), SavedSlotStart.Trim(), StringComparison.Ordinal)))
+                        {
+                            SavedSlotStart = "";
+                            ErrorMessage ??= _localizer.Text("Doctor.SlotTaken");
+                        }
                     }
                 }
 
@@ -135,6 +170,9 @@ namespace Book_An_Appointment1.Pages.Appointment
         }
 
         // ── AJAX: Get Doctors ────────────────────────────────
+        // SpecialityId 0 = every doctor of the facility (doctor can be chosen before the speciality).
+        // Only what the dropdown needs: each doctor's speciality lets the page fill the speciality when a doctor
+        // is picked first (doctor mobile / e-mail from the API are not sent to the browser).
         public async Task<JsonResult> OnPostGetDoctorsAsync([FromBody] GetDoctorsRequest request)
         {
             _logger.LogInformation("OnPostGetDoctorsAsync | FacilityId={F} SpecialityId={S}",
@@ -142,12 +180,18 @@ namespace Book_An_Appointment1.Pages.Appointment
             try
             {
                 FacilityId = request.FacilityId;
-                SpecialityId = request.SpecialityId;
+                SpecialityId = request.SpecialityId > 0 ? request.SpecialityId : null;
                 await LoadDoctors();
                 return new JsonResult(new
                 {
                     success = true,
-                    data = Wizard.Doctors
+                    data = Wizard.Doctors.Select(d => new
+                    {
+                        id = d.Id,
+                        fullName = d.FullName,
+                        specialisationId = d.SpecialisationId,
+                        specialisationName = d.SpecialisationName
+                    })
                 });
             }
             catch (Exception ex)
@@ -179,48 +223,9 @@ namespace Book_An_Appointment1.Pages.Appointment
                 var doc = Wizard.SelectedDoctor;
                 var hospital = doc?.ConsultingHospitals?.FirstOrDefault();
 
-                var feeRaw = Wizard.ConsultationFeeList?.FirstOrDefault()?.NetAmount
-                               ?? Wizard.ConsultationFeeList?.FirstOrDefault()?.Price
-                               ?? "0";
-                var RegfeeRaw = Wizard.RegistrationFeeList?.FirstOrDefault()?.NetAmount
-                               ?? Wizard.RegistrationFeeList?.FirstOrDefault()?.Price
-                               ?? "0";
-
-                // Trailing zeros remove karo
-                var fee = FormatFee(feeRaw);
-
-                var Regfee = FormatFee(RegfeeRaw);
-
                 var existing = SessionHelper.GetAppointmentData(HttpContext.Session)
                                ?? new AppointmentSessionData();
-
-                // Another doctor → the remembered date/slot belonged to the previous one
-                if (existing.DoctorId != (DoctorId ?? 0) || existing.FacilityId != FacilityId)
-                {
-                    existing.SlotDate = "";
-                    existing.SlotTime = "";
-                    existing.SlotDisplayText = "";
-                }
-
-                existing.FacilityId = FacilityId;
-                existing.DoctorId = DoctorId ?? 0;
-                existing.SpecialityId = SpecialityId ?? 0;
-                existing.HospitalLocationId = doc?.HospitalLocationId ?? 0;
-                existing.DoctorName = doc?.FullName ?? "";
-                existing.DoctorInitials = GetInitials(doc?.FullName ?? "");
-                existing.Specialisation = doc?.SpecialisationName ?? "";
-                existing.Hospital = hospital?.FacilityName ?? "";
-
-                existing.ConsultationFee = decimal.TryParse(feeRaw, System.Globalization.NumberStyles.Any,
-                    System.Globalization.CultureInfo.InvariantCulture, out var f) ? f : 0;
-
-                existing.RegistrationFee = decimal.TryParse(RegfeeRaw, System.Globalization.NumberStyles.Any,
-                    System.Globalization.CultureInfo.InvariantCulture, out var Rf) ? Rf : 0;
-
-                SessionHelper.SetAppointmentData(HttpContext.Session, existing);
-
-                _logger.LogInformation("DoctorDetails session saved | Name={N} Hospital={H} Fee={Fee}",
-                    existing.DoctorName, existing.Hospital, existing.ConsultationFee);
+                var (fee, Regfee) = SaveDoctorToSession(existing);
 
                 return new JsonResult(new
                 {
@@ -259,6 +264,50 @@ namespace Book_An_Appointment1.Pages.Appointment
             }
         }
 
+        // Selected doctor (after LoadDoctorDetails) → session: name, hospital, fees for the next pages.
+        // Used when a doctor is picked in the dropdowns and when one arrives from a doctor link (/book/doctor/{id}).
+        // Returns the fees formatted for display.
+        private (string Fee, string RegFee) SaveDoctorToSession(AppointmentSessionData existing)
+        {
+            var doc = Wizard.SelectedDoctor;
+            var hospital = doc?.ConsultingHospitals?.FirstOrDefault();
+
+            var feeRaw = Wizard.ConsultationFeeList?.FirstOrDefault()?.NetAmount
+                           ?? Wizard.ConsultationFeeList?.FirstOrDefault()?.Price
+                           ?? "0";
+            var regFeeRaw = Wizard.RegistrationFeeList?.FirstOrDefault()?.NetAmount
+                           ?? Wizard.RegistrationFeeList?.FirstOrDefault()?.Price
+                           ?? "0";
+
+            // Another doctor → the remembered date/slot belonged to the previous one
+            if (existing.DoctorId != (DoctorId ?? 0) || existing.FacilityId != FacilityId)
+            {
+                existing.SlotDate = "";
+                existing.SlotTime = "";
+                existing.SlotDisplayText = "";
+            }
+
+            existing.FacilityId = FacilityId;
+            existing.DoctorId = DoctorId ?? 0;
+            existing.SpecialityId = SpecialityId ?? 0;
+            existing.HospitalLocationId = doc?.HospitalLocationId ?? 0;
+            existing.DoctorName = doc?.FullName ?? "";
+            existing.DoctorInitials = GetInitials(doc?.FullName ?? "");
+            existing.Specialisation = doc?.SpecialisationName ?? "";
+            existing.Hospital = hospital?.FacilityName ?? "";
+
+            existing.ConsultationFee = decimal.TryParse(feeRaw, NumberStyles.Any, CultureInfo.InvariantCulture, out var f) ? f : 0;
+            existing.RegistrationFee = decimal.TryParse(regFeeRaw, NumberStyles.Any, CultureInfo.InvariantCulture, out var rf) ? rf : 0;
+
+            SessionHelper.SetAppointmentData(HttpContext.Session, existing);
+
+            _logger.LogInformation("DoctorDetails session saved | Name={N} Hospital={H} Fee={Fee}",
+                existing.DoctorName, existing.Hospital, existing.ConsultationFee);
+
+            // Trailing zeros removed for display
+            return (FormatFee(feeRaw), FormatFee(regFeeRaw));
+        }
+
         // ── GET: Slots by Date ───────────────────────────────
         public async Task<JsonResult> OnGetSlotsByDateAsync(int facilityId, int? doctorId, int hospitalLocationId, string date)
         {
@@ -278,6 +327,21 @@ namespace Book_An_Appointment1.Pages.Appointment
                     facilityId, doctorId, date);
                 return new JsonResult(new List<SlotResponse>());
             }
+        }
+
+        // appsettings AppointmentPageSettings:EnableStartOver (default true)
+        public bool StartOverEnabled => _configuration.GetValue("AppointmentPageSettings:EnableStartOver", true);
+
+        // ── POST: Start over ─────────────────────────────────
+        // The patient's own choice (link + confirmation on this page): clears hospital / speciality / doctor / slot,
+        // the page opens again like a new visit (default facility, every speciality and doctor).
+        // A reload or coming Back from page 2 does NOT clear anything — only this button.
+        public IActionResult OnPostStartOver()
+        {
+            if (!StartOverEnabled) return this.GoToStep(BookingStep.Appointment);   // switched off: nothing is cleared
+            _logger.LogInformation("Start over — booking choices cleared");
+            SessionHelper.ClearAppointmentData(HttpContext.Session);
+            return this.GoToStep(BookingStep.Appointment);
         }
 
         // ── AJAX: Remember the picked date / slot ────────────
@@ -305,6 +369,49 @@ namespace Book_An_Appointment1.Pages.Appointment
             return new JsonResult(new { success = true });
         }
 
+        // appsettings AppointmentPageSettings:EnableNextAvailable (default true)
+        public bool NextAvailableEnabled => _configuration.GetValue("AppointmentPageSettings:EnableNextAvailable", true);
+
+        // ── GET: Next free day ───────────────────────────────
+        // The chosen day has no free slots → first later day (within the booking window, at most 14 days ahead)
+        // that has a free slot. Days are checked 7 at a time in parallel with the same slot API as the calendar.
+        // { date: "yyyy-MM-dd" } or { date: null } when none was found.
+        public async Task<JsonResult> OnGetNextFreeDayAsync(int facilityId, int doctorId, int hospitalLocationId, string after)
+        {
+            if (!NextAvailableEnabled || facilityId <= 0 || doctorId <= 0 ||
+                !DateTime.TryParseExact(after, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var from))
+                return new JsonResult(new { date = (string?)null });
+
+            var today = DateTime.Today;
+            var lastDay = today.AddDays(_configuration.GetValue<int>("MaxAppointmentAllowedDays:Days", 90));
+            if (from < today) from = today.AddDays(-1);
+
+            try
+            {
+                for (var batch = 0; batch < 2; batch++)
+                {
+                    var days = Enumerable.Range(1 + batch * 7, 7).Select(i => from.AddDays(i)).Where(d => d <= lastDay).ToList();
+                    if (days.Count == 0) break;
+
+                    var results = await Task.WhenAll(days.Select(d =>
+                        GetDoctorSlotsAsync(facilityId, doctorId, hospitalLocationId, d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))));
+
+                    for (var i = 0; i < days.Count; i++)
+                    {
+                        var hasFree = results[i].Any(s =>
+                            !DateTime.TryParse(s.StartTime, CultureInfo.InvariantCulture, DateTimeStyles.None, out var start) || start > DateTime.Now);
+                        if (hasFree)
+                            return new JsonResult(new { date = days[i].ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "NextFreeDay failed | DoctorId={D} After={A}", doctorId, after);
+            }
+            return new JsonResult(new { date = (string?)null });
+        }
+
         // ── POST: Continue Button ────────────────────────────
         // MODIFIED: Validation fail hone pe ab poora Wizard reload karta hai
         // taaki dropdowns/doctor card UI mein blank na dikhein
@@ -322,7 +429,7 @@ namespace Book_An_Appointment1.Pages.Appointment
             DoctorId = doctorId;
 
             // ── Server Side Validation ─────────────────────
-            if (facilityId <= 0)
+            if (facilityId <= 0 || HideList.IsFacilityHidden(_configuration, facilityId))   // appsettings HideList
                 ModelState.AddModelError("Facility", _localizer.Text("Validation.SelectFacility"));
 
             if (!specialityId.HasValue || specialityId <= 0)
@@ -330,6 +437,8 @@ namespace Book_An_Appointment1.Pages.Appointment
 
             if (!doctorId.HasValue || doctorId <= 0)
                 ModelState.AddModelError("Doctor", _localizer.Text("Validation.SelectDoctor"));
+            else if (HideList.IsDoctorHidden(_configuration, doctorId.ToString(), specialityId?.ToString()))
+                ModelState.AddModelError("Doctor", _localizer.Text("Errors.SelectDoctorAgain"));   // appsettings HideList
 
             if (string.IsNullOrEmpty(selectedSlotStart))
                 ModelState.AddModelError("Slot", _localizer.Text("Validation.SelectSlot"));
@@ -413,12 +522,31 @@ namespace Book_An_Appointment1.Pages.Appointment
             return slot;
         }
 
+        // Facility pre-selected on a fresh visit: the one whose id (or facility code, when the API sends one) equals
+        // appsettings ApiParam:GetFacilitiesParams:FacilityCode. Not found → the only facility, if there is just one.
+        // The patient can still pick another facility from the dropdown.
+        private int DefaultFacilityId()
+        {
+            var code = _configuration["ApiParam:GetFacilitiesParams:FacilityCode"]?.Trim();
+            var match = string.IsNullOrEmpty(code) ? null : Wizard.Facilities.FirstOrDefault(f =>
+                f.FacilityId.ToString(CultureInfo.InvariantCulture) == code ||
+                string.Equals(f.FacilityCode?.Trim(), code, StringComparison.OrdinalIgnoreCase));
+
+            if (match == null && Wizard.Facilities.Count == 1)
+                match = Wizard.Facilities[0];
+
+            if (match == null)
+                _logger.LogWarning("Default facility not found | FacilityCode={C} Facilities={N}", code, Wizard.Facilities.Count);
+
+            return match?.FacilityId ?? 0;
+        }
+
         // ── Private Loaders ──────────────────────────────────
         private async Task LoadFacilities()
         {
             try
             {
-                Wizard.Facilities = (await _facilityService.GetFacilitiesAsync())?.Data ?? new();
+                Wizard.Facilities = HideList.Filter(_configuration, (await _facilityService.GetFacilitiesAsync())?.Data ?? new());   // appsettings HideList
                 _logger.LogInformation("LoadFacilities | Count={C}", Wizard.Facilities.Count);
             }
             catch (Exception ex)
@@ -430,9 +558,10 @@ namespace Book_An_Appointment1.Pages.Appointment
 
         private async Task LoadSpecialities()
         {
+            if (HideList.IsFacilityHidden(_configuration, FacilityId)) { Wizard.Specialities = new(); return; }   // appsettings HideList
             try
             {
-                Wizard.Specialities = (await _specialityService.GetSpecialitiesAsync(FacilityId))?.Data ?? new();
+                Wizard.Specialities = HideList.Filter(_configuration, (await _specialityService.GetSpecialitiesAsync(FacilityId))?.Data ?? new());   // appsettings HideList
                 _logger.LogInformation("LoadSpecialities | Count={C}", Wizard.Specialities.Count);
             }
             catch (Exception ex)
@@ -444,9 +573,10 @@ namespace Book_An_Appointment1.Pages.Appointment
 
         private async Task LoadDoctors()
         {
+            if (HideList.IsFacilityHidden(_configuration, FacilityId)) { Wizard.Doctors = new(); return; }   // appsettings HideList
             try
             {
-                Wizard.Doctors = (await _doctorService.GetDoctorsAsync(FacilityId, SpecialityId ?? 0))?.Data ?? new();
+                Wizard.Doctors = HideList.Filter(_configuration, (await _doctorService.GetDoctorsAsync(FacilityId, SpecialityId ?? 0))?.Data ?? new());   // appsettings HideList
                 _logger.LogInformation("LoadDoctors | Count={C}", Wizard.Doctors.Count);
             }
             catch (Exception ex)
@@ -548,6 +678,7 @@ namespace Book_An_Appointment1.Pages.Appointment
             return slotTime;
         }
 
+        // Whole rupees for display (1.50 → 2) — the same rule as Helpers/Fee.cs on every page
         public static string FormatFee(string? raw) =>
                 decimal.TryParse(raw, System.Globalization.NumberStyles.Any,
                          System.Globalization.CultureInfo.InvariantCulture, out var d)

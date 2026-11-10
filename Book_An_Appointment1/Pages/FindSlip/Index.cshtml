@@ -1,0 +1,61 @@
+@page "/find-slip"
+@model Book_An_Appointment1.Pages.FindSlip.IndexModel
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
+@{
+    ViewData["Title"] = L["FindSlip.PageTitle"];
+    var keepDays = Config.GetValue("SlipSettings:LinkValidDays", 30);
+    var viewSlip = Config.GetValue("SlipSettings:EnableViewSlip", false);
+}
+@section Styles {
+    <meta name="robots" content="noindex" />
+    <link rel="stylesheet" href="~/css/find-slip.css" asp-append-version="true" />
+}
+
+<div class="fs-page">
+    @Html.AntiForgeryToken()
+    <section class="fs-card" aria-labelledby="fsTitle">
+        <div class="fs-icon" aria-hidden="true">🧾</div>
+        <h1 class="fs-title" id="fsTitle">@L["FindSlip.Title"]</h1>
+        <p class="fs-sub">@L["FindSlip.Subtitle", keepDays]</p>
+
+        @* Step 1 + 2: mobile and OTP *@
+        <div id="fsVerify">
+            <label class="fs-label" for="fsMobile">@L["PatientDetails.MobileNumber"]</label>
+            <div class="fs-row">
+                <span class="fs-cc">+91</span>
+                <input type="tel" id="fsMobile" maxlength="10" inputmode="numeric" autocomplete="tel-national" placeholder="98XXXXXXXX" />
+                <button type="button" class="fs-btn" id="fsSend">@L["Js.SendOtp"]</button>
+            </div>
+
+            <div id="fsOtpBox" hidden>
+                <label class="fs-label" for="fsOtp">@L["FindSlip.EnterOtp"]</label>
+                <div class="fs-row">
+                    <input type="text" id="fsOtp" maxlength="@Model.OtpLength" inputmode="numeric" autocomplete="one-time-code" class="fs-otp" />
+                    <button type="button" class="fs-btn fs-btn-primary" id="fsVerifyBtn">@L["FindSlip.ShowSlips"]</button>
+                </div>
+                <button type="button" class="fs-link" id="fsResend" disabled>@L["PatientDetails.ResendOtp"]</button>
+                <span class="fs-timer" id="fsTimer" aria-live="polite"></span>
+            </div>
+
+            <div class="fs-error" id="fsError" role="alert" hidden></div>
+        </div>
+
+        @* Step 3: slips *@
+        <div id="fsResult" hidden>
+            <div class="fs-result-head">
+                <span id="fsCount"></span>
+                <button type="button" class="fs-link" id="fsOther">@L["FindSlip.OtherNumber"]</button>
+            </div>
+            <div id="fsList" class="fs-list"></div>
+        </div>
+
+        <a class="fs-back" href="~/book">← @L["Review.BookAnother"]</a>
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        window.FindSlipConfig = { otpLength: @Model.OtpLength, viewSlip: @(viewSlip ? "true" : "false") };
+    </script>
+    <script src="~/js/pages/find-slip.js" asp-append-version="true"></script>
+}

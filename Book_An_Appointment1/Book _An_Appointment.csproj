@@ -32,6 +32,11 @@
 	
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <!-- Appointment slip PDF. Keep 6.2.x: it is MIT. PDFsharp 6.5+ is AGPL-3.0 (would require publishing this
+         portal's source code) — do NOT upgrade without checking the licence first. -->
+    <PackageReference Include="PDFsharp" Version="[6.2.4]" />
+    <!-- Appointment slip QR code (MIT) -->
+    <PackageReference Include="QRCoder" Version="1.8.1" />
   </ItemGroup>
 
   <ItemGroup>

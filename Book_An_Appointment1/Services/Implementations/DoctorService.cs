@@ -29,5 +29,19 @@ namespace Book_An_Appointment1.Services.Implementations
                     });
             return await GetAsync<ApiResponse<List<DoctorItem>>>(url);
         }
+
+        public async Task<ApiResponse<List<DoctorItem>>?> GetDoctorAsync(int facilityId, int doctorId)
+        {
+            // Config GetDoctorsParams already has doctorId=0 → replaced in place (not sent twice).
+            // specializationId 0 = any speciality; the doctor record returned carries its own specialisationId.
+            var url = ApiUrlBuilder.BuildUrl(ApiRoutes.GetDoctors, "GetDoctorsParams",
+                    new Dictionary<string, string>
+                    {
+                        { "facilityCode", facilityId.ToString() },
+                        { "specializationId", "0" }
+                    });
+            url = System.Text.RegularExpressions.Regex.Replace(url, @"([?&])doctorId=[^&]*", "$1doctorId=" + doctorId);
+            return await GetAsync<ApiResponse<List<DoctorItem>>>(url);
+        }
     }
 }

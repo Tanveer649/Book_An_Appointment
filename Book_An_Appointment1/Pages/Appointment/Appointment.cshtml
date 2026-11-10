@@ -1,5 +1,6 @@
 ﻿@page "/book-appointment"
 @model Book_An_Appointment1.Pages.Appointment.AppointmentModel
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
 @{
     ViewData["Title"] = L["Appointment.PageTitle"];
 
@@ -85,6 +86,15 @@
         </div>
 
         <div class="selector-bar">
+            @* Clears the choices on this page (after a confirmation) — shown once something is chosen (appointment.js).
+               appsettings AppointmentPageSettings:EnableStartOver = false → not rendered at all *@
+            @if (Model.StartOverEnabled)
+            {
+                <button type="button" class="start-over-link" id="startOverBtn" hidden>
+                    <span aria-hidden="true">↺</span> @L["Appointment.StartOver"]
+                </button>
+            }
+
             <div class="dropdown-group">
                 <label class="form-label fw-bold" for="facilityDropdown">@L["Appointment.Facility"] <span class="text-danger">*</span></label>
                 <select name="FacilityId" id="facilityDropdown" class="form-select select2">
@@ -118,7 +128,7 @@
                         {
                             foreach (var item in Model.Wizard.Doctors)
                             {
-                                <option value="@item.Id" selected="@(item.Id == (Model.DoctorId ?? 0).ToString())">@(item.Name ?? "N/A")</option>
+                                <option value="@item.Id" data-speciality="@item.SpecialisationId" selected="@(item.Id == (Model.DoctorId ?? 0).ToString())">@(item.Name ?? "N/A")</option>
                             }
                         }
                     </select>
@@ -132,6 +142,18 @@
                 <div>
                     <h2 class="welcome-title">@L["Appointment.WelcomeTitle"]</h2>
                     <p class="welcome-text">@L["Appointment.WelcomeText"]</p>
+                    @if (Config.GetValue("FindSlipSettings:Enabled", false))
+                    {
+                        @* "Find my slip" (appsettings FindSlipSettings:Enabled) *@
+                        <a class="find-slip-callout" href="~/find-slip">
+                            <span class="fsc-icon" aria-hidden="true">🧾</span>
+                            <span class="fsc-text">
+                                <strong>@L["Appointment.AlreadyBooked"]</strong>
+                                <span>@L["Appointment.FindSlipSub"]</span>
+                            </span>
+                            <span class="fsc-btn">@L["Appointment.FindSlip"] →</span>
+                        </a>
+                    }
                 </div>
                 <ol class="welcome-steps" id="welcomeSteps">
                     <li class="current" data-step="facility"><span class="num">1</span>@L["Appointment.StepFacility"]</li>
@@ -185,7 +207,27 @@
             <button type="button" id="limitDialogClose" class="btn-continue">@L["Appointment.ChooseAnotherDate"]</button>
         </div>
     </div>
+
+    @if (Model.StartOverEnabled)
+    {
+        <div id="startOverDialog" class="app-dialog" role="alertdialog" aria-modal="true" aria-labelledby="startOverTitle" hidden>
+            <div class="app-dialog-card">
+                <h4 id="startOverTitle">@L["Appointment.StartOverTitle"]</h4>
+                <p>@L["Appointment.StartOverText"]</p>
+                <div class="dialog-actions">
+                    <button type="button" id="startOverCancel" class="btn-cancel">@L["Common.Cancel"]</button>
+                    <button type="submit" form="startOverForm" class="btn-continue">@L["Appointment.StartOver"]</button>
+                </div>
+            </div>
+        </div>
+    }
 </form>
+
+@if (Model.StartOverEnabled)
+{
+    @* "Start over" (OnPostStartOver, anti-forgery checked) — outside #appointmentForm, forms cannot be nested *@
+    <form id="startOverForm" method="post" action="?handler=StartOver" hidden>@Html.AntiForgeryToken()</form>
+}
 
 @section Scripts {
     <script>
@@ -197,6 +239,7 @@
             savedSlotStart: @Html.Raw(Json.Serialize(Model.SavedSlotStart ?? "")),
             hospitalLocationId: @(doc?.HospitalLocationId ?? 0),
             maxAdvanceDays: @Model.Wizard.MaxAppointmentAllowedDays,
+            nextAvailableEnabled: @(Model.NextAvailableEnabled ? "true" : "false"),   // appsettings AppointmentPageSettings:EnableNextAvailable
             initialDoctor: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(initialDoctor)),
             // Add these files under wwwroot/images (1600 x 1000 px, 16:10). Missing files are skipped automatically.
             hospitalImages: [

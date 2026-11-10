@@ -120,11 +120,34 @@
                 row.hidden = !Array.prototype.some.call(row.querySelectorAll('[data-booked]'),
                     function (el) { return el.textContent.trim() !== ''; });
             });
+            fillSlip(a);
             confirmBtns.forEach(function (b) { b.disabled = true; });    // already booked, no second booking
             bookedModal.hidden = false;
             document.body.style.overflow = 'hidden';
             var done = document.getElementById('bookedDone');
             if (done) done.focus();
+        }
+
+        // Slip section: QR + PDF / print / calendar links (each hidden when the server did not send it)
+        function fillSlip(a) {
+            var slip = document.getElementById('bookedSlip');
+            if (!slip) return;
+            if (!a.slipUrl) { slip.hidden = true; return; }
+
+            // SVG generated on the server (QRCoder) from the slip link — not user input
+            document.getElementById('bookedQr').innerHTML = a.qrSvg || '';
+            slip.querySelectorAll('[data-booked-href]').forEach(function (link) {
+                var url = a[link.getAttribute('data-booked-href')];
+                if (url) link.setAttribute('href', url); else link.removeAttribute('href');
+                link.hidden = !url;
+            });
+            document.getElementById('bookedCalendar').hidden = !a.googleCalendarUrl && !a.icsUrl;
+            slip.hidden = false;
+        }
+
+        function bookedFocusables() {
+            return Array.prototype.slice.call(bookedModal.querySelectorAll('a[href]:not([hidden]), button:not([disabled])'))
+                .filter(function (el) { return el.offsetParent !== null; });
         }
 
         confirmBtns.forEach(function (btn) { btn.addEventListener('click', openPaymentModal); });
@@ -136,8 +159,13 @@
         });
 
         document.addEventListener('keydown', function (e) {
-            if (bookedModal && !bookedModal.hidden) {                    // booked popup has a single action
-                if (e.key === 'Tab') { e.preventDefault(); document.getElementById('bookedDone').focus(); }
+            if (bookedModal && !bookedModal.hidden) {                    // keep focus inside the booked popup
+                if (e.key !== 'Tab') return;
+                var links = bookedFocusables();
+                if (!links.length) { e.preventDefault(); return; }
+                var firstLink = links[0], lastLink = links[links.length - 1];
+                if (e.shiftKey && (document.activeElement === firstLink || !bookedModal.contains(document.activeElement))) { e.preventDefault(); lastLink.focus(); }
+                else if (!e.shiftKey && (document.activeElement === lastLink || !bookedModal.contains(document.activeElement))) { e.preventDefault(); firstLink.focus(); }
                 return;
             }
             if (modal.hidden) return;

@@ -1234,3 +1234,186 @@ body {
 
 /* ── Progress Bar ── */
 
+
+/* ── Start over (top-right of the dropdown bar) ───────── */
+.selector-bar {
+    position: relative;
+}
+
+.start-over-link {
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--primary);
+    font-family: var(--font-body);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+    .start-over-link:hover, .start-over-link:focus-visible {
+        background: var(--primary-tint);
+        color: var(--primary-dark);
+    }
+
+    .start-over-link[hidden] {
+        display: none;
+    }
+
+.dialog-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-cancel {
+    height: 44px;
+    padding: 0 22px;
+    border: 1.5px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+    .btn-cancel:hover {
+        background: var(--surface-alt);
+    }
+
+/* ── Day without free slots → next free day ───────────── */
+.empty-day {
+    border: 1.5px dashed var(--primary-border-strong);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    padding: 22px 16px;
+    text-align: center;
+}
+
+.empty-day-icon {
+    color: var(--primary);
+    display: flex;
+    justify-content: center;
+    margin-bottom: 6px;
+}
+
+.empty-day-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+}
+
+.empty-day-sub {
+    margin-top: 2px;
+    font-size: 13px;
+    color: var(--ink-soft);
+}
+
+.empty-day-btn {
+    margin-top: 14px;
+    min-height: 42px;
+    padding: 0 22px;
+    border: none;
+    border-radius: 999px;
+    background: var(--primary);
+    color: #fff;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+    .empty-day-btn:hover, .empty-day-btn:focus-visible {
+        background: var(--primary-dark);
+    }
+
+/* "Already booked? Find my slip" — highlighted card under the welcome text */
+.find-slip-callout {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 18px 0 6px;
+    padding: 14px 16px;
+    border-radius: var(--radius-md);
+    background: var(--primary-tint);
+    border: 1.5px solid var(--primary-border-strong);
+    color: var(--ink);
+    text-decoration: none;
+    transition: border-color .15s, background .15s, transform .15s;
+}
+
+    .find-slip-callout:hover, .find-slip-callout:focus-visible {
+        background: var(--primary-soft);
+        border-color: var(--primary);
+        color: var(--ink);
+        transform: translateY(-1px);
+    }
+
+.fsc-icon {
+    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--surface);
+    font-size: 20px;
+}
+
+.fsc-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.35;
+}
+
+    .fsc-text strong {
+        font-size: 14.5px;
+        color: var(--primary-dark);
+    }
+
+    .fsc-text span {
+        font-size: 12.5px;
+        color: var(--ink-soft);
+    }
+
+.fsc-btn {
+    flex-shrink: 0;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--primary);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+    .find-slip-callout {
+        flex-wrap: wrap;
+    }
+
+    .fsc-btn {
+        flex: 1 1 100%;
+        text-align: center;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .find-slip-callout {
+        transition: none;
+        transform: none !important;
+    }
+}

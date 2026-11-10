@@ -17,5 +17,6 @@
         public const string GenerateOtpForPatient = "/api/VCP/GenerateOTPForPatient";
         public const string CreateAppointment = "/api/VCP/CreateAppointment";
         public const string GetAppointmentByID = "/api/VCP/GetAppointmentByID";
+        public const string SaveFamilyMember = "/api/VCP/MobSaveRegistrationForPatient";
     }
 }

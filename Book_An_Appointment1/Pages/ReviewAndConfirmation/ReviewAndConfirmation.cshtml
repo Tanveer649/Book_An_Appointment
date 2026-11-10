@@ -1,8 +1,8 @@
 ﻿@page "/review-confirm"
 @model Book_An_Appointment1.Pages.ReviewAndConfimation.ReviewAndConfirmationModel
 @functions {
-    // Whole rupees show without decimals (₹ 900); a fractional fee shows exactly (₹ 1.50) so the summary never misstates what is charged.
-    static string Money(decimal v) => v == decimal.Truncate(v) ? v.ToString("N0") : v.ToString("N2");
+    // Whole rupees, same as pages 1 and 2 (1.50 → 2) — Helpers/Fee.cs
+    static string Money(decimal v) => Book_An_Appointment1.Helpers.Fee.Text(v);
 }
 @{
     ViewData["Title"] = L["Review.PageTitle"];
@@ -10,7 +10,7 @@
     var isNewPatient = Model.Summary.PatientType != "registered";
     var editIcon = "<svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 20h9\" /><path d=\"M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z\" /></svg>";
     var showRegFee = isNewPatient && Model.Summary.RegistrationFee > 0;
-    var total = Model.Summary.ConsultationFee + (isNewPatient ? Model.Summary.RegistrationFee : 0);
+    var total = Book_An_Appointment1.Helpers.Fee.Total(Model.Summary.ConsultationFee, isNewPatient ? Model.Summary.RegistrationFee : 0);
 }
 
 @section Styles {
@@ -319,6 +319,29 @@
             <div class="rc-booked-item" data-booked-row><dt>@L["Review.Payment"]</dt><dd data-booked="paymentMode"></dd></div>
             <div class="rc-booked-item" data-booked-row><dt>@L["Review.AmountPayable"]</dt><dd class="rc-booked-amount" data-booked="amountPayable"></dd></div>
         </dl>
+
+        @* Appointment slip — QR (opens the slip on any phone), PDF, print, calendar. Links filled by review-confirm.js *@
+        <div class="rc-booked-slip" id="bookedSlip" hidden>
+            <div class="rc-slip-qr" id="bookedQr" role="img" aria-label="@L["Slip.QrAlt"]"></div>
+            <div class="rc-slip-body">
+                <div class="rc-slip-title">@L["Slip.YourSlip"]</div>
+                <p class="rc-slip-sub">@L["Slip.ScanHintLong"]</p>
+                <div class="rc-slip-actions">
+                    <a class="rc-slip-btn rc-slip-btn-primary" data-booked-href="pdfUrl" download>
+                        <span aria-hidden="true">⬇</span> @L["Slip.DownloadPdf"]
+                    </a>
+                    <a class="rc-slip-btn" data-booked-href="printUrl" target="_blank" rel="noopener">
+                        <span aria-hidden="true">🖨</span> @L["Slip.Print"]
+                    </a>
+                    <a class="rc-slip-btn" data-booked-href="viewSlipUrl" target="_blank" rel="noopener">@L["Slip.ViewSlip"]</a>
+                </div>
+                <div class="rc-slip-cal" id="bookedCalendar">
+                    <span class="rc-slip-cal-label"><span aria-hidden="true">📅</span> @L["Slip.AddToCalendar"]</span>
+                    <a class="rc-slip-link" data-booked-href="googleCalendarUrl" target="_blank" rel="noopener noreferrer">@L["Slip.GoogleCalendar"]</a>
+                    <a class="rc-slip-link" data-booked-href="icsUrl" download>@L["Slip.OtherCalendar"]</a>
+                </div>
+            </div>
+        </div>
 
         @* Footer — note + action side by side *@
         <div class="rc-booked-foot">

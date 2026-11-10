@@ -1544,3 +1544,187 @@ button.btn-back {
             .appt-summary {
                 flex-direction: row;*/ /* mobile pe horizontal */
 /* full width on mobile */
+
+/* ══ Add family member (registered patient) ═════════════════════════════════════ */
+.pf-add-btn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    margin-top: 12px;
+    padding: 14px 18px;
+    text-align: left;
+    background: var(--primary-tint);
+    border: 1.5px dashed var(--primary-border-strong);
+    border-radius: 16px;
+    font-family: var(--font-body);
+    color: var(--primary-dark);
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+}
+
+    .pf-add-btn:hover, .pf-add-btn:focus-visible {
+        background: var(--primary-soft);
+        border-color: var(--primary);
+    }
+
+.pf-add-icon {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 24px;
+    line-height: 1;
+    color: #fff;
+    background: var(--primary);
+}
+
+.pf-add-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.pf-add-title {
+    font-size: 14.5px;
+    font-weight: 700;
+}
+
+.pf-add-sub {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+}
+
+/* the member just added — short highlight */
+.pf-card.pf-card-new {
+    animation: pf-new 2.4s ease-out;
+}
+
+@keyframes pf-new {
+    0%, 30% { box-shadow: 0 0 0 4px var(--success-border-strong); }
+    100% { box-shadow: 0 1px 2px rgba(18, 40, 61, .04); }
+}
+
+.fm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1060;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(10, 25, 40, .5);
+}
+
+    .fm-overlay[hidden], .fm-overlay [hidden] {
+        display: none !important;
+    }
+
+.fm-modal {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 720px;
+    max-height: 94vh;
+    background: var(--surface);
+    border-top: 4px solid var(--primary);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 28px 56px -24px rgba(10, 25, 40, .5);
+    overflow: hidden;
+}
+
+.fm-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 1.1rem 1.4rem;
+    border-bottom: 1px solid var(--line);
+}
+
+.fm-title {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 560;
+    color: var(--primary-dark);
+}
+
+.fm-sub {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+}
+
+.fm-close {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: var(--surface-alt);
+    color: var(--ink-soft);
+    cursor: pointer;
+}
+
+    .fm-close:hover {
+        background: var(--line);
+    }
+
+.fm-body {
+    padding: 1.1rem 1.4rem .4rem;
+    overflow-y: auto;
+}
+
+.fm-error {
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    font-size: 13.5px;
+    color: #A3281B;
+    background: #FDECEA;
+    border-radius: var(--radius-md);
+}
+
+
+.fm-foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: .9rem 1.4rem;
+    background: var(--paper);
+    border-top: 1px solid var(--line);
+}
+
+.gender-row.fm-invalid .gender-btn {
+    border-color: var(--danger);
+}
+
+@media (max-width: 640px) {
+    .fm-overlay {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    .fm-modal {
+        max-height: 92vh;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
+
+    .fm-head, .fm-body, .fm-foot {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .fm-foot > * {
+        flex: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pf-card.pf-card-new {
+        animation: none;
+    }
+}
+

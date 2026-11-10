@@ -9,6 +9,13 @@ namespace Book_An_Appointment1.Helpers
         // Patient type the OTP API pointed to ("new" / "registered") — the only switch Patient Details allows
         public const string AllowedTypeSwitchKey = "Booking.AllowedTypeSwitch";
 
+        // OTP the registered mobile was verified with — server side only, never sent to the browser.
+        // "Add family member" passes it to MobSaveRegistrationForPatient (the API checks mobile + OTP).
+        public const string FamilyOtpKey = "Booking.FamilyOtp";
+
+        // One-time message for the booking page (e.g. a doctor link that no longer works) — translation key
+        public const string NoticeKey = "Booking.Notice";
+
         public static void SetAppointmentData(
             ISession session, AppointmentSessionData data)
         {
@@ -27,6 +34,7 @@ namespace Book_An_Appointment1.Helpers
             session.Remove(AppointmentKey);
             session.Remove("Booking.SlotEnd");
             session.Remove(AllowedTypeSwitchKey);
+            session.Remove(FamilyOtpKey);
             Security.BookingFlow.Reset(session);   // old /book/{token} URLs stop working
         }
     }
