@@ -623,6 +623,10 @@ namespace Book_An_Appointment1.Pages.Appointment
             var invalid = ValidateFamilyMember(request, registered);
             if (invalid != null) return invalid;
 
+            // Gender must fit the title (title master: M / F / B)
+            if (!GenderFitsTitle(await TitleGenderAsync(request.TitleId, request.TitleName), request.Gender))
+                return new JsonResult(new { success = false, field = "gender", message = _localizer.Text("Validation.GenderTitleMismatch") });
+
             // OTP of the mobile verification (kept on the server); missing → the mobile must be verified again
             var otp = HttpContext.Session.GetString(SessionHelper.FamilyOtpKey);
             if (!IsValidOtp(otp))
@@ -695,7 +699,14 @@ namespace Book_An_Appointment1.Pages.Appointment
                 p.LastName ??= apiRequest.LastName;
                 p.PatientName ??= string.Join(" ", new[] { request.TitleName, apiRequest.FirstName, request.MiddleName, apiRequest.LastName }
                     .Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x!.Trim()));
-                p.Gender ??= request.Gender;
+                // The card shows the gender chosen in the form. The API's echo was seen swapped
+                // (Ms. + Female sent as code "2" came back "Male"), so it is not trusted for the card;
+                // a mismatch is logged because it means AppointmentApi:GenderCodes may not match this HIS.
+                if (p.Gender != null && !string.Equals(p.Gender, request.Gender, StringComparison.OrdinalIgnoreCase))
+                    _logger.LogWarning("AddFamilyMember — API returned gender {ApiGender} for {Chosen} (sent code {Code}). " +
+                                       "Check AppointmentApi:GenderCodes against the HIS gender master.",
+                        p.Gender, request.Gender, apiRequest.Gender);
+                p.Gender = request.Gender;
                 p.Dob ??= apiRequest.Dob;
                 p.MobileNo ??= registered.Mobile;
                 p.RegistrationNo ??= "0";
@@ -745,6 +756,33 @@ namespace Book_An_Appointment1.Pages.Appointment
         }
 
         // Server-side checks (the page checks the same before sending). Returns the error response or null.
+        // Title master (GetTitles) "Gender": M = male title (Mr., Master), F = female title (Mrs., Ms., Baby),
+        // B = both (Dr., Baby Of) → any gender. Returns null when the title is unknown or the API is down.
+        private async Task<string?> TitleGenderAsync(int titleId, string? titleName)
+        {
+            try
+            {
+                var titles = (await _titleService.GetTitlesAsync())?.TitleList;
+                var title = titles?.FirstOrDefault(t => titleId > 0
+                    ? t.TitleId == titleId
+                    : string.Equals(t.Name?.Trim(), titleName?.Trim(), StringComparison.OrdinalIgnoreCase));
+                return title?.Gender?.Trim().ToUpperInvariant();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Title gender lookup failed | TitleId={T}", titleId);
+                return null;   // not blocked when the title list cannot be read
+            }
+        }
+
+        // M → Male only, F → Female only, B / unknown → any gender
+        private static bool GenderFitsTitle(string? titleGender, string? gender) => titleGender switch
+        {
+            "M" => gender == "Male",
+            "F" => gender == "Female",
+            _ => true
+        };
+
         private JsonResult? ValidateFamilyMember(AddFamilyMemberRequest? r, AppointmentSessionData.RegisteredPatientData registered)
         {
             JsonResult Field(string field, string key) => new(new { success = false, field, message = _localizer.Text(key) });
@@ -920,7 +958,7 @@ namespace Book_An_Appointment1.Pages.Appointment
         };
 
         // Review & Confirm button
-        public IActionResult OnPost()
+        public async Task<IActionResult> OnPostAsync()
         {
             _logger.LogInformation("PatientDetails OnPost | PatientType={Type}", Form.PatientType);
 
@@ -937,6 +975,12 @@ namespace Book_An_Appointment1.Pages.Appointment
             if (Form.PatientType == "new" || string.IsNullOrEmpty(Form.PatientType))
             {
                 ValidateNewPatient(sessionData);
+
+                // Gender must fit the title (title master: M / F / B)
+                var np = Form.NewPatient;
+                if (!string.IsNullOrWhiteSpace(np.Gender) &&
+                    !GenderFitsTitle(await TitleGenderAsync(np.TitleId, np.TitleName), np.Gender))
+                    ModelState.AddModelError("Form.NewPatient.Gender", _localizer.Text("Validation.GenderTitleMismatch"));
             }
             else if (Form.PatientType == "registered")
             {

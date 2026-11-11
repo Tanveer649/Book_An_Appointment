@@ -490,6 +490,14 @@ body {
         font-weight: 600;
     }
 
+    /* Not allowed for the chosen title (Mr. → Male only, Ms. → Female only) */
+    .gender-btn:disabled {
+        opacity: .4;
+        cursor: not-allowed;
+        border-color: var(--line);
+        background: var(--surface);
+    }
+
 /* Select2 on this page */
 .select2-container {
     width: 100% !important;

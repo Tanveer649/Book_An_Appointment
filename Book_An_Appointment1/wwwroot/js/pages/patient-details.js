@@ -131,7 +131,7 @@ function initPatientDetailsPage() {
 
         const savedGender = document.getElementById('Form_Gender').value;
         if (savedGender) {
-            const gbtn = document.querySelector(`.gender-btn[data-value="${savedGender}"]`);
+            const gbtn = document.querySelector(`#np-gender .gender-btn[data-value="${savedGender}"]`);
             if (gbtn) gbtn.classList.add('sel');
         }
         document.getElementById('char-count').textContent =
@@ -139,26 +139,43 @@ function initPatientDetailsPage() {
     }
 
     // ── Gender ───────────────────────────────────────────
+    // New-patient gender buttons only (the family form has its own row, #fm-gender)
+    const npGenderBtns = () => document.querySelectorAll('#np-gender .gender-btn');
+
     window.selGender = function (el) {
-        document.querySelectorAll('.gender-btn').forEach(b => b.classList.remove('sel'));
+        if (el.disabled) return;
+        npGenderBtns().forEach(b => b.classList.remove('sel'));
         el.classList.add('sel');
         document.getElementById('Form_Gender').value = el.dataset.value;
         document.getElementById('gender-error').style.display = 'none';
     };
 
-    function clearGender() {
-        document.querySelectorAll('.gender-btn').forEach(b => b.classList.remove('sel'));
-        document.getElementById('Form_Gender').value = '';
-    }
-
     function autoSelectGender(value) {
-        const btn = document.querySelector(`.gender-btn[data-value="${value}"]`);
+        const btn = document.querySelector(`#np-gender .gender-btn[data-value="${value}"]`);
         if (btn) {
-            document.querySelectorAll('.gender-btn').forEach(b => b.classList.remove('sel'));
+            npGenderBtns().forEach(b => b.classList.remove('sel'));
             btn.classList.add('sel');
             document.getElementById('Form_Gender').value = value;
             document.getElementById('gender-error').style.display = 'none';
         }
+    }
+
+    // Title master "Gender": M → only Male, F → only Female, B (Dr., Baby Of) or no title → all three.
+    // The other buttons are disabled; returns the one allowed gender (or null when any is allowed).
+    window.lockGenderToTitle = function (row, titleGender) {
+        const only = titleGender === 'M' ? 'Male' : titleGender === 'F' ? 'Female' : null;
+        row.querySelectorAll('.gender-btn').forEach(b => {
+            const off = only !== null && b.dataset.value !== only;
+            b.disabled = off;
+            b.setAttribute('aria-disabled', String(off));
+            b.title = off ? t('Validation.GenderTitleMismatch') : '';
+        });
+        return only;
+    };
+
+    function applyTitleGender(gender) {
+        const only = lockGenderToTitle(document.getElementById('np-gender'), gender);
+        if (only) autoSelectGender(only);   // B / no title: the patient's own choice is kept
     }
 
     // ── Titles ───────────────────────────────────────────
@@ -186,17 +203,15 @@ function initPatientDetailsPage() {
                 if (SavedTitleName) {
                     $('#Form_Title').val(SavedTitleName).trigger('change.select2');
                     document.getElementById('Form_TitleId').value = SavedTitleId;
+                    // Reload / Back: lock the buttons again for the saved title
+                    applyTitleGender(select.options[select.selectedIndex]?.dataset?.gender);
                 }
 
                 $('#Form_Title').off('change.titleHandler').on('change.titleHandler', function () {
                     clearError('Form_Title');
                     const opt = this.options[this.selectedIndex];
                     document.getElementById('Form_TitleId').value = opt?.dataset?.titleId || '';
-
-                    const gender = opt?.dataset?.gender;
-                    if (gender === 'M') autoSelectGender('Male');
-                    else if (gender === 'F') autoSelectGender('Female');
-                    else clearGender();
+                    applyTitleGender(opt?.dataset?.gender);
                 });
             })
             .catch(err => console.error('Titles load failed:', err));
@@ -791,10 +806,11 @@ function initPatientDetailsPage() {
             else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
         });
 
-        // Title → gender (same as the new patient form)
-        $('fm-title').addEventListener('change', function () {
-            const g = this.options[this.selectedIndex]?.dataset.gender;
-            if (g === 'M') setGender('Male'); else if (g === 'F') setGender('Female');
+        // Title → gender (same as the new patient form): M → only Male, F → only Female, B → any
+        const titleGender = () => { const s = $('fm-title'); return s.value ? (s.options[s.selectedIndex]?.dataset.gender || '') : ''; };
+        $('fm-title').addEventListener('change', () => {
+            const only = lockGenderToTitle($('fm-gender'), titleGender());
+            if (only) setGender(only);
         });
         $('fm-gender').querySelectorAll('.gender-btn').forEach(b => b.addEventListener('click', () => setGender(b.dataset.value)));
         $('fm-state').addEventListener('change', function () { loadFmCities(this.value); });
@@ -806,6 +822,7 @@ function initPatientDetailsPage() {
         function open() {
             opener = document.activeElement;
             form.reset();
+            lockGenderToTitle($('fm-gender'), '');   // no title yet → all buttons free
             setGender('');
             showFormError('');
             form.querySelectorAll('[data-field]').forEach(f => fieldError(f.dataset.field, ''));
@@ -901,6 +918,7 @@ function initPatientDetailsPage() {
                 ['dob', !v.dob, 'Validation.DobRequired'],
                 ['dob', v.dob && new Date(v.dob) >= today, 'Validation.DobPast'],
                 ['gender', !v.gender, 'Validation.SelectGender'],
+                ['gender', (titleGender() === 'M' && v.gender !== 'Male') || (titleGender() === 'F' && v.gender !== 'Female'), 'Validation.GenderTitleMismatch'],
                 ['state', !v.stateId, 'Validation.SelectState'],
                 ['city', !v.cityId, 'Validation.SelectCity'],
                 ['email', v.email && !emailRegex.test(v.email), 'Validation.EmailInvalid'],

@@ -7,7 +7,9 @@ shown as cards. Below the cards there is now **+ Add family member**.
 
 1. The patient clicks **Add family member** (mobile already verified) → a form opens: title, first / middle / last name,
    date of birth, gender, state, city (required) and address, email, pincode (optional).
-   Choosing the title sets the gender, as on the new-patient form.
+   Choosing the title sets the gender, as on the new-patient form, following the title master `Gender` column:
+   **M** (Mr., Master, Unit) → only Male, **F** (Mrs., Ms., Baby) → only Female, **B** (Dr., Baby Of) → any.
+   The other buttons are greyed out, and the server also rejects a mismatch.
 2. **Save & select** → `?handler=AddFamilyMember` → hospital API
    `POST /api/VCP/MobSaveRegistrationForPatient` with `IsFamilyMember = 1` (number).
 3. On success the new member is added to the list **and selected**, a short highlight shows the new
@@ -46,7 +48,7 @@ No second OTP is asked from the patient. The API checks **mobile + OTP**; the se
 | `FacilityID` | facility chosen on step 1 |
 | `FirstName` / `MiddleName` / `LastName` | form (`MiddleName` = `" "` when empty, as in the API sample) |
 | `DOB` | `yyyy-MM-dd` |
-| `Gender` | code from `AppointmentApi:GenderCodes` |
+| `Gender` | code from `AppointmentApi:GenderCodes` (this HIS: Male `2`, Female `1`, Other `3`) — **see the gender note below** |
 | `Mobile` | the verified mobile |
 | `TitleId` | from the title list |
 | `CountryId` / `StateId` / `CityId` | default country / form |
@@ -78,3 +80,23 @@ nothing is created in the hospital system while testing.
 - `PatientDetailsModel.OnPostAddFamilyMemberAsync` / `ValidateFamilyMember`
 - `Services/Implementations/PatientRegistrationService.cs`, `Models/PatientOTP/FamilyMemberRegistration.cs`
 - `patient-details.js` → `initFamilyMemberForm`; markup `#familyModal` in `PatientDetails.cshtml`
+
+## Gender shown on the new card
+
+The new member's card shows the gender **chosen in the form**, not the one in the API response.
+During testing, the API's answer was swapped: Ms. + Female (code `2`) came back as `"Male"`, and Mr. + Male
+(code `1`) came back as `"Female"`. When the two differ, the log shows a warning:
+
+```
+AddFamilyMember — API returned gender Male for Female (sent code 2). Check AppointmentApi:GenderCodes …
+```
+
+To find out which side is wrong, open the new member in the HIS (or check the patient row in the database):
+- **The HIS shows the right gender** → the API only reports it wrong in its response. Nothing to change
+  in the portal; tell the API team.
+- **The HIS shows the wrong gender too** → this HIS numbers genders differently. Swap the codes in
+  `AppointmentApi:GenderCodes` (`"Male": "2", "Female": "1"`). The same codes are also used by CreateAppointment.
+
+**Akhil HIS (2026-11-11):** the HIS showed the wrong gender too, so the codes were swapped to
+`Male = 2, Female = 1`. Members and new patients created before this change may have the wrong gender in the HIS,
+and must be corrected there. For a new client, add one test member and check it in the HIS before go-live.

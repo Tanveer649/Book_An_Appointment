@@ -38,7 +38,8 @@ Work through this page top to bottom; section 8 is the final checklist.
 | Public portal address | `https://booking.rubyhospital.com` | QR codes, website links |
 | Payment gateway URL | `https://pay.rubyhospital.com/pay` | Pay now |
 | Facility code / hospital location id in the HIS | `3`, `1` | `ApiParam` |
-| Terms / privacy / refund / about-us page links | `https://rubyhospital.com/terms` | footer |
+| Terms / privacy / refund / about-us / contact page links | `https://rubyhospital.com/terms` | footer (empty = hidden) |
+| Copyright name + year, Google Play / App Store app links | "Ruby General Hospital", 2023 | footer — `FooterSettings`, see [Footer.md](Footer.md) |
 | Languages wanted | English + Bengali | `LanguageSettings` |
 
 ---
@@ -104,7 +105,7 @@ only one facility, that one is selected. Patients can still pick another facilit
 "AppointmentApi": {
   "Source": "WA", "AppointmentType": "RC", "SourceAppointmentId": "12382245",
   "DefaultSlotMinutes": 15,
-  "GenderCodes": { "Male": "1", "Female": "2", "Other": "3" }   // codes of THIS HIS
+  "GenderCodes": { "Male": "2", "Female": "1", "Other": "3" }   // codes of THIS HIS — Akhil HIS: Female 1, Male 2. Check per client!
 }
 ```
 
@@ -311,7 +312,7 @@ middle of a booking have to start again. Nothing else breaks.
 - [ ] Logo uploaded (≥ 112 px high, transparent), looks right on desktop and phone
 - [ ] Hospital photos (or none), theme file present and `ThemeSettings:Theme` set
 - [ ] `ApiParam` facility / location ids — facilities, specialities, doctors load on `/book`
-- [ ] `AppointmentApi:GenderCodes` match the HIS
+- [ ] `AppointmentApi:GenderCodes` match the HIS — add one Female test patient / family member and check it shows Female **in the HIS**
 - [ ] `PaymentSettings:PaymentGatewayUrl` set; Pay now redirects correctly
 - [ ] Scan the poster QR at `/booking-qr` with a phone — it opens the portal (if it shows an internal address, set `SlipSettings:PublicBaseUrl` to the **portal** address, not the API)
 - [ ] Start-up log shows `Data Protection keys folder: …` (no "not writable" warning); shared folder if load-balanced

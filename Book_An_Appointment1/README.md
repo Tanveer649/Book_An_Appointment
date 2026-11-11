@@ -152,7 +152,8 @@ Book_An_Appointment1/   (this folder)
 | Section | Key settings | Notes |
 |---|---|---|
 | `ApiSettings` | `BaseUrl`, `UserName`, `Password`, `TimeoutSeconds` | **Per hospital.** HIS API address + portal account. |
-| `HospitalSettings` | `HospitalName`, `LogoPath`, `LogoHeight` (shown 32–60 px, recommended `56px`), `LogoWidth` (`auto`, max 200 px), `HeaderText`, `EmergencyNumber`, footer phones / links | Header, footer, slip and poster branding. Logo file: PNG/SVG, ≥ 112 px high. |
+| `HospitalSettings` | `HospitalName`, `LogoPath`, `LogoHeight` (shown 32–60 px, recommended `56px`), `LogoWidth` (`auto`, max 200 px), `HeaderText`, `EmergencyNumber`, `DisclaimerText`, footer links (`AboutUsUrl`, `ContactUs`, `TermsUrl`, `RefundPolicyUrl`, `PrivacyPolicyUrl` — empty = hidden) | Header, footer, slip and poster branding. Logo file: PNG/SVG, ≥ 112 px high. |
+| `FooterSettings` | `Enabled`, `ShowDisclaimer`, `DisclaimerCollapsed`, `ShowPanelPhones`, `ShowAboutUs`, `ShowContactUs`, `ShowTerms`, `ShowRefundPolicy`, `ShowPrivacyPolicy`, `ShowGooglePlay` + `GooglePlayUrl`, `ShowAppStore` + `AppStoreUrl`, `ShowCopyright` + `CopyrightYear` / `CopyrightName`, `ShowSecureBadge` | Compact footer. Every part has its own `Show…` switch; `Enabled: false` removes the whole footer. See [Footer.md](Docs/Footer.md) |
 | `ThemeSettings` | `Theme` | Loads `wwwroot/themes/{Theme}.css` |
 | `LanguageSettings` | `DefaultLanguage`, `Languages[]` | Languages in the header dropdown |
 | `PaymentSettings` | `EnablePayNow`, `EnablePayOnArrival`, `PaymentGatewayUrl` | Payment options |
@@ -258,6 +259,7 @@ All under `ApiSettings:BaseUrl` (see `API/EndPoints/ApiRoutes.cs`):
 | [Family-Member.md](Docs/Family-Member.md) | Add family member flow + API mapping |
 | [Language-Feature.md](Docs/Language-Feature.md) | Languages, adding a new one |
 | [Theme.md](Docs/Theme.md) | Hospital colours / themes |
+| [Footer.md](Docs/Footer.md) | Footer links, disclaimer, copyright, Google Play / App Store badges |
 | [Security.md](Docs/Security.md) | Security design + go-live checklist |
 
 ---
@@ -268,6 +270,12 @@ Add a line for every change that affects users, settings or URLs (newest first).
 
 | Date | Change |
 |---|---|
+| 2026-11-11 | Footer on/off switches in `FooterSettings` for every part: `Enabled` (whole footer), `ShowDisclaimer`, `ShowAboutUs`, `ShowContactUs`, `ShowTerms`, `ShowRefundPolicy`, `ShowPrivacyPolicy`, `ShowGooglePlay`, `ShowAppStore`, `ShowCopyright`, `ShowSecureBadge`. |
+| 2026-11-11 | Disclaimer rewritten (en / hi / bn): open to all patients, pay online or at the hospital, arrive 15 minutes early with photo ID, timings may change, contact the hospital for changes / cancellations. |
+| 2026-11-11 | **Title decides gender**, following the HIS title master (`GetTitles` → `Gender`). **M** (Mr., Master, Unit) allows Male only, **F** (Mrs., Ms., Baby) allows Female only, and **B** (Dr., Baby Of) allows any gender. The other buttons are greyed out on the New patient and Add family member forms, and the server rejects a mismatch ("This gender does not match the selected title"). |
+| 2026-11-11 | **Gender codes swapped for this HIS**: `AppointmentApi:GenderCodes` is now Male `2`, Female `1`. This was confirmed in the HIS, where a Female member was saved as Male. It applies to CreateAppointment and Add family member. Patients created earlier may have the wrong gender in the HIS. |
+| 2026-11-11 | Shorter, clearer disclaimer text (`HospitalSettings:DisclaimerText` + `Footer.DisclaimerText` in en / hi / bn). `FooterSettings` re-added to appsettings (it had been lost, so the copyright line and store badge were missing). Add family member: the new card shows the gender chosen in the form. The hospital API sent the gender back swapped (Ms. + Female → "Male"), and that mismatch is now logged as a warning. |
+| 2026-11-11 | Compact footer, configured in appsettings (`FooterSettings` + links in `HospitalSettings`). It has a one-line disclaimer with Read more, a Contact us link, the copyright line, and Google Play / App Store badges. Empty values hide their part, and external links open in a new tab. Removed a linked `akhil-logo.png` from the Downloads folder in the `.csproj`, which broke the build (the file is in `wwwroot/Images/Logo`). See [Footer.md](Docs/Footer.md). |
 | 2026-11-10 | Fix — Add family member: `IsFamilyMember` and `inyHospitalLocationId` are now sent as **numbers** (`1`), not strings (`"1"`). The API could not read the string `"1"` into its bool, so the procedure got `@bitIsFamilyMember=0` and the member was not added. Request body is logged at Debug (OTP masked). |
 | 2026-11-10 | Hide list can also hide **facilities** (`HideList:FacilityIds`) — not in the facility dropdown, their specialities / doctors not loaded, links and profiles say not found, Continue refuses them. |
 | 2026-11-10 | Log files: `logs/portal-yyyyMMdd.log` one per day, only the last `FileLogging:RetainDays` (5) days kept, older files deleted automatically. |

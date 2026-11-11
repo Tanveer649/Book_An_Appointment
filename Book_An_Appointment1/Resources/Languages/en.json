@@ -10,13 +10,20 @@
   },
   "Footer": {
     "Disclaimer": "Disclaimer:",
-    "DisclaimerText": "Booking of an appointment is valid only for self-paying patients due to technical reasons. If you inadvertently booked an appointment and you are not self-paying patient then your appointment may be liable to be cancelled.",
+    "DisclaimerText": "Book your appointment online and pay securely through our payment gateway, or pay at the hospital on arrival. Please arrive 15 minutes before your appointment with a valid photo ID. Timings may occasionally change due to doctor availability or emergencies; the hospital will inform you if this happens. For changes or cancellations, please contact the hospital.",
     "PanelPatients": "For Panel (Any Government Panel cash/Credit) Patients, please call Sector 14: {0}, Sector 56: {1}, Sector 82: {2} to take appointment.",
     "AboutUs": "About us",
     "TermsOfUse": "Terms of Use",
     "RefundPolicy": "Refund & Cancellations Policy",
     "PrivacyPolicy": "Privacy policy",
-    "SecurePortal": "Secure patient portal"
+    "SecurePortal": "Secure patient portal",
+    "ContactUs": "Contact us",
+    "ReadMore": "Read more",
+    "ReadLess": "Show less",
+    "Links": "Footer links",
+    "GetItOn": "GET IT ON",
+    "DownloadOn": "Download on the",
+    "Copyright": "© {0} {1}. All rights reserved."
   },
   "Steps": {
     "SelectSlot": "Select slot",
@@ -182,7 +189,8 @@
     "SelectPatient": "Please select the patient for whom you want to book the appointment",
     "SelectState": "Please select a state",
     "SelectCity": "Please select a city",
-    "AddressTooLong": "Address can be at most 200 characters"
+    "AddressTooLong": "Address can be at most 200 characters",
+    "GenderTitleMismatch": "This gender does not match the selected title"
   },
   "Errors": {
     "SomethingWrong": "Something went wrong",

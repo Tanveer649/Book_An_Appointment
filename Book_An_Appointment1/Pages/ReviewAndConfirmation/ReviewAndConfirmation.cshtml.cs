@@ -195,7 +195,7 @@ namespace Book_An_Appointment1.Pages.ReviewAndConfimation
                     return new JsonResult(new
                     {
                         success = true,
-                        redirectUrl = QueryHelpers.AddQueryString(gatewayUrl!, "appointmentId", appointmentId)
+                        redirectUrl = QueryHelpers.AddQueryString(gatewayUrl!, "var", appointmentId)
                     });
                 }
 
