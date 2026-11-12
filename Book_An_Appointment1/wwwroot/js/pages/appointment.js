@@ -92,7 +92,22 @@ var AppointmentUI = (function () {
             ? '<div class="slot-legend" aria-hidden="true"><span><i class="slot-swatch"></i>' + esc(t('Js.SlotAvailable')) +
               '</span><span><i class="slot-swatch is-booked"></i>' + esc(t('Js.SlotBooked')) + '</span></div>'
             : '';
-        return legend + groups.map(function (g) {
+        // Phone: one group at a time behind Morning / Afternoon / Evening tabs (CSS shows the tabs only on phones).
+        // Opens on the group with the chosen slot, else the first group with a free slot.
+        var active = 0;
+        groups.forEach(function (g, i) {
+            if (selectedStart && g.items.some(function (it) { return it.slot.startTime === selectedStart; })) active = i;
+        });
+        if (!selectedStart || !groups[active].items.some(function (it) { return it.slot.startTime === selectedStart; })) {
+            for (var i = 0; i < groups.length; i++) { if (groups[i].items.some(function (it) { return isOpen(it.slot); })) { active = i; break; } }
+        }
+        var tabs = '<div class="slot-tabs" role="tablist">' + groups.map(function (g, i) {
+            var free = g.items.filter(function (it) { return isOpen(it.slot); }).length;
+            return '<button type="button" class="slot-tab' + (i === active ? ' is-active' : '') + '" role="tab" aria-selected="' + (i === active) +
+                '" data-group="' + i + '">' + esc(t('Js.' + g.name)) + ' <span class="slot-tab-count">' + free + '</span></button>';
+        }).join('') + '</div>';
+
+        return tabs + legend + groups.map(function (g, gi) {
             var btns = g.items.map(function (it) {
                 if (!isOpen(it.slot)) {   // booked → grey, disabled, not clickable
                     return '<button type="button" class="slot-btn is-booked" disabled aria-disabled="true" title="' + esc(t('Js.SlotBooked')) +
@@ -103,7 +118,7 @@ var AppointmentUI = (function () {
                     '" data-start="' + esc(it.slot.startTime) + '" data-end="' + esc(it.slot.endTime) + '">' + esc(it.label) + '</button>';
             }).join('');
             var free = g.items.filter(function (it) { return isOpen(it.slot); }).length;
-            return '<div class="slot-group"><div class="slot-group-label">' + esc(t('Js.' + g.name)) +
+            return '<div class="slot-group' + (gi === active ? ' is-active' : '') + '" data-group="' + gi + '"><div class="slot-group-label">' + esc(t('Js.' + g.name)) +
                 ' <span class="slot-group-count">' + free + '</span></div><div class="slot-group-grid">' + btns + '</div></div>';
         }).join('');
     }
@@ -126,26 +141,49 @@ var AppointmentUI = (function () {
             '<p class="doctor-speciality">' + esc(clean(doc.specialisation)) + '</p>' +
             (doc.isTeleconsult ? '<span class="teleconsult-badge">' + esc(t('Js.Teleconsultation')) + '</span>' : '') + '</div></div>' +
             '<div class="fee-block"><span class="fee-label">' + esc(t('Js.ConsultationFee')) + '</span><span class="fee-value">₹ ' + esc(doc.fee) + '</span></div>' +
+            // Phone: details fold away behind "View doctor details" (always open on larger screens — the summary is hidden there)
+            '<details class="doctor-more"' + (isPhone() ? '' : ' open') + '><summary>' + esc(t('Js.DoctorDetails')) + '</summary>' +
             '<dl class="doctor-details">' + rows.map(function (r) {
                 return '<div class="detail"><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>';
-            }).join('') + '</dl>';
+            }).join('') + '</dl></details>';
+    }
+
+    // Same breakpoints as appointment.css
+    function isPhone() { return !!(window.matchMedia && window.matchMedia('(max-width: 767px)').matches); }
+
+    // Tablet / phone: one-tap row of bookable days (the month calendar opens from the "Calendar" button)
+    function renderDateStrip(from, to) {
+        var html = '', d = new Date(from.getTime());
+        while (d <= to) {
+            html += '<button type="button" class="ds-day" data-date="' + toDateStr(d) + '">' +
+                '<span class="ds-dow">' + esc(DAYS[d.getDay()]) + '</span><span class="ds-num">' + d.getDate() + '</span>' +
+                '<span class="ds-mon">' + esc(MONTHS[d.getMonth()]) + '</span></button>';
+            d.setDate(d.getDate() + 1);
+        }
+        return html;
     }
 
     function renderBooking(slotsHtml, noteText) {
         return '<div id="selectionSummary" class="selection-banner" aria-live="polite"><span class="selection-label">' + esc(t('Js.YourSlot')) + '</span>' +
             '<span id="selectionValue" class="selection-value">' + esc(t('Js.SelectDateTime')) + '</span></div>' +
             '<div class="booking-grid">' +
-            '<div class="calendar-panel"><h5 class="panel-title">' + esc(t('Js.SelectDate')) + '</h5>' +
+            '<div class="calendar-panel"><div class="calendar-head"><h5 class="panel-title">' + esc(t('Js.SelectDate')) + '</h5>' +
+            '<button type="button" class="cal-toggle" id="calToggle" aria-expanded="false" aria-controls="calWrap">' +
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' + esc(t('Js.Calendar')) + '</button></div>' +
+            '<div class="date-strip" id="dateStrip" role="group" aria-label="' + esc(t('Js.SelectDate')) + '"></div>' +
+            '<div class="cal-wrap" id="calWrap">' +
             '<input type="text" id="slotCalendar" class="form-control" placeholder="' + esc(t('Js.SelectDate')) + '" readonly style="display:none;" />' +
-            '<p class="calendar-note">' + esc(noteText || '') + '</p></div>' +
+            '<p class="calendar-note">' + esc(noteText || '') + '</p></div></div>' +
             '<div class="slots-panel"><div class="slots-head"><h5 class="panel-title">' + esc(t('Js.AvailableSlots')) + '</h5><span id="slotDateLabel"></span></div>' +
             '<div id="slotsContainer" class="slots-container">' + slotsHtml + '</div></div></div>' +
-            '<div class="booking-actions"><button type="button" id="continueBtn" class="btn-continue">' + esc(t('Js.Continue')) + '</button></div>';
+            '<div class="booking-actions"><span class="action-slot" id="actionSlot" aria-hidden="true"></span>' +
+            '<button type="button" id="continueBtn" class="btn-continue">' + esc(t('Js.Continue')) + '</button></div>';
     }
 
     return {
         esc: esc, parseSlot: parseSlot, formatTime: formatTime, formatDay: formatDay, toDateStr: toDateStr,
-        groupSlots: groupSlots, renderSlots: renderSlots, isOpen: isOpen, hasOpen: hasOpen, renderDoctorCard: renderDoctorCard, renderBooking: renderBooking, initials: initials, photoSrc: photoSrc
+        groupSlots: groupSlots, renderSlots: renderSlots, isOpen: isOpen, hasOpen: hasOpen, renderDateStrip: renderDateStrip, isPhone: isPhone, renderDoctorCard: renderDoctorCard, renderBooking: renderBooking, initials: initials, photoSrc: photoSrc
     };
 })();
 
@@ -220,7 +258,11 @@ $(document).ready(function () {
     }
 
     /* ── Hospital carousel (skips images that fail to load) ─ */
+    // Tablet / phone (≤ 991 px, same as appointment.css): no carousel — keeps the first page short and saves mobile data
+    function carouselOff() { return !!(window.matchMedia && window.matchMedia('(max-width: 991px)').matches); }
+
     function buildCarousel() {
+        if (carouselOff()) { $('#hospitalCarousel').hide(); $('#welcomeStage').removeClass('has-media'); return; }
         var images = cfg.hospitalImages || [];
         var loaded = new Array(images.length), pending = images.length;
         if (!pending) return finish();
@@ -262,7 +304,7 @@ $(document).ready(function () {
     }
     function startCarousel() {
         stopCarousel();
-        if ((window._carouselImages || []).length < 2) return;
+        if ((window._carouselImages || []).length < 2 || carouselOff()) return;
         if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
         window._carouselInterval = setInterval(function () { goToSlide((window._carouselIndex || 0) + 1); }, 3500);
     }
@@ -410,6 +452,58 @@ $(document).ready(function () {
         var d = start ? UI.parseSlot(start) : null;
         $('#selectionSummary').toggleClass('has-slot', !!d);
         $('#selectionValue').text(d ? UI.formatDay(d) + ' · ' + UI.formatTime(d) : t('Js.SelectDateTime'));
+        // Tablet / phone: the floating Continue bar repeats the chosen slot
+        $('#actionSlot').toggleClass('has-slot', !!d).empty().append(d
+            ? [$('<small></small>').text(UI.formatDay(d)), $('<strong></strong>').text(UI.formatTime(d))]
+            : $('<strong></strong>').text(t('Js.PickTime')));
+    }
+
+    /* ── Tablet / phone: date strip, calendar toggle, slot tabs ── */
+    function buildDateStrip(selected) {
+        var $strip = $('#dateStrip');
+        if (!$strip.length) return;
+        $strip.html(UI.renderDateStrip(startOfToday(), lastBookable()));
+        syncDateStrip(selected);
+    }
+
+    // Highlight the chosen day and scroll the strip (not the page) so it is in view
+    function syncDateStrip(dateStr) {
+        var $strip = $('#dateStrip');
+        $strip.find('.ds-day').removeClass('is-selected').attr('aria-pressed', 'false');
+        var $day = $strip.find('.ds-day[data-date="' + dateStr + '"]').addClass('is-selected').attr('aria-pressed', 'true');
+        if ($day.length && $strip[0].clientWidth) {
+            var el = $day[0], box = $strip[0];
+            box.scrollLeft = Math.max(0, el.offsetLeft - box.offsetLeft - (box.clientWidth - el.offsetWidth) / 2);
+        }
+    }
+
+    function setCalendarOpen(open) {
+        $('#bookingPanel').toggleClass('calendar-open', open);
+        $('#calToggle').attr('aria-expanded', open ? 'true' : 'false');
+    }
+
+    $(document).on('click', '.ds-day', function () {
+        var fp = window._flatpickrInstance, date = $(this).attr('data-date');
+        if (!fp || date === currentDate) return;
+        fp.setDate(date, true);      // same path as picking the day in the calendar (onChange loads the slots)
+    });
+
+    $(document).on('click', '#calToggle', function () {
+        setCalendarOpen(!$('#bookingPanel').hasClass('calendar-open'));
+    });
+
+    $(document).on('click', '.slot-tab', function () {
+        var g = $(this).attr('data-group');
+        $('.slot-tab').removeClass('is-active').attr('aria-selected', 'false');
+        $(this).addClass('is-active').attr('aria-selected', 'true');
+        $('.slot-group').removeClass('is-active').filter('[data-group="' + g + '"]').addClass('is-active');
+    });
+
+    // Doctor details: folded on phones, always open on larger screens
+    if (window.matchMedia) {
+        var phoneMq = window.matchMedia('(max-width: 767px)');
+        var onPhoneChange = function () { if (!phoneMq.matches) $('.doctor-more').attr('open', ''); };
+        if (phoneMq.addEventListener) phoneMq.addEventListener('change', onPhoneChange); else if (phoneMq.addListener) phoneMq.addListener(onPhoneChange);
     }
 
     /* ── Slot select & continue ───────────────────────── */
@@ -512,6 +606,7 @@ $(document).ready(function () {
                 for (var y = first; y <= today.getFullYear() + 5; y++) $year.append($('<option></option>').val(y).text(y));
                 $year.val(fp.currentYear).on('change', function () { fp.changeYear(parseInt(this.value)); });
                 $(fp.currentYearElement).closest('.flatpickr-current-month').append($year);
+                buildDateStrip(date);
             },
             onYearChange: function (sel, str, fp) { if ($year) $year.val(fp.currentYear); },
             onDayCreate: function (sel, str, fp, el) { if (el.dateObj > max) el.classList.add('beyond-window'); },
@@ -523,6 +618,8 @@ $(document).ready(function () {
                     return;
                 }
                 currentDate = dateStr;
+                syncDateStrip(dateStr);
+                setCalendarOpen(false);
                 rememberSlot(dateStr, '');
                 loadSlots(dateStr, hospitalLocationId, facilityId, doctorId);
             }

@@ -1470,3 +1470,397 @@ body {
         transform: none !important;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Tablet + phone layout. Desktop (≥ 992 px) is untouched: everything
+   below is either hidden on desktop or inside a max-width query.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Parts that exist only on tablet / phone */
+.cal-toggle, .date-strip, .slot-tabs, .action-slot, .doctor-more > summary {
+    display: none;
+}
+
+.doctor-more {
+    display: block;
+}
+
+@media (max-width: 991px) {
+    /* First page: no photo carousel (also not built by appointment.js) */
+    #hospitalCarousel {
+        display: none !important;
+    }
+
+    /* ── Date: one-tap strip of days; the month calendar opens on demand ── */
+    .calendar-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+        .calendar-head .panel-title {
+            margin: 0;
+        }
+
+    .cal-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 34px;
+        padding: 0 12px;
+        border: 1.5px solid var(--primary-border-strong);
+        border-radius: 999px;
+        background: var(--surface);
+        color: var(--primary-dark);
+        font: 600 13px var(--font-body);
+        cursor: pointer;
+    }
+
+        .cal-toggle[aria-expanded="true"] {
+            background: var(--primary-tint);
+            border-color: var(--primary);
+        }
+
+    .date-strip {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        scroll-snap-type: x proximity;
+        scrollbar-width: none;
+        padding: 2px 2px 4px;
+        margin: 0 -2px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+        .date-strip::-webkit-scrollbar {
+            display: none;
+        }
+
+    .ds-day {
+        flex: 0 0 auto;
+        width: 58px;
+        padding: 8px 0 7px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1px;
+        border: 1.5px solid var(--line);
+        border-radius: var(--radius-md);
+        background: var(--surface);
+        color: var(--ink);
+        font-family: var(--font-body);
+        cursor: pointer;
+        scroll-snap-align: center;
+        transition: border-color .15s, background .15s;
+    }
+
+        .ds-day:hover {
+            border-color: var(--primary);
+        }
+
+    .ds-dow, .ds-mon {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--ink-soft);
+        line-height: 1.2;
+    }
+
+    .ds-num {
+        font-size: 19px;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    .ds-day.is-selected {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: #fff;
+    }
+
+        .ds-day.is-selected .ds-dow, .ds-day.is-selected .ds-mon {
+            color: rgba(255, 255, 255, .85);
+        }
+
+    .cal-wrap {
+        display: none;
+        margin-top: 12px;
+    }
+
+    #bookingPanel.calendar-open .cal-wrap {
+        display: block;
+    }
+
+    .calendar-note {
+        max-width: none;
+        text-align: center;
+    }
+
+    /* "Your slot" moves into the floating Continue bar */
+    #selectionSummary {
+        display: none;
+    }
+
+    /* ── Continue: floats at the bottom while the panel is on screen, then parks at the end of the panel ── */
+    .booking-actions {
+        position: sticky;
+        bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+        z-index: 5;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 8px 8px 18px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .97);
+        box-shadow: 0 12px 28px -14px rgba(18, 40, 61, .45);
+        text-align: left;
+    }
+
+    /* Chosen slot: date small on top, time bold below */
+    .action-slot {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        line-height: 1.2;
+        color: var(--ink-faint);
+    }
+
+        .action-slot small, .action-slot strong {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .action-slot small {
+            font-size: 11.5px;
+            font-weight: 600;
+            color: var(--ink-soft);
+        }
+
+        .action-slot strong {
+            font-size: 14.5px;
+            font-weight: 700;
+        }
+
+        .action-slot.has-slot strong {
+            color: var(--primary-dark);
+        }
+
+    #continueBtn, .booking-actions .btn-continue {
+        width: auto;
+        flex-shrink: 0;
+    }
+}
+
+@media (max-width: 767px) {
+    /* ── First page: short welcome card ── */
+    .welcome-steps {
+        display: none;
+    }
+
+    .empty-hint {
+        gap: 0;
+    }
+
+    .welcome-title {
+        font-size: 22px;
+    }
+
+    .welcome-text {
+        font-size: 14px;
+    }
+
+    /* ── Doctor card: compact head, slim fee, details folded ── */
+    #doctorIdentityCard.doctor-card {
+        padding: 1.1rem 1.1rem;
+        gap: .9rem;
+    }
+
+    .doctor-head {
+        grid-template-columns: 64px minmax(0, 1fr);
+        gap: 14px;
+        align-items: center;
+    }
+
+    .doctor-avatar-wrap {
+        width: 64px;
+        height: 64px;
+        border-width: 2px;
+    }
+
+        .doctor-avatar-wrap.no-photo::after {
+            font-size: 22px;
+        }
+
+    .doctor-avatar-col {
+        gap: 6px;
+    }
+
+    .rating-badge {
+        font-size: 12px;
+        padding: 2px 9px;
+    }
+
+    .review-count {
+        font-size: 11px;
+    }
+
+    .doctor-name {
+        font-size: 18px;
+    }
+
+    .doctor-info {
+        padding-top: 0;
+        gap: 3px;
+    }
+
+    .fee-block {
+        padding: 10px 14px;
+    }
+
+    .fee-value {
+        font-size: 20px;
+    }
+
+    .doctor-more > summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        list-style: none;
+        cursor: pointer;
+        padding: 2px 0;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--primary);
+    }
+
+        .doctor-more > summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .doctor-more > summary::after {
+            content: "";
+            width: 8px;
+            height: 8px;
+            margin-right: 4px;
+            border-right: 2px solid currentColor;
+            border-bottom: 2px solid currentColor;
+            transform: rotate(45deg) translateY(-2px);
+            transition: transform .2s;
+        }
+
+    .doctor-more[open] > summary::after {
+        transform: rotate(-135deg) translateY(-2px);
+    }
+
+    .doctor-more[open] > .doctor-details {
+        margin-top: 12px;
+    }
+
+    /* ── Booking panel ── */
+    #bookingPanel {
+        gap: 1rem;
+    }
+
+    .booking-grid {
+        gap: 18px;
+    }
+
+    /* ── Slots: Morning / Afternoon / Evening tabs, 3 per row, no inner scrolling ── */
+    .slot-tabs {
+        display: flex;
+        gap: 6px;
+        padding: 4px;
+        margin-bottom: 12px;
+        border-radius: 999px;
+        background: var(--surface-alt);
+    }
+
+    .slot-tab {
+        flex: 1 1 0;
+        min-width: 0;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        border: none;
+        border-radius: 999px;
+        background: transparent;
+        color: var(--ink-soft);
+        font: 600 13px var(--font-body);
+        white-space: nowrap;
+        cursor: pointer;
+    }
+
+        .slot-tab.is-active {
+            background: var(--surface);
+            color: var(--primary-dark);
+            box-shadow: 0 2px 8px -3px rgba(18, 40, 61, .3);
+        }
+
+    .slot-tab-count {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--ink-faint);
+    }
+
+    .slots-container {
+        max-height: none;
+        overflow: visible;
+        padding-right: 0;
+        gap: 0;
+    }
+
+    .slot-group {
+        display: none;
+    }
+
+        .slot-group.is-active {
+            display: flex;
+        }
+
+    .slot-group-label {
+        display: none;
+    }
+
+    .slot-group-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .slot-btn {
+        height: 42px;
+        font-size: 13px;
+    }
+
+    .slot-legend {
+        position: static;
+        padding: 0;
+    }
+
+    .slots-head {
+        min-height: 0;
+        margin-bottom: 10px;
+    }
+}
+
+@media (max-width: 360px) {
+    .slot-tab {
+        font-size: 12px;
+    }
+
+    .action-slot strong {
+        font-size: 13.5px;
+    }
+
+    .booking-actions .btn-continue {
+        padding-left: 18px;
+        padding-right: 18px;
+    }
+}

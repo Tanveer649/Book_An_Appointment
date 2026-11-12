@@ -1736,3 +1736,136 @@ button.btn-back {
     }
 }
 
+/* ═══ Phone only: OTP on one line, compact patient cards ═══ */
+
+/* Arrow that opens a card's details — phones only */
+.pf-card-toggle {
+    display: none;
+}
+
+@media (max-width: 767px) {
+    /* OTP: all boxes share one row and shrink to fit (no box wraps to a second line) */
+    .otp-inputs {
+        flex-wrap: nowrap;
+        gap: 6px;
+    }
+
+    .otp-input {
+        flex: 1 1 0;
+        min-width: 0;
+        width: auto;
+        max-width: 48px;
+        height: 46px;
+        font-size: 18px;
+    }
+
+    /* Patient card: avatar · name + UHID · tick · arrow. Gender / DOB / email open with the arrow */
+    .pf-list {
+        gap: 10px;
+    }
+
+    .pf-card {
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 10px 10px 12px;
+        border-radius: 14px;
+    }
+
+        .pf-card:hover, .pf-card:focus-visible {
+            transform: none !important;
+            border-bottom-left-radius: 14px !important;
+            border-bottom-right-radius: 14px !important;
+        }
+
+    .pf-card-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        font-size: 12.5px;
+    }
+
+    .pf-card-body {
+        gap: 2px;
+    }
+
+    .pf-card-name {
+        font-size: 14.5px;
+    }
+
+    .pf-card-tags {
+        display: none;
+    }
+
+    .pf-card-uhid {
+        padding-top: 0;
+        border-top: none;
+        gap: 5px;
+    }
+
+    .pf-uhid-value {
+        font-size: 12.5px;
+    }
+
+    .pf-card-check {
+        margin-top: 0;
+    }
+
+    .pf-card-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        margin: -4px 0 -4px -4px;
+        border-radius: 50%;
+        color: var(--ink-soft);
+        flex-shrink: 0;
+        cursor: pointer;
+    }
+
+        .pf-card-toggle::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            border-right: 2px solid currentColor;
+            border-bottom: 2px solid currentColor;
+            transform: translateY(-2px) rotate(45deg);
+            transition: transform .2s;
+        }
+
+        .pf-card-toggle:active {
+            background: var(--surface-alt);
+        }
+
+        .pf-card-toggle:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 1px;
+        }
+
+    .pf-card.is-open .pf-card-toggle::before {
+        transform: translateY(2px) rotate(-135deg);
+    }
+
+    /* Details: closed until the arrow is tapped (also for the selected card) */
+    .pf-list .pf-card .pf-card-more {
+        display: none !important;
+    }
+
+    .pf-list .pf-card.is-open .pf-card-more {
+        display: flex !important;
+        position: static;
+        flex-basis: 100%;
+        padding: 10px 2px 2px;
+        border: none;
+        border-top: 1px dashed var(--line);
+        border-radius: 0;
+        box-shadow: none;
+        background: transparent;
+    }
+
+    .pf-card.selected.is-open .pf-card-more {
+        border-top-color: var(--success-border);
+    }
+}
+

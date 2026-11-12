@@ -57,39 +57,42 @@
                     <button type="submit" form="flowNav" name="to" value="appointment" class="rc-edit-btn">@Html.Raw(editIcon) @L["Review.Edit"]</button>
                 </div>
 
-                <div class="rc-detail-row">
+                @* Phone: these rows become a 2-column grid (review-confirm.css); no effect on larger screens *@
+                <div class="rc-detail-grid">
+                <div class="rc-detail-row rc-row-hospital">
                     <span class="rc-detail-icon" aria-hidden="true">🏥</span>
                     <span class="rc-detail-label">@L["Review.Hospital"]</span>
                     <span class="rc-detail-value">@Model.Summary.HospitalName</span>
                 </div>
-                <div class="rc-detail-row">
+                <div class="rc-detail-row rc-row-specialty">
                     <span class="rc-detail-icon" aria-hidden="true">🩺</span>
                     <span class="rc-detail-label">@L["Review.Specialty"]</span>
                     <span class="rc-detail-value">@Model.Summary.Specialisation</span>
                 </div>
-                <div class="rc-detail-row">
+                <div class="rc-detail-row rc-row-doctor">
                     <span class="rc-detail-icon" aria-hidden="true">👨‍⚕️</span>
                     <span class="rc-detail-label">@L["Review.Doctor"]</span>
                     <span class="rc-detail-value">@Model.Summary.DoctorName</span>
                 </div>
-                <div class="rc-detail-row">
+                <div class="rc-detail-row rc-row-date">
                     <span class="rc-detail-icon" aria-hidden="true">📅</span>
                     <span class="rc-detail-label">@L["Review.AppointmentDate"]</span>
                     <span class="rc-detail-value">
                         @(DateTime.TryParse(Model.Summary.SlotDate, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var sd) ? sd.ToString("ddd, dd MMM yyyy") : Model.Summary.SlotDate)
                     </span>
                 </div>
-                <div class="rc-detail-row">
+                <div class="rc-detail-row rc-row-time">
                     <span class="rc-detail-icon" aria-hidden="true">🕐</span>
                     <span class="rc-detail-label">@L["Review.AppointmentTime"]</span>
                     <span class="rc-detail-value">
                         @(DateTime.TryParse(Model.Summary.SlotTime, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var st) ? st.ToString("hh:mm tt") : Model.Summary.SlotTime)
                     </span>
                 </div>
-                <div class="rc-detail-row">
+                <div class="rc-detail-row rc-row-fee">
                     <span class="rc-detail-icon" aria-hidden="true">💰</span>
                     <span class="rc-detail-label">@L["Review.ConsultationFee"]</span>
                     <span class="rc-detail-value rc-fee">₹ @Money(Model.Summary.ConsultationFee)</span>
+                </div>
                 </div>
             </section>
 
@@ -108,7 +111,7 @@
                         <span class="rc-patient-label">@L["Review.PatientType"]</span>
                         <span class="rc-patient-value">@(isNewPatient ? L["Common.NewPatient"] : L["Common.RegisteredPatient"])</span>
                     </div>
-                    <div class="rc-patient-item">
+                    <div class="rc-patient-item rc-pi-name">
                         <span class="rc-patient-label">@L["Review.FullName"]</span>
                         <span class="rc-patient-value">@Model.Summary.FullName</span>
                     </div>
@@ -126,7 +129,7 @@
                     </div>
                     @if (!string.IsNullOrWhiteSpace(Model.Summary.Email))
                     {
-                        <div class="rc-patient-item">
+                        <div class="rc-patient-item rc-pi-email">
                             <span class="rc-patient-label">@L["Review.Email"]</span>
                             <span class="rc-patient-value">@Model.Summary.Email</span>
                         </div>
@@ -148,7 +151,7 @@
                     @* Registered patients always show their UHID — "0" means the account exists but no appointment was booked yet *@
                     @if (!string.IsNullOrWhiteSpace(Model.Summary.RegistrationNo))
                     {
-                        <div class="rc-patient-item rc-full-width">
+                        <div class="rc-patient-item rc-full-width rc-pi-uhid">
                             <span class="rc-patient-label">@L["Review.Uhid"]</span>
                             <span class="rc-patient-value">@Model.Summary.RegistrationNo</span>
                         </div>

@@ -684,6 +684,22 @@ function initPatientDetailsPage() {
 
         card.appendChild(el('span', 'pf-card-check', '✓'));
 
+        // Phone only (CSS): arrow that opens / closes the details below — tapping the rest of the card still selects
+        const toggle = el('span', 'pf-card-toggle');
+        toggle.setAttribute('role', 'button');
+        toggle.setAttribute('tabindex', '0');
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.setAttribute('aria-label', t('Js.ShowDetails'));
+        const flip = (e) => {
+            e.preventDefault();
+            e.stopPropagation();                                   // do not select the patient
+            const open = card.classList.toggle('is-open');
+            toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        };
+        toggle.addEventListener('click', flip);
+        toggle.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') flip(e); });
+        card.appendChild(toggle);
+
         // Full details — visible only on hover / keyboard focus (and for the selected card on touch screens)
         const more = el('span', 'pf-card-more');
         [[t('Js.FullName'), name], [t('Js.Gender'), genderText(p.gender)], [t('Js.DateOfBirth'), formatDob(p.dob)], [t('Js.Age'), age],
