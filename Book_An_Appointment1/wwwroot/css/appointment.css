@@ -883,6 +883,59 @@ body {
         box-shadow: 0 8px 16px -10px color-mix(in srgb, var(--primary) 65%, transparent);
     }
 
+    /* Already booked (API statusText "Booked"): diagonal grey stripes, faded time, not clickable */
+    .slot-btn.is-booked,
+    .slot-btn.is-booked:hover,
+    .slot-swatch.is-booked {
+        background: repeating-linear-gradient(135deg,
+            color-mix(in srgb, var(--ink) 5%, #fff) 0 6px,
+            color-mix(in srgb, var(--ink) 11%, #fff) 6px 12px);
+        border-color: color-mix(in srgb, var(--ink) 11%, #fff);
+    }
+
+    .slot-btn.is-booked,
+    .slot-btn.is-booked:hover {
+        color: color-mix(in srgb, var(--ink) 42%, #fff);
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+/* Available / Booked key above the slots (only on days with a booked slot) */
+.slot-legend {
+    position: sticky;   /* stays visible while the slot list scrolls */
+    top: 0;
+    z-index: 1;
+    display: flex;
+    gap: 16px;
+    margin: 0 0 8px;
+    padding: 2px 0 6px;
+    background: var(--surface);
+    font-size: 12px;
+    color: var(--ink-soft);
+}
+
+    .slot-legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+.slot-swatch {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    background: var(--surface);
+    border: 1.5px solid var(--line);
+}
+
+    .slot-swatch.is-booked {
+        background: repeating-linear-gradient(135deg,
+            color-mix(in srgb, var(--ink) 5%, #fff) 0 3px,
+            color-mix(in srgb, var(--ink) 13%, #fff) 3px 6px);
+    }
+
 .text-muted {
     color: var(--ink-faint) !important;
     font-size: 14px;

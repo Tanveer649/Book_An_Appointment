@@ -80,17 +80,31 @@ var AppointmentUI = (function () {
         return BUCKETS.filter(function (b) { return map[b]; }).map(function (b) { return { name: b, items: map[b] }; });
     }
 
+    // API statusText "Available" → open; "Booked" (or any other status) → isAvailable false. Missing flag = open.
+    function isOpen(s) { return !s || s.isAvailable !== false; }
+    function hasOpen(slots) { return (slots || []).some(isOpen); }
+
     function renderSlots(slots, selectedStart, emptyMsg) {
         var groups = groupSlots(slots);
         if (!groups.length) return '<div class="text-muted">' + esc(emptyMsg || t('Js.NoSlotsForDate')) + '</div>';
-        return groups.map(function (g) {
+        // Key under the slots, only when the day has a booked slot
+        var legend = (slots || []).some(function (s) { return !isOpen(s); })
+            ? '<div class="slot-legend" aria-hidden="true"><span><i class="slot-swatch"></i>' + esc(t('Js.SlotAvailable')) +
+              '</span><span><i class="slot-swatch is-booked"></i>' + esc(t('Js.SlotBooked')) + '</span></div>'
+            : '';
+        return legend + groups.map(function (g) {
             var btns = g.items.map(function (it) {
+                if (!isOpen(it.slot)) {   // booked → grey, disabled, not clickable
+                    return '<button type="button" class="slot-btn is-booked" disabled aria-disabled="true" title="' + esc(t('Js.SlotBooked')) +
+                        '" aria-label="' + esc(it.label + ' – ' + t('Js.SlotBooked')) + '">' + esc(it.label) + '</button>';
+                }
                 var on = selectedStart && it.slot.startTime === selectedStart;
                 return '<button type="button" class="slot-btn' + (on ? ' is-selected' : '') + '" aria-pressed="' + (on ? 'true' : 'false') +
                     '" data-start="' + esc(it.slot.startTime) + '" data-end="' + esc(it.slot.endTime) + '">' + esc(it.label) + '</button>';
             }).join('');
+            var free = g.items.filter(function (it) { return isOpen(it.slot); }).length;
             return '<div class="slot-group"><div class="slot-group-label">' + esc(t('Js.' + g.name)) +
-                ' <span class="slot-group-count">' + g.items.length + '</span></div><div class="slot-group-grid">' + btns + '</div></div>';
+                ' <span class="slot-group-count">' + free + '</span></div><div class="slot-group-grid">' + btns + '</div></div>';
         }).join('');
     }
 
@@ -131,7 +145,7 @@ var AppointmentUI = (function () {
 
     return {
         esc: esc, parseSlot: parseSlot, formatTime: formatTime, formatDay: formatDay, toDateStr: toDateStr,
-        groupSlots: groupSlots, renderSlots: renderSlots, renderDoctorCard: renderDoctorCard, renderBooking: renderBooking, initials: initials, photoSrc: photoSrc
+        groupSlots: groupSlots, renderSlots: renderSlots, isOpen: isOpen, hasOpen: hasOpen, renderDoctorCard: renderDoctorCard, renderBooking: renderBooking, initials: initials, photoSrc: photoSrc
     };
 })();
 
@@ -379,11 +393,11 @@ $(document).ready(function () {
         showBookingStage();
         setDateLabel(date);
 
-        var saved = savedStart && slots.filter(function (s) { return s.startTime === savedStart; })[0];
+        var saved = savedStart && slots.filter(function (s) { return s.startTime === savedStart && UI.isOpen(s); })[0];
         if (saved) { $('#hdnSelectedSlotStart').val(saved.startTime); $('#hdnSelectedSlotEnd').val(saved.endTime); }
         updateSummary();
         initCalendar(doc.hospitalLocationId, facilityId, doctorId, date);
-        if (!slots.length) showEmptyDay(date, facilityId, doctorId, doc.hospitalLocationId);
+        if (!UI.hasOpen(slots)) showEmptyDay(date, facilityId, doctorId, doc.hospitalLocationId);
     }
 
     function setDateLabel(dateStr) {
@@ -528,7 +542,7 @@ $(document).ready(function () {
         }).done(function (data) {
             if (reqId !== slotRequestId) return;
             $('#slotsContainer').html(UI.renderSlots(data, '', t('Js.NoSlotsForDate')));
-            if (!(data || []).length) showEmptyDay(date, facilityId, doctorId, hospitalLocationId);
+            if (!UI.hasOpen(data)) showEmptyDay(date, facilityId, doctorId, hospitalLocationId);
         }).fail(function () {
             if (reqId !== slotRequestId) return;
             $('#slotsContainer').html('<div class="text-danger">' + UI.esc(t('Js.SlotsLoadFailed')) + '</div>');

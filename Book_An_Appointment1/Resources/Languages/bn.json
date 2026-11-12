@@ -254,6 +254,8 @@
     "Year": "বছর",
     "LoadingSlots": "স্লট লোড হচ্ছে…",
     "SlotsLoadFailed": "স্লট লোড করা যায়নি। অনুগ্রহ করে আবার তারিখ বাছুন।",
+    "SlotBooked": "বুক করা হয়েছে",
+    "SlotAvailable": "উপলব্ধ",
     "PleaseWait": "অনুগ্রহ করে অপেক্ষা করুন…",
     "ReviewConfirm": "পর্যালোচনা ও নিশ্চিতকরণ →",
     "OtpSent": "OTP পাঠানো হয়েছে ✓",

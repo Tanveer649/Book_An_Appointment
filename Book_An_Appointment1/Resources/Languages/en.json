@@ -254,6 +254,8 @@
     "Year": "Year",
     "LoadingSlots": "Loading slots…",
     "SlotsLoadFailed": "Could not load slots. Please pick the date again.",
+    "SlotBooked": "Booked",
+    "SlotAvailable": "Available",
     "PleaseWait": "Please wait…",
     "ReviewConfirm": "Review & Confirm →",
     "OtpSent": "OTP Sent ✓",

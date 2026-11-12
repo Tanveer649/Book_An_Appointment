@@ -35,7 +35,7 @@
             hospitalName = hospital?.FacilityName,
             hospitalCity = hospital?.CityName,
             hospitalLocationId = doc.HospitalLocationId,
-            slots = Model.Wizard.Slots.Select(s => new { startTime = s.StartTime, endTime = s.EndTime })
+            slots = Model.Wizard.Slots.Select(s => new { startTime = s.StartTime, endTime = s.EndTime, isAvailable = s.IsAvailable })
         };
     }
 }

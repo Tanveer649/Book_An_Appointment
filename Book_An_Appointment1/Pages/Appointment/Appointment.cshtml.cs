@@ -130,7 +130,7 @@ namespace Book_An_Appointment1.Pages.Appointment
 
                         // Remembered / linked slot already taken → say so (the day stays open to pick another time)
                         if (!string.IsNullOrEmpty(SavedSlotStart) &&
-                            !Wizard.Slots.Any(s => string.Equals(s.StartTime?.Trim(), SavedSlotStart.Trim(), StringComparison.Ordinal)))
+                            !Wizard.Slots.Any(s => s.IsAvailable && string.Equals(s.StartTime?.Trim(), SavedSlotStart.Trim(), StringComparison.Ordinal)))
                         {
                             SavedSlotStart = "";
                             ErrorMessage ??= _localizer.Text("Doctor.SlotTaken");
@@ -252,7 +252,8 @@ namespace Book_An_Appointment1.Pages.Appointment
                         slots = Wizard.Slots.Select(s => new
                         {
                             startTime = s.StartTime,
-                            endTime = s.EndTime
+                            endTime = s.EndTime,
+                            isAvailable = s.IsAvailable
                         })
                     }
                 });
@@ -398,8 +399,8 @@ namespace Book_An_Appointment1.Pages.Appointment
 
                     for (var i = 0; i < days.Count; i++)
                     {
-                        var hasFree = results[i].Any(s =>
-                            !DateTime.TryParse(s.StartTime, CultureInfo.InvariantCulture, DateTimeStyles.None, out var start) || start > DateTime.Now);
+                        var hasFree = results[i].Any(s => s.IsAvailable &&
+                            (!DateTime.TryParse(s.StartTime, CultureInfo.InvariantCulture, DateTimeStyles.None, out var start) || start > DateTime.Now));
                         if (hasFree)
                             return new JsonResult(new { date = days[i].ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) });
                     }
@@ -514,7 +515,7 @@ namespace Book_An_Appointment1.Pages.Appointment
 
             var date = start.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             var slots = await GetDoctorSlotsAsync(sessionData.FacilityId, sessionData.DoctorId, sessionData.HospitalLocationId, date);
-            var slot = slots.FirstOrDefault(s => string.Equals(s.StartTime?.Trim(), slotStart.Trim(), StringComparison.Ordinal));
+            var slot = slots.FirstOrDefault(s => s.IsAvailable && string.Equals(s.StartTime?.Trim(), slotStart.Trim(), StringComparison.Ordinal));
 
             if (slot == null)
                 _logger.LogWarning("Continue — slot not available | DoctorId={D} Slot={S}", sessionData.DoctorId, slotStart);

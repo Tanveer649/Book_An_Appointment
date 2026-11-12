@@ -34,6 +34,12 @@ namespace Book_An_Appointment1.Models.Slot
         [JsonProperty("statusText")]
         public string StatusText { get; set; }
 
+        // "Available" (or no status from older APIs) = bookable. "Booked" or any other status = shown grey and disabled.
+        [JsonProperty("isAvailable")]
+        public bool IsAvailable =>
+            string.IsNullOrWhiteSpace(StatusText) ||
+            string.Equals(StatusText.Trim(), "Available", StringComparison.OrdinalIgnoreCase);
+
         [JsonProperty("reservationType")]
         public string ReservationType { get; set; }
 

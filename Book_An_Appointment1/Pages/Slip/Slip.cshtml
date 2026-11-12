@@ -78,26 +78,34 @@
                 <div class="slip-item"><dt>@L["Review.Patient"]</dt><dd>@s.PatientName</dd></div>
                 @if (!string.IsNullOrWhiteSpace(s.Mobile))
                 {
-                    <div class="slip-item"><dt>@L["Review.Mobile"]</dt><dd>@s.Mobile</dd></div>
+                    <div class="slip-item slip-half"><dt>@L["Review.Mobile"]</dt><dd>@s.Mobile</dd></div>
                 }
                 <div class="slip-item"><dt>@L["Review.Doctor"]</dt><dd>@s.DoctorName</dd></div>
-                <div class="slip-item"><dt>@L["Review.Specialty"]</dt><dd>@s.Specialisation</dd></div>
+                @if (!string.IsNullOrWhiteSpace(s.Specialisation))
+                {
+                    <div class="slip-item"><dt>@L["Review.Specialty"]</dt><dd>@s.Specialisation</dd></div>
+                }
                 <div class="slip-item slip-wide"><dt>@L["Review.Hospital"]</dt><dd>@s.HospitalName</dd></div>
                 @if (!string.IsNullOrWhiteSpace(s.VisitType))
                 {
-                    <div class="slip-item"><dt>@L["Review.VisitType"]</dt><dd>@s.VisitType</dd></div>
+                    <div class="slip-item slip-half"><dt>@L["Review.VisitType"]</dt><dd>@s.VisitType</dd></div>
                 }
                 @if (!string.IsNullOrWhiteSpace(s.PaymentMode))
                 {
-                    <div class="slip-item"><dt>@L["Review.Payment"]</dt><dd>@s.PaymentMode</dd></div>
+                    <div class="slip-item slip-half"><dt>@L["Review.Payment"]</dt><dd>@s.PaymentMode</dd></div>
                 }
                 @if (!string.IsNullOrWhiteSpace(s.Amount))
                 {
-                    <div class="slip-item"><dt>@L["Review.AmountPayable"]</dt><dd class="slip-amount">@s.Amount</dd></div>
+                    <div class="slip-item slip-half"><dt>@L["Review.AmountPayable"]</dt><dd class="slip-amount">@s.Amount</dd></div>
                 }
             </dl>
 
-            <p class="slip-note"><span aria-hidden="true">ℹ</span> @L["Slip.ArriveNote", arriveMinutes]</p>
+            <p class="slip-note">
+                <svg class="slip-note-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4M12 8h.01"></path>
+                </svg>
+                <span>@L["Slip.ArriveNote", arriveMinutes]</span>
+            </p>
 
             <div class="slip-actions" data-no-print>
                 <a class="slip-btn slip-btn-primary" href="@handlerUrl("Pdf")" download>
