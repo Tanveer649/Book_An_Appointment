@@ -137,6 +137,10 @@ var app = builder.Build();
 foreach (var code in languageCatalog.InvalidCodes)
     app.Logger.LogWarning("LanguageSettings: unknown or duplicate language code '{Code}' — skipped", code);
 
+app.Logger.LogInformation("Languages offered: {Codes}{Hidden}",
+    string.Join(", ", languageCatalog.Languages.Select(l => l.Code)),
+    languageCatalog.HiddenCodes.Count > 0 ? " (switched off: " + string.Join(", ", languageCatalog.HiddenCodes) + ")" : "");
+
 // API credentials come from appsettings.json → ApiSettings (set per client deployment)
 if (string.IsNullOrWhiteSpace(app.Configuration["ApiSettings:UserName"]) ||
     string.IsNullOrWhiteSpace(app.Configuration["ApiSettings:Password"]))

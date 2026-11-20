@@ -1,11 +1,22 @@
 ﻿@page "/patient-details"
 @model Book_An_Appointment1.Pages.Appointment.PatientDetailsModel
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
 @{
     ViewData["Title"] = L["PatientDetails.PageTitle"];
 
-    // Links placed inside the translated consent sentence ({0} and {1})
-    var termsLink = $"<a href=\"/terms\" target=\"_blank\" rel=\"noopener\">{System.Net.WebUtility.HtmlEncode(L.Text("PatientDetails.TermsConditions"))}</a>";
-    var privacyLink = $"<a href=\"/privacy-policy\" target=\"_blank\" rel=\"noopener\">{System.Net.WebUtility.HtmlEncode(L.Text("PatientDetails.PrivacyPolicy"))}</a>";
+    // Links placed inside the translated consent sentence ({0} and {1}).
+    // Same URLs as the footer: appsettings HospitalSettings:TermsUrl / PrivacyPolicyUrl (the hospital's own pages).
+    // Opened in a new tab so the booking in progress is kept. No URL set → plain text instead of a dead link.
+    string ConsentLink(string? url, string textKey)
+    {
+        var text = System.Net.WebUtility.HtmlEncode(L.Text(textKey));
+        url = url?.Trim();
+        return string.IsNullOrEmpty(url)
+            ? text
+            : $"<a href=\"{System.Net.WebUtility.HtmlEncode(url)}\" target=\"_blank\" rel=\"noopener noreferrer\">{text}</a>";
+    }
+    var termsLink = ConsentLink(Config["HospitalSettings:TermsUrl"], "PatientDetails.TermsConditions");
+    var privacyLink = ConsentLink(Config["HospitalSettings:PrivacyPolicyUrl"], "PatientDetails.PrivacyPolicy");
 }
 @section Styles {
     <link rel="stylesheet" href="~/css/patient-details.css" asp-append-version="true" />

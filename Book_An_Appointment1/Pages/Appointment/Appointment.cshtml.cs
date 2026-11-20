@@ -78,7 +78,7 @@ namespace Book_An_Appointment1.Pages.Appointment
 
             await LoadFacilities();
 
-            // Fresh visit: the default facility (appsettings ApiParam:GetFacilitiesParams:FacilityCode) is selected and
+            // Fresh visit: the default facility (appsettings AppointmentPageSettings:DefaultFacilityId) is selected and
             // its specialities + ALL its doctors are loaded, so the patient can start with a speciality OR a doctor.
             if (sessionData == null || sessionData.FacilityId <= 0 || HideList.IsFacilityHidden(_configuration, sessionData.FacilityId))
             {
@@ -523,21 +523,23 @@ namespace Book_An_Appointment1.Pages.Appointment
             return slot;
         }
 
-        // Facility pre-selected on a fresh visit: the one whose id (or facility code, when the API sends one) equals
-        // appsettings ApiParam:GetFacilitiesParams:FacilityCode. Not found → the only facility, if there is just one.
-        // The patient can still pick another facility from the dropdown.
+        // Facility pre-selected on a fresh visit (the patient can still pick another one):
+        //   1. appsettings AppointmentPageSettings:DefaultFacilityId — the facility id from GetFacilityDetails ("facilityId")
+        //   2. not set / "0" → the only facility, when the API returns just one
+        // Not under ApiParam:GetFacilitiesParams on purpose: every key there is sent to the API as a query parameter.
+        // ApiParam:GetFacilitiesParams:FacilityCode stays the API filter only ("0" = all facilities).
         private int DefaultFacilityId()
         {
-            var code = _configuration["ApiParam:GetFacilitiesParams:FacilityCode"]?.Trim();
-            var match = string.IsNullOrEmpty(code) ? null : Wizard.Facilities.FirstOrDefault(f =>
-                f.FacilityId.ToString(CultureInfo.InvariantCulture) == code ||
-                string.Equals(f.FacilityCode?.Trim(), code, StringComparison.OrdinalIgnoreCase));
+            var wanted = _configuration["AppointmentPageSettings:DefaultFacilityId"]?.Trim();
+            var match = string.IsNullOrEmpty(wanted) || wanted == "0" ? null : Wizard.Facilities.FirstOrDefault(f =>
+                f.FacilityId.ToString(CultureInfo.InvariantCulture) == wanted ||
+                string.Equals(f.FacilityCode?.Trim(), wanted, StringComparison.OrdinalIgnoreCase));
 
             if (match == null && Wizard.Facilities.Count == 1)
                 match = Wizard.Facilities[0];
 
-            if (match == null)
-                _logger.LogWarning("Default facility not found | FacilityCode={C} Facilities={N}", code, Wizard.Facilities.Count);
+            if (match == null && !string.IsNullOrEmpty(wanted) && wanted != "0")
+                _logger.LogWarning("Default facility not found | DefaultFacilityId={Id} Facilities={N}", wanted, Wizard.Facilities.Count);
 
             return match?.FacilityId ?? 0;
         }

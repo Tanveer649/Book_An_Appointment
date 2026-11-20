@@ -54,15 +54,28 @@ language is changed in the middle of a booking.
 
 ```jsonc
 "LanguageSettings": {
+  "Enabled": true,                 // false = no language dropdown; whole portal in DefaultLanguage
   "DefaultLanguage": "en",
   "ResourcesPath": "Resources/Languages",
   "Languages": [
-    { "Code": "en", "Name": "English", "NativeName": "English" },
-    { "Code": "hi", "Name": "Hindi",   "NativeName": "हिन्दी", "Font": "Noto Sans Devanagari" },
-    { "Code": "bn", "Name": "Bengali", "NativeName": "বাংলা",  "Font": "Noto Sans Bengali" }
+    { "Code": "en", "Name": "English", "NativeName": "English", "IsShow": true },
+    { "Code": "hi", "Name": "Hindi",   "NativeName": "हिन्दी", "Font": "Noto Sans Devanagari", "IsShow": true },
+    { "Code": "bn", "Name": "Bengali", "NativeName": "বাংলা",  "Font": "Noto Sans Bengali",    "IsShow": true }
   ]
 }
 ```
+
+### Switching languages on / off (per hospital)
+
+| Setting | Effect |
+|---|---|
+| `Enabled: false` | The header dropdown disappears and every page is in `DefaultLanguage`, even for a patient who chose another language earlier (their saved choice is ignored). |
+| `"IsShow": false` on a language | That language is left out: not in the dropdown, `/set-language` refuses it, and a patient who had chosen it gets `DefaultLanguage`. The JSON translation file can stay. |
+| Missing `Enabled` / `IsShow` | Counts as `true`. |
+
+The `DefaultLanguage` is always available, even if its own `IsShow` is `false`. With only one language left,
+the dropdown is not shown. The start-up log lists the result, e.g. `Languages offered: en, hi (switched off: bn)`.
+Restart the site (recycle the app pool) after changing these settings.
 
 | Field | Meaning |
 |---|---|
@@ -70,6 +83,7 @@ language is changed in the middle of a booking.
 | `Name` | English name, shown small in the dropdown |
 | `NativeName` | Name in its own script, shown in the dropdown and on the header button |
 | `Font` | Optional Google Font for non-Latin scripts. When set, the font is loaded and `letter-spacing` is reset (spacing breaks joined scripts). |
+| `IsShow` | `true` = offered in the dropdown; `false` = switched off for this hospital (default `true`) |
 
 Order of `Languages` = order in the dropdown. An unknown or duplicate code is skipped and logged
 (`LanguageSettings: unknown or duplicate language code`) — the site keeps running.

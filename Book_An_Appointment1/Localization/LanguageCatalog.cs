@@ -15,15 +15,32 @@ namespace Book_An_Appointment1.Localization
         // Codes skipped because .NET does not know the culture (logged at startup)
         public IReadOnlyList<string> InvalidCodes { get; }
 
+        // Languages present in config but switched off (IsShow: false, or LanguageSettings:Enabled: false)
+        public IReadOnlyList<string> HiddenCodes { get; }
+
         public LanguageCatalog(LanguageSettings settings)
         {
             Settings = settings;
             var languages = new List<LanguageOption>();
             var cultures = new List<CultureInfo>();
             var invalid = new List<string>();
+            var hidden = new List<string>();
+
+            // Which languages are offered:
+            //   LanguageSettings:Enabled = false → only DefaultLanguage (the header dropdown disappears: it needs 2+ languages)
+            //   Languages[i].IsShow = false      → that language is left out (dropdown, /set-language, culture cookie)
+            // The default language is always kept, so the portal never ends up without a language.
+            bool IsDefault(LanguageOption x) => string.Equals(x.Code?.Trim(), settings.DefaultLanguage?.Trim(), StringComparison.OrdinalIgnoreCase);
+            bool Offered(LanguageOption x) => IsDefault(x) || (settings.Enabled && x.IsShow);
 
             foreach (var lang in settings.Languages.Where(x => !string.IsNullOrWhiteSpace(x.Code)))
             {
+                if (!Offered(lang))
+                {
+                    hidden.Add(lang.Code.Trim());
+                    continue;
+                }
+
                 var culture = CreateCulture(lang.Code.Trim());
                 if (culture == null || cultures.Any(c => c.Name == culture.Name))
                 {
@@ -48,6 +65,7 @@ namespace Book_An_Appointment1.Localization
             Languages = languages;
             Cultures = cultures;
             InvalidCodes = invalid;
+            HiddenCodes = hidden;
             Default = Find(settings.DefaultLanguage) ?? languages[0];
         }
 

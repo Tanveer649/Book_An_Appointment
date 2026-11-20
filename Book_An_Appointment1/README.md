@@ -31,7 +31,7 @@ comes live from the hospital's HIS API.
 
 | Area | What it does | Doc |
 |---|---|---|
-| **Booking wizard** | 3 steps: hospital → speciality / doctor → date/slot · patient details · review & confirm. The default facility (`ApiParam:GetFacilitiesParams:FacilityCode`) is pre-selected; the patient can pick a **speciality first or a doctor first** (choosing a doctor fills in its speciality). Choices survive a page reload and Back from page 2; a **Start over** link (with confirmation) clears them when the patient wants (`AppointmentPageSettings:EnableStartOver`). | — |
+| **Booking wizard** | 3 steps: hospital → speciality / doctor → date/slot · patient details · review & confirm. The default facility (`AppointmentPageSettings:DefaultFacilityId`) is pre-selected; the patient can pick a **speciality first or a doctor first** (choosing a doctor fills in its speciality). Choices survive a page reload and Back from page 2; a **Start over** link (with confirmation) clears them when the patient wants (`AppointmentPageSettings:EnableStartOver`). | — |
 | **New patient** | Details form + mobile OTP verification. | — |
 | **Registered patient** | Mobile OTP → family members on that number as cards → pick one. UHID `0` = account created, no appointment booked before. | — |
 | **Add family member** | Registered patient can add a member (MobSaveRegistrationForPatient); it is selected straight away. | [Family-Member.md](Docs/Family-Member.md) |
@@ -155,12 +155,12 @@ Book_An_Appointment1/   (this folder)
 | `HospitalSettings` | `HospitalName`, `LogoPath`, `LogoHeight` (shown 32–60 px, recommended `56px`), `LogoWidth` (`auto`, max 200 px), `HeaderText`, `EmergencyNumber`, `DisclaimerText`, footer links (`AboutUsUrl`, `ContactUs`, `TermsUrl`, `RefundPolicyUrl`, `PrivacyPolicyUrl` — empty = hidden) | Header, footer, slip and poster branding. Logo file: PNG/SVG, ≥ 112 px high. |
 | `FooterSettings` | `Enabled`, `ShowDisclaimer`, `DisclaimerCollapsed`, `ShowPanelPhones`, `ShowAboutUs`, `ShowContactUs`, `ShowTerms`, `ShowRefundPolicy`, `ShowPrivacyPolicy`, `ShowGooglePlay` + `GooglePlayUrl`, `ShowAppStore` + `AppStoreUrl`, `ShowCopyright` + `CopyrightYear` / `CopyrightName`, `ShowSecureBadge` | Compact footer. Every part has its own `Show…` switch; `Enabled: false` removes the whole footer. See [Footer.md](Docs/Footer.md) |
 | `ThemeSettings` | `Theme` | Loads `wwwroot/themes/{Theme}.css` (lowercase file name). Now **`motherland`** (Motherland Hospital) |
-| `LanguageSettings` | `DefaultLanguage`, `Languages[]` | Languages in the header dropdown |
+| `LanguageSettings` | `Enabled`, `DefaultLanguage`, `Languages[]` (each with `IsShow`) | Languages in the header dropdown. `Enabled: false` = no dropdown, portal in `DefaultLanguage`; `IsShow: false` = that language switched off. Restart after a change. See [Language-Feature.md](Docs/Language-Feature.md#switching-languages-on--off-per-hospital) |
 | `PaymentSettings` | `EnablePayNow`, `EnablePayOnArrival`, `PaymentGatewayUrl` | Payment options |
 | `AppointmentApi` | `Source`, `AppointmentType`, `SourceAppointmentId`, `DefaultSlotMinutes`, `GenderCodes` | Values sent to CreateAppointment |
 | `OtpSettings` | `OtpLength`, `NotRegisteredPattern`, `AlreadyRegisteredPattern` | OTP length + how the API reports "wrong patient type" |
 | `RateLimits` | `WindowMinutes`, `OtpSend`, `OtpVerify`, `Booking` | Requests per visitor (IP) per window |
-| `AppointmentPageSettings` | `EnableStartOver`, `EnableNextAvailable` | "Start over" link; "Next free day" box on days without slots (`true` = on) |
+| `AppointmentPageSettings` | `EnableStartOver`, `EnableNextAvailable`, `DefaultFacilityId` | "Start over" link; "Next free day" box on days without slots (`true` = on); **facility pre-selected** on the first page = `facilityId` from GetFacilityDetails (`"0"` / empty = none, unless only one facility) |
 | `HideList` | `Enabled`, `FacilityIds`, `DoctorIds`, `SpecialityIds` | Facilities / doctors / specialities hidden from patients (ids as strings) |
 | `FindSlipSettings` | `Enabled`, `StorePath` | Find my slip page; slips remembered in `App_Data/slips` (or `StorePath`) |
 | `MaxAppointmentAllowedDays` | `Days` | Booking window (default 90) |
@@ -169,7 +169,7 @@ Book_An_Appointment1/   (this folder)
 | `FamilyMemberSettings` | `DefaultAreaId`, `PaymentFlag`, `OtpErrorPattern` | Add family member (MobSaveRegistrationForPatient) |
 | `FileLogging` | `Enabled`, `Path`, `RetainDays` | Daily log files `logs/portal-yyyyMMdd.log`; only the last `RetainDays` days are kept (default 5) |
 | `DataProtection` | `KeysPath` | Where the signing keys are stored (section 8) |
-| `ApiParam` | per-API static query values | `GetFacilitiesParams:FacilityCode` = **default facility** selected on the first page (matched to the facility id); location id, default country, … |
+| `ApiParam` | per-API static query values | **Every key is sent to the API as a query parameter.** `GetFacilitiesParams:FacilityCode` = facility filter for GetFacilityDetails (`"0"` = all); location id, default country, … |
 
 ---
 
@@ -270,6 +270,8 @@ Add a line for every change that affects users, settings or URLs (newest first).
 
 | Date | Change |
 |---|---|
+| 2026-11-20 | Patient Details consent ("I agree to the Terms & Conditions and Privacy Policy"): the two links pointed to `/terms` and `/privacy-policy`, which do not exist in the portal ("page not available"). They now use the same URLs as the footer — `HospitalSettings:TermsUrl` / `PrivacyPolicyUrl` — and open in a new tab; with no URL set the words show as plain text. |
+| 2026-11-20 | **Default facility** now set by `AppointmentPageSettings:DefaultFacilityId` (Motherland: `1` = MOTHERLAND HOSPITAL). `ApiParam:GetFacilitiesParams:FacilityCode` is only the API filter again (`"0"` = all facilities) — before, `"0"` left nothing pre-selected. The new key is deliberately not under `ApiParam` (every key there is sent to the API). **Language switches**: `LanguageSettings:Enabled` (false = no dropdown, always `DefaultLanguage`) and `IsShow` per language (false = not offered, `/set-language` refuses it, a saved choice falls back to the default). Default language always available; start-up log lists `Languages offered`. |
 | 2026-11-17 | Device check (320–1366 px, portrait and landscape): no sideways scrolling on any page. Fixed iPhone / iPad zoom-on-tap: text fields, the dropdown search box, the calendar month / year and the Find my slip inputs are now 16 px on screens up to 991 px and on every touch screen (iOS Safari zooms the page into any field smaller than 16 px). Desktop with a mouse unchanged. |
 | 2026-11-17 | **Motherland Hospital theme** `wwwroot/themes/motherland.css` (colours and font from motherlandhospital.com: pink `#ED2E7D`, green `#1AAB91`, soft pink page, light pink footer with dark text, Manrope body font); `ThemeSettings:Theme` = `motherland`. Footer colours that were hard-coded white are now theme variables (`--footer-link-hover`, `--footer-strong`, `--footer-line`, white by default), so a theme can have a light footer. **“Powered by Akhil Systems Private Limited”** (link to https://akhilsystems.com/, new tab) on every deployment — in the footer's bottom line, and as a single small line when the footer is switched off; no setting. New key `Footer.PoweredBy` (en/hi/bn). See Docs/Theme.md, Docs/Footer.md. |
 | 2026-11-13 | First page (desktop): no more horizontal scroll bar. The hospital photo carousel kept a 16:10 shape, so when the welcome card next to it was tall it grew wider than its column and pushed the page sideways; it now fills exactly its column and the card's height. |

@@ -86,7 +86,7 @@ If UserName / Password are empty the log shows a **Critical** message at start a
 
 ```jsonc
 "ApiParam": {
-  "GetFacilitiesParams":   { "FacilityCode": "1", "HospitalLocationId": "1" },   // FacilityCode = DEFAULT facility on the first page
+  "GetFacilitiesParams":   { "FacilityCode": "0", "HospitalLocationId": "1" },   // FacilityCode = API filter ("0" = all facilities)
   "DefaultLocationSettings": { "DefaultCountryId": "1", "DefaultCountryName": "INDIA" },
   "GetSpecialitiesParams": { "HospitalLocationId": "1", "isTeleconsultation": "0" },
   "GetDoctorsParams":      { "facilityCode": "1", "doctorId": "0", "specializationId": "0", "isTeleconsultation": "0" },
@@ -95,9 +95,19 @@ If UserName / Password are empty the log shows a **Critical** message at start a
 }
 ```
 
-`GetFacilitiesParams:FacilityCode` also chooses the facility that is **pre-selected** when the first page opens: the
-facility whose id (or facility code, if the API returns one) equals this value. If none matches and the hospital has
-only one facility, that one is selected. Patients can still pick another facility from the dropdown.
+`GetFacilitiesParams:FacilityCode` is only the filter sent to GetFacilityDetails: `"0"` returns every facility,
+a code returns just that one. Every key under `ApiParam:*` is sent to the API as a query parameter, so do not add
+portal settings there.
+
+The facility **pre-selected** when the first page opens is set separately:
+
+```jsonc
+"AppointmentPageSettings": { "DefaultFacilityId": "1" }   // "facilityId" from GetFacilityDetails; "0" / empty = none
+```
+
+If `DefaultFacilityId` is empty / `"0"` / not found and the API returns only one facility, that one is selected.
+Patients can still pick another facility from the dropdown. To find the id, open the first page and look at the
+facility dropdown (or the GetFacilityDetails response, field `facilityId`).
 
 ### 2.4 Booking API values — *Check* with the HIS team
 
