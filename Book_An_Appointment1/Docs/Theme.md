@@ -44,6 +44,32 @@ All pass WCAG AA contrast (≥ 4.5 : 1) for white button text, footer text / lin
 "Verified" badges. When choosing your own `--primary`, keep it dark enough for white text
 (check at e.g. webaim.org/resources/contrastchecker).
 
+## Hospital themes
+
+| File | Hospital | Colours | Notes |
+|---|---|---|---|
+| `aiims.css` | AIIMS | `#8B1E3F` / `#1C9A6C` / `#D97706` | Dark footer |
+| `motherland.css` | Motherland Hospital (motherlandhospital.com) | pink `#ED2E7D`, green `#1AAB91` | Taken from the hospital website: soft pink page, **light pink footer with dark text**, Manrope body font. The website pink gives white button text a contrast of about 4 : 1 (slightly under AA); if the hospital wants AA, change `--primary` to `#D81B6A`. |
+
+### Light footer
+
+A hospital whose website has a light footer (like Motherland) sets these in its theme file, in addition to `--footer-bg`:
+
+```css
+--footer-bg-2: …;          /* gradient end */
+--footer-text: …;  --footer-text-soft: …;  --footer-text-muted: …;   /* dark text */
+--footer-link: …;  --footer-link-hover: …;
+--footer-strong: …;        /* "Disclaimer:" label */
+--footer-line: …;          /* top border and divider */
+```
+
+`--footer-link-hover`, `--footer-strong` and `--footer-line` default to white (for the usual dark footer) in `theme.css`.
+
+### Body font
+
+A theme may change the body font, as `motherland.css` does (Google Font `@import` + `html:root { --font-body: … }`).
+Hindi / Bengali pages still switch to their own script font.
+
 ## How it works
 
 | File | Role |

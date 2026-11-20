@@ -39,15 +39,44 @@
     // Nothing left to show (or the whole footer switched off) → no empty dark bar
     var footerOn = Show("Enabled") &&
                    (showDisclaimer || links.Count > 0 || hasStores || !string.IsNullOrEmpty(copyrightName) || showSecure);
+
+    // "Powered by Akhil Systems Private Limited" — the product owner's credit. Shown in EVERY deployment,
+    // deliberately not in appsettings (no switch), also when the footer itself is switched off.
+    const string PoweredByName = "Akhil Systems Private Limited";
+    const string PoweredByUrl = "https://akhilsystems.com/";
+    var poweredParts = L["Footer.PoweredBy"].Value.Split("{0}");   // "Powered by {0}" / "{0} द्वारा संचालित"
 }
-@if (!footerOn) { return; }
+@functions {
+    // "Powered by" text with the company name as the link (word order comes from the language file)
+    Microsoft.AspNetCore.Html.IHtmlContent PoweredBy(string[] parts, string name, string url, string cssClass)
+    {
+        var b = new Microsoft.AspNetCore.Html.HtmlContentBuilder();
+        b.AppendHtml($"<span class=\"{cssClass}\">");
+        b.Append(parts.Length > 0 ? parts[0] : "");
+        b.AppendHtml($"<a href=\"{url}\" target=\"_blank\" rel=\"noopener\">");
+        b.Append(name);
+        b.AppendHtml("</a>");
+        b.Append(parts.Length > 1 ? parts[1] : "");
+        b.AppendHtml("</span>");
+        return b;
+    }
+}
+@if (!footerOn)
+{
+    @* Footer switched off: only the Powered by line, small and centred *@
+    <div class="powered-strip" style="text-align:center;padding:10px 16px calc(10px + env(safe-area-inset-bottom, 0px));font-size:12px;color:var(--ink-faint)">
+        <style>.powered-strip a { color: var(--ink-soft); font-weight: 600; text-decoration: none; } .powered-strip a:hover { color: var(--primary); }</style>
+        @PoweredBy(poweredParts, PoweredByName, PoweredByUrl, "footer-powered")
+    </div>
+    return;
+}
 
 <style>
     .custom-footer {
         background: linear-gradient(135deg, var(--footer-bg) 0%, var(--footer-bg-2) 100%);
         color: var(--footer-text);
         width: 100%;
-        border-top: 1px solid rgba(255,255,255,.08);
+        border-top: 1px solid var(--footer-line, rgba(255,255,255,.08));
         font-size: 13px;
     }
 
@@ -67,7 +96,7 @@
         color: var(--footer-text-soft);
     }
 
-        .footer-disclaimer strong { color: #fff; margin-right: 6px; }
+        .footer-disclaimer strong { color: var(--footer-strong, #fff); margin-right: 6px; }
 
         .footer-disclaimer summary {
             list-style: none;
@@ -106,7 +135,7 @@
 
     .footer-divider {
         height: 1px;
-        background: rgba(255,255,255,.10);
+        background: var(--footer-line, rgba(255,255,255,.10));
     }
 
     /* ── Links + store badges ── */
@@ -132,7 +161,16 @@
             transition: color .2s ease;
         }
 
-            .footer-links a:hover { color: #fff; }
+            .footer-links a:hover { color: var(--footer-link-hover, #fff); }
+
+    /* "Powered by Akhil Systems Private Limited" — every deployment */
+    .footer-powered a {
+        color: var(--footer-link);
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+        .footer-powered a:hover { color: var(--footer-link-hover, #fff); text-decoration: underline; }
 
     .footer-stores {
         display: flex;
@@ -261,13 +299,13 @@
             </div>
         }
 
-        @if (!string.IsNullOrEmpty(copyrightName) || showSecure)
-        {
+        @* Bottom line is always there: it carries the Powered by credit (every deployment) *@
             <div class="footer-bottom">
                 @if (!string.IsNullOrEmpty(copyrightName))
                 {
                     <span>@L["Footer.Copyright", copyrightYear, copyrightName]</span>
                 }
+                @PoweredBy(poweredParts, PoweredByName, PoweredByUrl, "footer-powered")
                 @if (showSecure)
                 {
                     <span class="footer-security">
@@ -279,6 +317,5 @@
                     </span>
                 }
             </div>
-        }
     </div>
 </footer>

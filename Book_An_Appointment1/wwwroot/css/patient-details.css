@@ -1736,6 +1736,16 @@ button.btn-back {
     }
 }
 
+/* ═══ Touch screens of any size (iPhone landscape, iPad, Android tablets): text fields at 16px.
+   Below 16px iOS Safari zooms the whole page when a field is tapped. Desktop (mouse) unchanged. ═══ */
+@media (max-width: 991px), (hover: none) and (pointer: coarse) {
+    input:not([type=checkbox]):not([type=radio]):not(.otp-input), select, textarea,
+    .select2-container .select2-selection__rendered,
+    .select2-container .select2-search__field {
+        font-size: 16px !important;   /* !important: page styles like .notes-textarea (14px) must not undercut it */
+    }
+}
+
 /* ═══ Phone only: OTP on one line, compact patient cards ═══ */
 
 /* Arrow that opens a card's details — phones only */

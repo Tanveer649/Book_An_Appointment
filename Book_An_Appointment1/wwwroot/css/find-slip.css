@@ -72,6 +72,13 @@ body {
         background: var(--surface);
     }
 
+        /* Phones / tablets: 16px, otherwise iOS Safari zooms the page when the field is tapped */
+        @media (max-width: 991px), (hover: none) and (pointer: coarse) {
+            .fs-row input {
+                font-size: 16px !important;
+            }
+        }
+
         .fs-row input:focus {
             outline: none;
             border-color: var(--primary);

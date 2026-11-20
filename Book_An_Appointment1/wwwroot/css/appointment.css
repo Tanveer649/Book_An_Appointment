@@ -301,6 +301,14 @@ body {
         grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
     }
 
+        /* Next to the welcome card the photo takes its column's width and the card's height.
+           Keeping 16:10 here made it wider than its column when the card is tall → sideways page scroll. */
+        .welcome-stage.has-media .carousel {
+            width: 100%;
+            min-width: 0;
+            aspect-ratio: auto;
+        }
+
 .empty-hint {
     background: var(--surface);
     border: 1px solid var(--line);
@@ -1847,6 +1855,16 @@ body {
     .slots-head {
         min-height: 0;
         margin-bottom: 10px;
+    }
+}
+
+/* Phones / tablets / any touch screen: dropdown search box and calendar month / year at 16px —
+   smaller text makes iOS Safari zoom the page when tapped. Desktop with a mouse unchanged. */
+@media (max-width: 991px), (hover: none) and (pointer: coarse) {
+    .select2-search--dropdown .select2-search__field,
+    .flatpickr-current-month .flatpickr-monthDropdown-months,
+    .flatpickr-current-month .fp-year {
+        font-size: 16px !important;
     }
 }
 

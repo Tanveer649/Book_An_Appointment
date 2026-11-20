@@ -1,0 +1,39 @@
+/* ══ Motherland Hospital (https://motherlandhospital.com/) ═══════════════════════════
+   appsettings.json → "ThemeSettings": { "Theme": "motherland" }
+
+   Colours and font taken from the hospital website: brand pink #ED2E7D, green #1AAB91,
+   soft pink backgrounds, light pink footer with dark text, Manrope body text
+   (headings stay Fraunces, as on the website). Every other shade is calculated from
+   these in wwwroot/css/theme.css; only the values below are overridden. */
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
+
+:root {
+    --primary: #ED2E7D;      /* buttons, links, selected slot, header title — website pink */
+    --success: #1AAB91;      /* verified, completed steps, booked — website green */
+    --accent: #1AAB91;       /* consultation-fee highlight — website green */
+
+    /* Page and text — the website uses a very light pink wash and neutral dark text */
+    --paper: #FFF7FA;
+    --ink: #212529;
+    --ink-soft: #5B6168;
+    --ink-faint: #8E959C;
+
+    /* Footer — light pink with dark text, like the website (not the usual dark footer) */
+    --footer-bg: #FFF4F8;
+    --footer-bg-2: #FFECF4;
+    --footer-text: #212529;
+    --footer-text-soft: #4A4F55;
+    --footer-text-muted: #6C737A;
+    --footer-link: #C81E66;        /* darker pink — readable on the light footer */
+    --footer-link-hover: #9E1650;
+    --footer-strong: #101010;      /* "Disclaimer:" label */
+    --footer-line: rgba(237, 46, 125, .16);
+}
+
+/* Manrope for body text, like the website. html:root wins over the page styles' :root.
+   Hindi / Bengali pages set their own script font afterwards (_Layout), which still applies. */
+html:root {
+    --font-body: 'Manrope', 'Inter', 'Segoe UI', sans-serif;
+    --bs-body-font-family: var(--font-body);
+}

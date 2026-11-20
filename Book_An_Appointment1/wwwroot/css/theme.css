@@ -39,6 +39,9 @@
     --footer-text: color-mix(in srgb, var(--primary) 9%, #fff);              /* light text on the dark footer */
     --footer-text-soft: color-mix(in srgb, var(--primary) 15%, #f2f2f2);
     --footer-text-muted: color-mix(in srgb, var(--primary) 12%, #bebebe);
+    --footer-link-hover: #fff;                                                /* link hover on the footer */
+    --footer-strong: #fff;                                                    /* "Disclaimer:" label */
+    --footer-line: rgba(255, 255, 255, .10);                                  /* footer top border and divider */
 
     /* ── Fixed design colours (same for every hospital) ──── */
     --surface: #FFFFFF;

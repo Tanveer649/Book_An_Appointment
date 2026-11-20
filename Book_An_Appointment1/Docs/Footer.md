@@ -36,6 +36,15 @@ A link or badge appears only when its switch is `true` **and** its URL is set.
 
 If every part is switched off, the footer is not drawn at all, so no empty dark bar is left.
 
+## Powered by Akhil Systems — every deployment
+
+The bottom line always shows **“Powered by Akhil Systems Private Limited”**. The company name links to
+https://akhilsystems.com/ and opens in a new tab.
+
+- It is part of the product, so it has **no switch** in appsettings and appears for every hospital.
+- If the footer is switched off (`Enabled: false`, or every part off), only this one line is shown, small and centred.
+- The name and URL are constants at the top of `Pages/Footer.cshtml`. The words around the name come from `Footer.PoweredBy` in the language files (`Powered by {0}` / `{0} द्वारा संचालित` / `{0} দ্বারা পরিচালিত`).
+
 Examples:
 - **Client does not want the disclaimer:** `"ShowDisclaimer": false`.
 - **No footer inside the mobile app:** `"Enabled": false`.
@@ -56,6 +65,7 @@ The keys are:
 - `GetItOn`, `DownloadOn`
 - `Copyright` (`© {0} {1}. All rights reserved.`)
 - `SecurePortal`, `Links`
+- `PoweredBy` (`Powered by {0}`, `{0}` = company name link)
 
 `DisclaimerText` works like this:
 - In English, the text from `HospitalSettings:DisclaimerText` is used.
